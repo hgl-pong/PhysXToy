@@ -1,0 +1,3 @@
+[submodule "ThirdParty/PhysX"]
+	path = ThirdParty/PhysX
+	url = git@github.com:NVIDIA-Omniverse/PhysX.git
