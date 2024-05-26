@@ -48,7 +48,7 @@ using namespace physx;
 //static PxFoundation *gFoundation = NULL;
 //static PxPhysics *gPhysics = NULL;
 //static PxDefaultCpuDispatcher *gDispatcher = NULL;
-static PhysicsEngine gPhysicsEngine;
+static IPhysicsEngine* gPhysicsEngine = nullptr;
 static IPhysicsMaterial *gMaterial = nullptr;
 
 static IPhysicsScene* gScene = nullptr;
@@ -162,19 +162,20 @@ static void createStack(const PxTransform &t, PxU32 size, PxReal halfExtent)
 void initPhysics(bool interactive)
 {
 	PhysicsEngineOptions options;
-	gPhysicsEngine.Init(options);
+	gPhysicsEngine =new PhysicsEngine();
+	gPhysicsEngine->Init(options);
 
 	PhysicsSceneCreateOptions sceneOptions;
 	sceneOptions.m_FilterShaderType = PhysicsSceneFilterShaderType::eDEFAULT;
 	sceneOptions.m_Gravity = MathLib::HVector3(0.0f, -9.81f, 0.0f);
 
-	gScene = gPhysicsEngine.CreateScene(sceneOptions);
+	gScene = gPhysicsEngine->CreateScene(sceneOptions);
 
 	PhysicsMaterialCreateOptions materialOptions;
 	materialOptions.m_StaticFriction = 0.5f;
 	materialOptions.m_DynamicFriction = 0.5f;
 	materialOptions.m_Restitution = 0.6f;
-	gMaterial = gPhysicsEngine.CreateMaterial(materialOptions);
+	gMaterial = gPhysicsEngine->CreateMaterial(materialOptions);
 
 	PxRigidStatic *groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
 	gScene->addActor(*groundPlane);

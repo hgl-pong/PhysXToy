@@ -39,8 +39,6 @@ enum class CollierGeometryType
 	COLLIER_GEOMETRY_TYPE_SPHERE,
 	COLLIER_GEOMETRY_TYPE_BOX,
 	COLLIER_GEOMETRY_TYPE_CAPSULE,
-	COLLIER_GEOMETRY_TYPE_CYLINDER,
-	COLLIER_GEOMETRY_TYPE_CONE,
 	COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH,
 	COLLIER_GEOMETRY_TYPE_CONVEX_MESH,
 	COLLIER_GEOMETRY_TYPE_COUNT
@@ -61,18 +59,8 @@ struct CollisionGeometryCreateOptions
 	struct CapsuleParams
 	{
 		MathLib::HReal m_Radius;
-		MathLib::HReal m_Height;
+		MathLib::HReal m_HalfHeight;
 	} m_CapsuleParams;
-	struct CylinderParams
-	{
-		MathLib::HReal m_Radius;
-		MathLib::HReal m_Height;
-	} m_CylinderParams;
-	struct ConeParams
-	{
-		MathLib::HReal m_Radius;
-		MathLib::HReal m_Height;
-	} m_ConeParams;
 	struct TriangleMeshParams
 	{
 		MathLib::HVector3 *m_Vertices;

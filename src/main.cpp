@@ -83,6 +83,7 @@ static void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
 	}
 	shape->release();
 	printf("actor count: %d\n", gScene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC));
+	convex->release();
 
 	//auto *convex = createConvex<PxConvexMeshCookingType::eQUICKHULL, true, 256>(SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
 	//printf("convex vertex count: %d\n", convex->getNbVertices());

@@ -10,6 +10,7 @@ namespace physx
 	class PxPhysics;
 	class PxCpuDispatcher;
 	class PxCooking;
+	class PxGeometry;
 };
 
 class PhysicsEngine : public IPhysicsEngine
@@ -25,11 +26,11 @@ public:
 	IPhysicsScene *CreateScene(const PhysicsSceneCreateOptions &options) override;
 	IColliderGeometry *CreateColliderGeometry(const CollisionGeometryCreateOptions& options) override;
 
-public:
-
+private:
+	friend bool CreatePhysXGeometry(PhysicsEngine* engine, const CollisionGeometryCreateOptions &options, PxGeometry** geometry);
+	friend bool CreatePhysXMaterial(PhysicsEngine* engine, const PhysicsMaterialCreateOptions& options, PxMaterial** material);
 private:
 	PhysicsEngineOptions m_Options;
-
 	std::unique_ptr<physx::PxAllocatorCallback> m_AllocatorCallback;
 	std::unique_ptr<physx::PxErrorCallback> m_ErrorCallback;
 	std::unique_ptr<physx::PxCooking> m_Cooking;
