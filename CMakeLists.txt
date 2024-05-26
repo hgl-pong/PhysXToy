@@ -24,11 +24,12 @@ add_executable(${PHYSX_TOY} ${SOURCE_FILES})
 find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)
 find_package(GLEW REQUIRED)  
 find_package(GLUT REQUIRED)
+find_package(Eigen3 CONFIG REQUIRED)
 
 target_include_directories(${PHYSX_TOY} PUBLIC ./include
     PRIVATE)
 
-target_link_libraries(${PHYSX_TOY} PRIVATE unofficial::omniverse-physx-sdk::sdk GLEW::GLEW GLUT::GLUT)
+target_link_libraries(${PHYSX_TOY} PRIVATE unofficial::omniverse-physx-sdk::sdk GLEW::GLEW GLUT::GLUT Eigen3::Eigen)
 
 add_custom_command(TARGET ${PHYSX_TOY} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different

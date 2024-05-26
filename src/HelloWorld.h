@@ -38,16 +38,20 @@
 #include "snippetcommon/SnippetPrint.h"
 #include "snippetcommon/SnippetPVD.h"
 #include "snippetutils/SnippetUtils.h"
-
+#include "Physics/PhysicsEngine.h"
+#include "Physics/PhysicsScene.h"
+#include "Physics/PhysicsMaterial.h"
 using namespace physx;
 
-static PxDefaultAllocator gAllocator;
-static PxDefaultErrorCallback gErrorCallback;
-static PxFoundation *gFoundation = NULL;
-static PxPhysics *gPhysics = NULL;
-static PxDefaultCpuDispatcher *gDispatcher = NULL;
-static PxScene *gScene = NULL;
-static PxMaterial *gMaterial = NULL;
+//static PxDefaultAllocator gAllocator;
+//static PxDefaultErrorCallback gErrorCallback;
+//static PxFoundation *gFoundation = NULL;
+//static PxPhysics *gPhysics = NULL;
+//static PxDefaultCpuDispatcher *gDispatcher = NULL;
+static PhysicsEngine gPhysicsEngine;
+static IPhyicsMaterial *gMaterial = nullptr;
+
+static IPhysicsScene* gScene = nullptr;
 static PxPvd *gPvd = NULL;
 
 static PxReal stackZ = 10.0f;
@@ -116,30 +120,29 @@ static void createStack(const PxTransform &t, PxU32 size, PxReal halfExtent)
 	auto *convex = createConvex<PxConvexMeshCookingType::eQUICKHULL, true, 256>(SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
 	printf("convex vertex count: %d\n", convex->getNbVertices());
 	// PxBoxGeometry geo(halfExtent, halfExtent, halfExtent);
-	//PxSphereGeometry geo(halfExtent);
+	// PxSphereGeometry geo(halfExtent);
 	PxConvexMeshGeometry geo(convex, PxMeshScale(3.f));
-	PxShape* shape = gPhysics->createShape(geo, *gMaterial);
+	PxShape *shape = gPhysics->createShape(geo, *gMaterial);
 	for (PxU32 i = 0; i < size; i++)
 	{
 		for (PxU32 j = 0; j < size - i; j++)
 		{
 			PxTransform localTm(PxVec3(PxReal(j * 2) - PxReal(size - i), PxReal(i * 2 + 1), 0) * halfExtent);
-			PxRigidDynamic* body = gPhysics->createRigidDynamic(t.transform(localTm));
+			PxRigidDynamic *body = gPhysics->createRigidDynamic(t.transform(localTm));
 			body->attachShape(*shape);
 			PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
 			gScene->addActor(*body);
 		}
 	}
 	shape->release();
-	printf("actor count: %d\n", gScene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC|PxActorTypeFlag::eRIGID_STATIC));
-
-	//auto *convex = createConvex<PxConvexMeshCookingType::eQUICKHULL, true, 256>(SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
-	//printf("convex vertex count: %d\n", convex->getNbVertices());
+	printf("actor count: %d\n", gScene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC));
+	// auto *convex = createConvex<PxConvexMeshCookingType::eQUICKHULL, true, 256>(SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
+	// printf("convex vertex count: %d\n", convex->getNbVertices());
 	//// PxBoxGeometry geo(halfExtent, halfExtent, halfExtent);
-	//PxConvexMeshGeometry geo(convex, PxMeshScale(5.f));
-	//auto *body = gPhysics->createRigidDynamic(t);
-	//int counter = 0;
-	//for (PxU32 i = 0; i < size; i++)
+	// PxConvexMeshGeometry geo(convex, PxMeshScale(5.f));
+	// auto *body = gPhysics->createRigidDynamic(t);
+	// int counter = 0;
+	// for (PxU32 i = 0; i < size; i++)
 	//{
 	//	for (PxU32 j = 0; j < size - i; j++)
 	//	{
@@ -150,37 +153,28 @@ static void createStack(const PxTransform &t, PxU32 size, PxReal halfExtent)
 	//		shape->release();
 	//		counter++;
 	//	}
-	//}
-	//printf("total vertex count: %d\n", counter * convex->getNbVertices());
-	//PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
-	//gScene->addActor(*body);
+	// }
+	// printf("total vertex count: %d\n", counter * convex->getNbVertices());
+	// PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
+	// gScene->addActor(*body);
 }
 
 void initPhysics(bool interactive)
 {
-	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
+	PhysicsEngineOptions options;
+	gPhysicsEngine.Init(options);
 
-	gPvd = PxCreatePvd(*gFoundation);
-	PxPvdTransport *transport = PxDefaultPvdSocketTransportCreate(PVD_HOST, 5425, 10);
-	gPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
+	PhysicsSceneCreateOptions sceneOptions;
+	sceneOptions.m_FilterShaderType = PhysicsSceneFilterShaderType::eDEFAULT;
+	sceneOptions.m_Gravity = MathLib::HVector3(0.0f, -9.81f, 0.0f);
 
-	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
+	gScene = gPhysicsEngine.CreateScene(sceneOptions);
 
-	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
-	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
-	gDispatcher = PxDefaultCpuDispatcherCreate(2);
-	sceneDesc.cpuDispatcher = gDispatcher;
-	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
-	gScene = gPhysics->createScene(sceneDesc);
-
-	PxPvdSceneClient *pvdClient = gScene->getScenePvdClient();
-	if (pvdClient)
-	{
-		pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);
-		pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);
-		pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
-	}
-	gMaterial = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
+	PhysicsMaterialCreateOptions materialOptions;
+	materialOptions.m_StaticFriction = 0.5f;
+	materialOptions.m_DynamicFriction = 0.5f;
+	materialOptions.m_Restitution = 0.6f;
+	gMaterial = gPhysicsEngine.CreateMaterial(materialOptions);
 
 	PxRigidStatic *groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
 	gScene->addActor(*groundPlane);
