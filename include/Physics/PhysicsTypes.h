@@ -31,6 +31,7 @@ struct PhysicsMaterialCreateOptions
 	MathLib::HReal m_StaticFriction;
 	MathLib::HReal m_DynamicFriction;
 	MathLib::HReal m_Restitution;
+	MathLib::HReal m_Density;
 };
 
 enum class CollierGeometryType
@@ -45,7 +46,7 @@ enum class CollierGeometryType
 	COLLIER_GEOMETRY_TYPE_COUNT
 };
 
-struct CollisionShapeCreateOptions
+struct CollisionGeometryCreateOptions
 {
 	CollierGeometryType m_GeometryType;
 	MathLib::HTransform3 m_LocalTransform;

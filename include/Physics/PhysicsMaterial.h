@@ -17,8 +17,11 @@ public:
 	MathLib::HReal SetStaticFriction(const MathLib::HReal &value) override;
 	MathLib::HReal SetDynamicFriction(const MathLib::HReal &value) override;
 	MathLib::HReal SetRestitution(const MathLib::HReal &value) override;
+	MathLib::HReal GetDensity() const override;
+	MathLib::HReal SetDensity(const MathLib::HReal &value) override;
 
 private:
 	friend class PhysicsEngine;
 	std::unique_ptr<physx::PxMaterial> m_Material;
+	MathLib::HReal m_Density;
 };

@@ -2,6 +2,8 @@
 #include "PxPhysicsAPI.h"
 #include "Physics/PhysicsScene.h"
 
+#include "PhysxUtils.h"
+
 #ifndef NDEBUG
 #define ENABLE_PVD
 #endif
@@ -61,9 +63,12 @@ void PhysicsEngine::Init(const PhysicsEngineOptions &options)
 			PxPvdTransport *transport = std::make_unique<PxPvdTransport>(PxDefaultPvdSocketTransportCreate(PHYSX_PVD_HOST, 5425, 10));
 			m_Pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
 		}
+		PxTolerancesScale toleranceScale;
+		PxCookingParams cookingParams(toleranceScale);
 
-		m_Physics = std::make_unique<PxPhysics>(PxCreatePhysics(PX_PHYSICS_VERSION, *m_pFoundation, PxTolerancesScale(), true, m_Pvd));
+		m_Physics = std::make_unique<PxPhysics>(PxCreatePhysics(PX_PHYSICS_VERSION, *m_pFoundation, toleranceScale, true, m_Pvd));
 		m_Dispatcher = std::make_unique<PxCpuDispatcher>(PxDefaultCpuDispatcherCreate(options.m_iNumThreads == 0 ? 1 : options.m_iNumThreads));
+		m_Cooking = std::make_unique<PxCooking>(PxCreateCooking(PX_PHYSICS_VERSION, *m_Foundation, cookingParams));
 	}
 
 	m_bInitialized = true;
@@ -81,18 +86,16 @@ void PhysicsEngine::UnInit()
 	m_Dispatcher->release();
 	m_Physics->release();
 	m_Foundation->release();
+	m_Cooking->release();
 
 	m_Pvd.reset();
 	m_Dispatcher.reset();
+	m_Cooking.reset();
 	m_Physics.reset();
 	m_Foundation.reset();
 	m_ErrorCallback.reset();
 	m_AllocatorCallback.reset();
 	m_bInitialized = false;
-}
-
-void PhysicsEngine::Update(float deltaTime)
-{
 }
 
 IPhysicsObject *PhysicsEngine::CreateObject()
@@ -107,6 +110,7 @@ IPhysicsMaterial *PhysicsEngine::CreateMaterial(const PhysicsMaterialCreateOptio
 
 	PhysicsMaterial *material = new PhysicsMaterial();
 	material->m_Material = std::make_unique<PxMaterial>(m_Physics->createMaterial(options.m_fStaticFriction, options.m_fDynamicFriction, options.m_fRestitution));
+	material->m_Density = options.m_Density;
 	return material;
 }
 
@@ -126,7 +130,7 @@ IPhysicsScene *PhysicsEngine::CreateScene(const PhysicsSceneCreateOptions &optio
 	return scene;
 }
 
-IColliderGeometry *PhysicsEngine::CreateColliderGeometry()
+IColliderGeometry *PhysicsEngine::CreateColliderGeometry(const CollisionGeometryCreateOptions& options)
 {
 	return nullptr;
 }

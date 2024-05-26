@@ -44,3 +44,15 @@ MathLib::HReal PhysicsMaterial::SetRestitution(const MathLib::HReal &value)
     m_Material->setRestitution(value);
     return value;
 }
+
+MathLib::HReal PhysicsMaterial::GetDensity() const
+{
+	return m_Density
+}
+
+MathLib::HReal PhysicsMaterial::SetDensity(const MathLib::HReal &value)
+{
+	m_Density = value;
+    return value;
+}
+

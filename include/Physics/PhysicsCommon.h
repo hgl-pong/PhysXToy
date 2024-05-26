@@ -1,6 +1,7 @@
 #pragma once
 #include "Physics/PhysicsTypes.h"
 #include <memory>
+#include <unordered_set>
 
 class IPhysicsEngine;
 class IPhysicsScene;
@@ -14,14 +15,18 @@ public:
 	virtual void Init(const PhysicsEngineOptions &options) = 0;
 	virtual void UnInit() = 0;
 	virtual IPhysicsObject *CreateObject() = 0;
-	virtual IPhyicsMaterial *CreateMaterial(const PhysicsMaterialCreateOptions &options) = 0;
+	virtual IPhysicsMaterial *CreateMaterial(const PhysicsMaterialCreateOptions &options) = 0;
 	virtual IPhysicsScene *CreateScene(const PhysicsSceneCreateOptions &options) = 0;
-	virtual IColliderGeometry *CreateColliderGeometry() = 0;
+	virtual IColliderGeometry *CreateColliderGeometry(const CollisionGeometryCreateOptions& options) = 0;
 };
 
 class IPhysicsScene
 {
 public:
+	virtual void Tick(float deltaTime) = 0;
+	virtual bool AddPhysicsObject(IPhysicsObject *physicsObject) = 0;
+	virtual void RemovePhysicsObject(IPhysicsObject *physicsObject) = 0;
+	virtual uint32_t GetPhysicsObjectCount() const = 0;
 };
 
 class IColliderGeometry
@@ -38,7 +43,7 @@ public:
 	virtual void AddColliderGeometry(IColliderGeometry *colliderGeometry) = 0;
 };
 
-class IPhyicsMaterial
+class IPhysicsMaterial
 {
 public:
 	virtual MathLib::HReal GetStaticFriction() const = 0;
@@ -47,4 +52,6 @@ public:
 	virtual MathLib::HReal SetStaticFriction(const MathLib::HReal &value) = 0;
 	virtual MathLib::HReal SetDynamicFriction(const MathLib::HReal &value) = 0;
 	virtual MathLib::HReal SetRestitution(const MathLib::HReal &value) = 0;
+	virtual MathLib::HReal GetDensity() const = 0;
+	virtual MathLib::HReal SetDensity(const MathLib::HReal &value) = 0;
 };

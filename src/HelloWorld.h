@@ -49,7 +49,7 @@ using namespace physx;
 //static PxPhysics *gPhysics = NULL;
 //static PxDefaultCpuDispatcher *gDispatcher = NULL;
 static PhysicsEngine gPhysicsEngine;
-static IPhyicsMaterial *gMaterial = nullptr;
+static IPhysicsMaterial *gMaterial = nullptr;
 
 static IPhysicsScene* gScene = nullptr;
 static PxPvd *gPvd = NULL;
