@@ -35,9 +35,7 @@
 #pragma once
 #include <ctype.h>
 #include "PxPhysicsAPI.h"
-#include "snippetcommon/SnippetPrint.h"
-#include "snippetcommon/SnippetPVD.h"
-#include "snippetutils/SnippetUtils.h"
+//#include "snippetutils/SnippetUtils.h"
 
 using namespace physx;
 
@@ -64,11 +62,11 @@ static PxRigidDynamic* createDynamic(const PxTransform& t, const PxGeometry& geo
 
 static void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
 {
-	auto* convex = PhysXConstructTools::CreateConvexMesh<true, 256>(gPhysics,SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
-	printf("convex vertex count: %d\n", convex->getNbVertices());
+	//auto* convex = PhysXConstructTools::CreateConvexMesh<true, 256>(gPhysics,SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
+	//printf("convex vertex count: %d\n", convex->getNbVertices());
 	// PxBoxGeometry geo(halfExtent, halfExtent, halfExtent);
-	//PxSphereGeometry geo(halfExtent);
-	PxConvexMeshGeometry geo(convex, PxMeshScale(3.f));
+	PxSphereGeometry geo(halfExtent);
+	//PxConvexMeshGeometry geo(convex, PxMeshScale(3.f));
 	PxShape* shape = gPhysics->createShape(geo, *gMaterial);
 	for (PxU32 i = 0; i < size; i++)
 	{
@@ -83,7 +81,7 @@ static void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
 	}
 	shape->release();
 	printf("actor count: %d\n", gScene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC));
-	convex->release();
+	//convex->release();
 
 	//auto *convex = createConvex<PxConvexMeshCookingType::eQUICKHULL, true, 256>(SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
 	//printf("convex vertex count: %d\n", convex->getNbVertices());
@@ -113,7 +111,7 @@ void initPhysics(bool interactive)
 	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
 
 	gPvd = PxCreatePvd(*gFoundation);
-	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate(PVD_HOST, 5425, 10);
+	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
 	gPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
 
 	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);

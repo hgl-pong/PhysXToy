@@ -35,9 +35,7 @@
 #pragma once
 #include <ctype.h>
 #include "PxPhysicsAPI.h"
-#include "snippetcommon/SnippetPrint.h"
-#include "snippetcommon/SnippetPVD.h"
-#include "snippetutils/SnippetUtils.h"
+//#include "snippetutils/SnippetUtils.h"
 #include "Physics/PhysicsEngine.h"
 #include "Physics/PhysicsScene.h"
 #include "Physics/PhysicsMaterial.h"

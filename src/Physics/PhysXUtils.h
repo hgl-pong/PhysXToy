@@ -27,8 +27,6 @@ namespace PhysXConstructTools
 		PxU32 meshSize = 0;
 		PxConvexMesh* convex = NULL;
 
-		PxU64 startTime = SnippetUtils::getCurrentTimeCounterValue();
-
 		if (directInsertion)
 		{
 			// Directly insert mesh into PhysX

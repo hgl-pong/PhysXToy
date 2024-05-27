@@ -14,10 +14,10 @@ class IPhysicsEngine
 public:
 	virtual void Init(const PhysicsEngineOptions &options) = 0;
 	virtual void UnInit() = 0;
-	virtual IPhysicsObject *CreateObject() = 0;
+	virtual IPhysicsObject *CreateObject(const PhysicsObjectCreateOptions &options) = 0;
 	virtual IPhysicsMaterial *CreateMaterial(const PhysicsMaterialCreateOptions &options) = 0;
 	virtual IPhysicsScene *CreateScene(const PhysicsSceneCreateOptions &options) = 0;
-	virtual IColliderGeometry *CreateColliderGeometry(const CollisionGeometryCreateOptions& options) = 0;
+	virtual IColliderGeometry *CreateColliderGeometry(const CollisionGeometryCreateOptions &options) = 0;
 };
 
 class IPhysicsScene

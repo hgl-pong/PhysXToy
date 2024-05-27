@@ -13,6 +13,9 @@ namespace physx
 	class PxGeometry;
 };
 
+class PhysicsAllocator;
+class PhysicsErrorCallback;
+
 class PhysicsEngine : public IPhysicsEngine
 {
 public:
@@ -21,14 +24,15 @@ public:
 
 	void Init(const PhysicsEngineOptions &options) override;
 	void UnInit() override;
-	IPhysicsObject *CreateObject() override;
-	IPhysicsMaterial* CreateMaterial(const PhysicsMaterialCreateOptions& options) override;
+	IPhysicsObject *CreateObject(const PhysicsObjectCreateOptions &options) override;
+	IPhysicsMaterial *CreateMaterial(const PhysicsMaterialCreateOptions &options) override;
 	IPhysicsScene *CreateScene(const PhysicsSceneCreateOptions &options) override;
-	IColliderGeometry *CreateColliderGeometry(const CollisionGeometryCreateOptions& options) override;
+	IColliderGeometry *CreateColliderGeometry(const CollisionGeometryCreateOptions &options) override;
 
 private:
-	friend bool CreatePhysXGeometry(PhysicsEngine* engine, const CollisionGeometryCreateOptions &options, PxGeometry** geometry);
-	friend bool CreatePhysXMaterial(PhysicsEngine* engine, const PhysicsMaterialCreateOptions& options, PxMaterial** material);
+	friend bool CreatePhysXGeometry(PhysicsEngine *engine, const CollisionGeometryCreateOptions &options, PxGeometry **geometry);
+	friend bool CreatePhysXMaterial(PhysicsEngine *engine, const PhysicsMaterialCreateOptions &options, PxMaterial **material);
+
 private:
 	PhysicsEngineOptions m_Options;
 	std::unique_ptr<physx::PxAllocatorCallback> m_AllocatorCallback;

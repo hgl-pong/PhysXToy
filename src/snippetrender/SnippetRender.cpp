@@ -44,7 +44,6 @@
 #include "SnippetRender.h"
 #endif
 
-#include "SnippetFontRenderer.h"
 #include "SnippetCamera.h"
 #include "foundation/PxArray.h"
 #include "foundation/PxMathUtils.h"
@@ -55,8 +54,6 @@
 #define	INITIAL_SCREEN_HEIGHT	768
 
 using namespace physx;
-
-static GLFontRenderer	gTexter;
 
 static float gCylinderData[]={
 	1.0f,0.0f,1.0f,1.0f,0.0f,1.0f,1.0f,0.0f,0.0f,1.0f,0.0f,0.0f,
@@ -428,7 +425,6 @@ static PxU32 gScreenHeight	= 0;
 static void defaultReshapeCallback(int width, int height)
 {
 	glViewport(0, 0, width, height);
-	gTexter.setScreenResolution(width, height);
 	gScreenWidth = width;
 	gScreenHeight = height;
 }
@@ -503,10 +499,6 @@ static void setupDefaultWindow(const char* name, RenderCallback rdcb)
 	
 	gScreenWidth	= INITIAL_SCREEN_WIDTH;
 	gScreenHeight	= INITIAL_SCREEN_HEIGHT;
-
-	gTexter.init();
-	gTexter.setScreenResolution(gScreenWidth, gScreenHeight);
-	gTexter.setColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 	glutInitWindowSize(gScreenWidth, gScreenHeight);
 	glutInitDisplayMode(GLUT_RGB|GLUT_DOUBLE|GLUT_DEPTH);
@@ -741,7 +733,6 @@ void startRender(const Camera* camera, float clipNear, float clipFar, float fov,
 
 	gTextScale = 0.0175f * float(INITIAL_SCREEN_HEIGHT) / float(gScreenHeight);
 	gTextY = 1.0f - gTextScale;
-	gTexter.setColor(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 void finishRender()
@@ -751,7 +742,6 @@ void finishRender()
 
 void print(const char* text)
 {
-	gTexter.print(0.0f, gTextY, gTextScale, text);
 	gTextY -= gTextScale;
 }
 

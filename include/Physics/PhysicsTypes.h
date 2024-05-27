@@ -82,3 +82,17 @@ enum class PhysicsObjectType
 	PHYSICS_OBJECT_TYPE_RIGID_KINEMATIC,
 	PHYSICS_OBJECT_TYPE_COUNT
 };
+
+enum class PhysicsObjectAttributeType
+{
+	eRigidStatic,
+	eRigidDynamic,
+	eRigidKinematic,
+};
+
+struct PhysicsObjectCreateOptions
+{
+	PhysicsObjectType m_ObjectType;
+	MathLib::HTransform3 m_Transform;
+	PhysicsMaterialCreateOptions m_MaterialOptions;
+};

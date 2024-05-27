@@ -98,7 +98,7 @@ void PhysicsEngine::UnInit()
 	m_bInitialized = false;
 }
 
-IPhysicsObject *PhysicsEngine::CreateObject()
+IPhysicsObject *PhysicsEngine::CreateObject(const PhysicsObjectCreateOptions &options)
 {
 	return nullptr;
 }
@@ -130,7 +130,7 @@ IPhysicsScene *PhysicsEngine::CreateScene(const PhysicsSceneCreateOptions &optio
 	return scene;
 }
 
-IColliderGeometry *PhysicsEngine::CreateColliderGeometry(const CollisionGeometryCreateOptions& options)
+IColliderGeometry *PhysicsEngine::CreateColliderGeometry(const CollisionGeometryCreateOptions &options)
 {
 	return nullptr;
 }
