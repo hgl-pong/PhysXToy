@@ -31,6 +31,7 @@
 
 #include "PxPhysicsAPI.h"
 #include "foundation/PxPreprocessor.h"
+#include "Physics/PhysicsTypes.h"
 
 #if PX_WINDOWS
 	#include <windows.h>
@@ -54,15 +55,18 @@
 	#error platform not supported.
 #endif
 
-typedef	void	(*KeyboardCallback)	(unsigned char key, const physx::PxTransform& camera);
+typedef	void	(*KeyboardCallback)	(unsigned char key, const MathLib::HTransform3& camera);
 typedef	void	(*RenderCallback)	();
 typedef	void	(*ExitCallback)		();
+namespace MathLib
+{
+	class Camera;
+}
 
 namespace Snippets
 {
-	class Camera;
-	void setupDefault(const char* name, Camera* camera, KeyboardCallback kbcb, RenderCallback rdcb, ExitCallback excb);
-	Camera* getCamera();
+	void setupDefault(const char* name, MathLib::Camera* camera, KeyboardCallback kbcb, RenderCallback rdcb, ExitCallback excb);
+	MathLib::Camera* getCamera();
 	physx::PxVec3 computeWorldRayF(float xs, float ys, const physx::PxVec3& camDir);
 	PX_FORCE_INLINE physx::PxVec3 computeWorldRay(int xs, int ys, const physx::PxVec3& camDir)
 	{
@@ -74,7 +78,7 @@ namespace Snippets
 
 	void	enableVSync(bool vsync);
 
-	void	startRender(const Camera* camera, float nearClip = 1.0f, float farClip = 10000.0f, float fov=60.0f, bool setupLighting=true);
+	void	startRender(const MathLib::Camera* camera, float nearClip = 1.0f, float farClip = 10000.0f, float fov=60.0f, bool setupLighting=true);
 	void	finishRender();
 	void	print(const char* text);
 

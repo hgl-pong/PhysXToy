@@ -54,6 +54,7 @@
 #define	INITIAL_SCREEN_HEIGHT	768
 
 using namespace physx;
+using namespace MathLib;
 
 static float gCylinderData[]={
 	1.0f,0.0f,1.0f,1.0f,0.0f,1.0f,1.0f,0.0f,0.0f,1.0f,0.0f,0.0f,
@@ -416,7 +417,7 @@ static void renderGeometry(const PxGeometry& geom)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-static Snippets::Camera* gCamera = NULL;
+static MathLib::Camera* gCamera = NULL;
 static KeyboardCallback gKbCb = NULL;
 
 static PxU32 gScreenWidth	= 0;
@@ -461,7 +462,7 @@ static void defaultKeyboardCallback(unsigned char key, int x, int y)
 
 	const bool status = gCamera ? gCamera->handleKey(key, x, y) : false;
 	if(!status && gKbCb)
-		gKbCb(key, gCamera ? gCamera->getTransform() : PxTransform(PxIdentity));
+		gKbCb(key, gCamera ? gCamera->getTransform() : HTransform3::Identity());
 }
 
 static void defaultSpecialCallback(int key, int x, int y)
@@ -476,7 +477,7 @@ static void defaultSpecialCallback(int key, int x, int y)
 
 	const bool status = gCamera ? gCamera->handleKey((unsigned char)key, x, y) : false;
 	if(!status && gKbCb)
-		gKbCb((unsigned char)key, gCamera ? gCamera->getTransform() : PxTransform(PxIdentity));
+		gKbCb((unsigned char)key, gCamera ? gCamera->getTransform() : HTransform3::Identity());
 }
 
 static ExitCallback gUserExitCB = NULL;
@@ -708,8 +709,11 @@ PxVec3 computeWorldRayF(float xs, float ys, const PxVec3& camDir)
 
 void startRender(const Camera* camera, float clipNear, float clipFar, float fov, bool setupLighting)
 {
-	const PxVec3 cameraEye = camera->getEye();
-	const PxVec3 cameraDir = camera->getDir();
+	const HVector3 cameraEye0 = camera->getEye();
+	const HVector3 cameraDir0 = camera->getDir();
+
+	const PxVec3 cameraEye(cameraEye0[0], cameraEye0[1], cameraEye0[2]);
+	const PxVec3 cameraDir(cameraDir0[0], cameraDir0[1], cameraDir0[2]);
 
 	gNearClip = clipNear;
 	gFarClip = clipFar;

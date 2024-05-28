@@ -35,6 +35,7 @@
 #pragma once
 #include <ctype.h>
 #include "PxPhysicsAPI.h"
+#include "Physics/PhysicsTypes.h"
 //#include "snippetutils/SnippetUtils.h"
 
 using namespace physx;
@@ -165,8 +166,25 @@ void cleanupPhysics(bool /*interactive*/)
 	printf("SnippetHelloWorld done.\n");
 }
 
-void keyPress(unsigned char key, const PxTransform& camera)
+PxTransform ToPxTransform(const MathLib::HTransform3& transform)
 {
+	// 提取平移部分
+	MathLib::HVector3 translation = transform.translation();
+
+	// 提取旋转部分
+	MathLib::HMatrix3 rotationMatrix = transform.rotation();
+	MathLib::HQuaternion rotationQuaternion(rotationMatrix);
+
+	// 创建PxTransform
+	PxVec3 pxTranslation(translation.x(), translation.y(), translation.z());
+	PxQuat pxRotation(rotationQuaternion.x(), rotationQuaternion.y(), rotationQuaternion.z(), rotationQuaternion.w());
+
+	return PxTransform(pxTranslation, pxRotation);
+}
+
+void keyPress(unsigned char key, const MathLib::HTransform3& camera0)
+{
+	PxTransform camera = ToPxTransform(camera0);
 	switch (toupper(key))
 	{
 	case 'B':

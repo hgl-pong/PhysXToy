@@ -2,10 +2,15 @@
 #include <Eigen/Dense>
 namespace MathLib
 {
+#define H_PI 3.14159265358979323846f
 	typedef float HReal;
 	typedef Eigen::Matrix<HReal, 3, 1> HVector3;
 	typedef Eigen::Matrix<HReal, 4, 1> HVector4;
 
+	typedef Eigen::Matrix<HReal, 3, 3> HMatrix3;
+	typedef Eigen::Matrix<HReal, 4, 4> HMatrix4;
+
+	typedef Eigen::Quaternion<HReal> HQuaternion;
 	typedef Eigen::Transform<HReal, 3, Eigen::Affine> HTransform3;
 }
 

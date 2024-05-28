@@ -42,7 +42,7 @@ extern void keyPress(unsigned char key, const PxTransform& camera);
 
 namespace
 {
-	Snippets::Camera* sCamera;
+	MathLib::Camera* sCamera;
 
 	void renderCallback()
 	{
@@ -72,7 +72,7 @@ namespace
 
 void renderLoop()
 {
-	sCamera = new Snippets::Camera(PxVec3(50.0f, 50.0f, 50.0f), PxVec3(-0.6f, -0.2f, -0.7f));
+	sCamera = new MathLib::Camera(MathLib::HVector3(50.0f, 50.0f, 50.0f), MathLib::HVector3(-0.6f, -0.2f, -0.7f));
 
 	Snippets::setupDefault("PhysX Snippet HelloWorld", sCamera, keyPress, renderCallback, exitCallback);
 
