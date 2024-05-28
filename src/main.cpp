@@ -37,7 +37,7 @@
 #include "PxPhysicsAPI.h"
 #include "Physics/PhysicsTypes.h"
 //#include "snippetutils/SnippetUtils.h"
-
+#include "extensions/PxRemeshingExt.h"
 using namespace physx;
 
 static PxDefaultAllocator gAllocator;
@@ -59,25 +59,202 @@ static PxRigidDynamic* createDynamic(const PxTransform& t, const PxGeometry& geo
 	gScene->addActor(*dynamic);
 	return dynamic;
 }
+
+void createCube(PxArray<PxVec3>& triVerts, PxArray<PxU32>& triIndices, const PxVec3& pos, PxReal scaling)
+{
+	triVerts.clear();
+	triIndices.clear();
+	triVerts.pushBack(scaling * PxVec3(0.5f, -0.5f, -0.5f) + pos);
+	triVerts.pushBack(scaling * PxVec3(0.5f, -0.5f, 0.5f) + pos);
+	triVerts.pushBack(scaling * PxVec3(-0.5f, -0.5f, 0.5f) + pos);
+	triVerts.pushBack(scaling * PxVec3(-0.5f, -0.5f, -0.5f) + pos);
+	triVerts.pushBack(scaling * PxVec3(0.5f, 0.5f, -0.5f) + pos);
+	triVerts.pushBack(scaling * PxVec3(0.5f, 0.5f, 0.5f) + pos);
+	triVerts.pushBack(scaling * PxVec3(-0.5f, 0.5f, 0.5f) + pos);
+	triVerts.pushBack(scaling * PxVec3(-0.5f, 0.5f, -0.5f) + pos);
+
+	triIndices.pushBack(1); triIndices.pushBack(2); triIndices.pushBack(3);
+	triIndices.pushBack(7); triIndices.pushBack(6); triIndices.pushBack(5);
+	triIndices.pushBack(4); triIndices.pushBack(5); triIndices.pushBack(1);
+	triIndices.pushBack(5); triIndices.pushBack(6); triIndices.pushBack(2);
+
+	triIndices.pushBack(2); triIndices.pushBack(6); triIndices.pushBack(7);
+	triIndices.pushBack(0); triIndices.pushBack(3); triIndices.pushBack(7);
+	triIndices.pushBack(0); triIndices.pushBack(1); triIndices.pushBack(3);
+	triIndices.pushBack(4); triIndices.pushBack(7); triIndices.pushBack(5);
+
+	triIndices.pushBack(0); triIndices.pushBack(4); triIndices.pushBack(1);
+	triIndices.pushBack(1); triIndices.pushBack(5); triIndices.pushBack(2);
+	triIndices.pushBack(3); triIndices.pushBack(2); triIndices.pushBack(7);
+	triIndices.pushBack(4); triIndices.pushBack(0); triIndices.pushBack(7);
+}
+
+void createConeY(PxArray<PxVec3>& triVerts, PxArray<PxU32>& triIndices, const PxVec3& center, PxReal radius, PxReal height, PxU32 numPointsOnRing = 32)
+{
+	triVerts.clear();
+	triIndices.clear();
+	for (PxU32 i = 0; i < numPointsOnRing; ++i)
+	{
+		PxReal angle = i * 2.0f * 3.1415926535898f / numPointsOnRing;
+		triVerts.pushBack(center + radius * PxVec3(PxSin(angle), 0, PxCos(angle)));
+	}
+
+	triVerts.pushBack(center);
+	triVerts.pushBack(center + PxVec3(0, height, 0));
+	for (PxU32 i = 0; i < numPointsOnRing; ++i)
+	{
+		triIndices.pushBack(numPointsOnRing);  triIndices.pushBack(i); triIndices.pushBack((i + 1) % numPointsOnRing);
+		triIndices.pushBack(numPointsOnRing + 1); triIndices.pushBack((i + 1) % numPointsOnRing); triIndices.pushBack(i);
+	}
+}
+
+void projectPointsOntoSphere(PxArray<PxVec3>& triVerts, const PxVec3& center, PxReal radius)
+{
+	for (PxU32 i = 0; i < triVerts.size(); ++i)
+	{
+		PxVec3 dir = triVerts[i] - center;
+		dir.normalize();
+		triVerts[i] = center + radius * dir;
+	}
+}
+
+void projectPointsOntoBowl(PxArray<PxVec3>& triVerts, const PxVec3& center, PxReal radius)
+{
+	for (PxU32 i = 0; i < triVerts.size(); ++i)
+	{
+		PxVec3 dir = triVerts[i] - center;
+		dir.normalize();
+
+		if (dir.y > 0.01f)
+		{
+			dir.x *= 0.9f;
+			dir.z *= 0.9f;
+			dir.y = -dir.y;
+		}
+
+		triVerts[i] = center + radius * dir;
+	}
+}
+
+void createBowl(PxArray<PxVec3>& triVerts, PxArray<PxU32>& triIndices, const PxVec3& center, PxReal radius, const PxReal maxEdgeLength)
+{
+	triVerts.clear();
+	triIndices.clear();
+	createCube(triVerts, triIndices, center, radius);
+	projectPointsOntoSphere(triVerts, center, radius);
+
+	while (PxRemeshingExt::limitMaxEdgeLength(triIndices, triVerts, maxEdgeLength, 1))
+		projectPointsOntoSphere(triVerts, center, radius);
+
+	projectPointsOntoBowl(triVerts, center, radius);
+}
+
+static PxTriangleMesh* createTriMesh(PxCookingParams& params, const PxArray<PxVec3>& triVerts, const PxArray<PxU32>& triIndices, PxReal sdfSpacing,
+	PxU32 sdfSubgridSize = 6, PxSdfBitsPerSubgridPixel::Enum bitsPerSdfSubgridPixel = PxSdfBitsPerSubgridPixel::e16_BIT_PER_PIXEL)
+{
+	PxTriangleMeshDesc meshDesc;
+	meshDesc.points.count = triVerts.size();
+	meshDesc.triangles.count = triIndices.size() / 3;
+	meshDesc.points.stride = sizeof(float) * 3;
+	meshDesc.triangles.stride = sizeof(int) * 3;
+	meshDesc.points.data = triVerts.begin();
+	meshDesc.triangles.data = triIndices.begin();
+
+	params = PxCookingParams(PxTolerancesScale());
+	params.meshPreprocessParams |= PxMeshPreprocessingFlag::eENABLE_INERTIA;
+	params.meshWeldTolerance = 1e-7f;
+
+	PxSDFDesc sdfDesc;
+
+	if (sdfSpacing > 0.f)
+	{
+		sdfDesc.spacing = sdfSpacing;
+		sdfDesc.subgridSize = sdfSubgridSize;
+		sdfDesc.bitsPerSubgridPixel = bitsPerSdfSubgridPixel;
+		sdfDesc.numThreadsForSdfConstruction = 16;
+
+		meshDesc.sdfDesc = &sdfDesc;
+	}
+
+	bool enableCaching = false;
+
+	if (enableCaching)
+	{
+		const char* path = "C:\\tmp\\PhysXSDFSnippetData.dat";
+		bool ok = false;
+		FILE* fp = fopen(path, "rb");
+		if (fp)
+		{
+			fclose(fp);
+			ok = true;
+		}
+
+		if (!ok)
+		{
+			PxDefaultFileOutputStream stream(path);
+			ok = PxCookTriangleMesh(params, meshDesc, stream);
+		}
+
+		if (ok)
+		{
+			PxDefaultFileInputData stream(path);
+			PxTriangleMesh* triangleMesh = gPhysics->createTriangleMesh(stream);
+			return triangleMesh;
+		}
+		return NULL;
+	}
+	else
+		return PxCreateTriangleMesh(params, meshDesc, gPhysics->getPhysicsInsertionCallback());
+}
+
 #include "Physics/PhysXUtils.h"
+
+unsigned RandomUInt(unsigned range)
+{
+	return rand() % range;
+}
 
 static void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
 {
 	//auto* convex = PhysXConstructTools::CreateConvexMesh<true, 256>(gPhysics,SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
 	//printf("convex vertex count: %d\n", convex->getNbVertices());
 	// PxBoxGeometry geo(halfExtent, halfExtent, halfExtent);
-	PxSphereGeometry geo(halfExtent);
+	//PxSphereGeometry geo(halfExtent);
 	//PxConvexMeshGeometry geo(convex, PxMeshScale(3.f));
+
+	PxArray<PxVec3> triVerts;
+	PxArray<PxU32> triIndices;
+
+	PxReal maxEdgeLength = 1;
+
+	createBowl(triVerts, triIndices, PxVec3(0, 4.5, 0), 6.0f, maxEdgeLength);
+	PxTolerancesScale scale; 
+	PxCookingParams params(scale);
+	PxTriangleMesh* mesh = createTriMesh(params, triVerts, triIndices, 0.0f);
+	PxTriangleMeshGeometry geo(mesh, PxMeshScale(1));
+
 	PxShape* shape = gPhysics->createShape(geo, *gMaterial);
 	for (PxU32 i = 0; i < size; i++)
 	{
 		for (PxU32 j = 0; j < size - i; j++)
 		{
 			PxTransform localTm(PxVec3(PxReal(j * 2) - PxReal(size - i), PxReal(i * 2 + 1), 0) * halfExtent);
-			PxRigidDynamic* body = gPhysics->createRigidDynamic(t.transform(localTm));
-			body->attachShape(*shape);
-			PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
-			gScene->addActor(*body);
+			if (RandomUInt(100)>70)
+			{
+				auto* body = gPhysics->createRigidStatic(t.transform(localTm));
+				body->attachShape(*shape);
+				gScene->addActor(*body);
+			}
+			else
+			{
+				auto* body = gPhysics->createRigidDynamic(t.transform(localTm));
+				body->attachShape(*shape);
+				PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
+
+				body->setRigidBodyFlag(PxRigidBodyFlag::eENABLE_GYROSCOPIC_FORCES, true);
+				body->setRigidBodyFlag(PxRigidBodyFlag::eENABLE_SPECULATIVE_CCD, true);
+				gScene->addActor(*body);
+			}
 		}
 	}
 	shape->release();

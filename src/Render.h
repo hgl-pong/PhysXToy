@@ -52,12 +52,20 @@ namespace
 
 		PxScene* scene;
 		PxGetPhysics().getScenes(&scene, 1);
-		PxU32 nbActors = scene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC);
-		if (nbActors)
+		PxU32 nbDynamicActors = scene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC );
+		if (nbDynamicActors)
 		{
-			std::vector<PxRigidActor*> actors(nbActors);
-			scene->getActors(PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC, reinterpret_cast<PxActor**>(&actors[0]), nbActors);
-			Snippets::renderActors(&actors[0], static_cast<PxU32>(actors.size()), true);
+			std::vector<PxRigidActor*> dynamicActors(nbDynamicActors);
+			scene->getActors(PxActorTypeFlag::eRIGID_DYNAMIC, reinterpret_cast<PxActor**>(&dynamicActors[0]), nbDynamicActors);
+			Snippets::renderActors(&dynamicActors[0], static_cast<PxU32>(dynamicActors.size()), true);
+		}
+
+		PxU32 nbStaticActors = scene->getNbActors(PxActorTypeFlag::eRIGID_STATIC);
+		if (nbStaticActors)
+		{
+			std::vector<PxRigidActor*> staticActors(nbStaticActors);
+			scene->getActors(PxActorTypeFlag::eRIGID_STATIC, reinterpret_cast<PxActor**>(&staticActors[0]), nbStaticActors);
+			Snippets::renderActors(&staticActors[0], static_cast<PxU32>(staticActors.size()), true,PxVec3(0.7,0,0));
 		}
 
 		Snippets::finishRender();
