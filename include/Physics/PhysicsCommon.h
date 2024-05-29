@@ -2,6 +2,7 @@
 #include "Physics/PhysicsTypes.h"
 #include <memory>
 #include <unordered_set>
+#include <unordered_map>
 
 class IPhysicsEngine;
 class IPhysicsScene;
@@ -27,20 +28,23 @@ public:
 	virtual bool AddPhysicsObject(IPhysicsObject *physicsObject) = 0;
 	virtual void RemovePhysicsObject(IPhysicsObject *physicsObject) = 0;
 	virtual uint32_t GetPhysicsObjectCount() const = 0;
+	virtual uint32_t GetOffset()const = 0;
 };
 
 class IColliderGeometry
 {
 public:
+	virtual CollierGeometryType GetType() const = 0;
+	virtual void SetScale(const MathLib::HVector3 &scale) = 0;
 };
 
 class IPhysicsObject
 {
 public:
-	virtual void SetPosition(float x, float y, float z) = 0;
-	virtual void SetRotation(float x, float y, float z) = 0;
-	virtual void SetScale(float x, float y, float z) = 0;
-	virtual void AddColliderGeometry(IColliderGeometry *colliderGeometry) = 0;
+	virtual void AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) = 0;
+	virtual PhysicsObjectType GetType() const = 0;
+	virtual uint32_t GetOffset() const = 0;
+	virtual void SetTransform(const MathLib::HTransform3 &trans) = 0;
 };
 
 class IPhysicsMaterial
@@ -54,4 +58,13 @@ public:
 	virtual MathLib::HReal SetRestitution(const MathLib::HReal &value) = 0;
 	virtual MathLib::HReal GetDensity() const = 0;
 	virtual MathLib::HReal SetDensity(const MathLib::HReal &value) = 0;
+	virtual uint32_t GetOffset() const = 0;
 };
+
+class PhysicsEngineUtils
+{
+public:
+	static IPhysicsEngine* CreatePhysicsEngine();
+	static void DestroyPhysicsEngine();
+};
+

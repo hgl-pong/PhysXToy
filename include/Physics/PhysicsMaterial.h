@@ -19,6 +19,7 @@ public:
 	MathLib::HReal SetRestitution(const MathLib::HReal &value) override;
 	MathLib::HReal GetDensity() const override;
 	MathLib::HReal SetDensity(const MathLib::HReal &value) override;
+	uint32_t GetOffset() const override;
 
 private:
 	friend class PhysicsEngine;

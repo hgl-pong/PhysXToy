@@ -1,5 +1,46 @@
 #pragma once
 using namespace physx;
+namespace ConvertUtils
+{
+	physx::PxVec3 ToPxVec3(const MathLib::HVector3& vector)
+	{
+		return physx::PxVec3(vector[0],vector[1],vector[2]);
+	}
+
+	MathLib::HVector3 FromPxVec3(const physx::PxVec3& vector)
+	{
+		return MathLib::HVector3(vector.x, vector.y, vector.z);
+	}
+
+	physx::PxTransform ToPxTransform(const MathLib::HTransform3& transform)
+	{
+		MathLib::HVector3 translation = transform.translation();
+
+		MathLib::HMatrix3 rotationMatrix = transform.rotation();
+		MathLib::HQuaternion rotationQuaternion(rotationMatrix);
+
+		PxVec3 pxTranslation(translation.x(), translation.y(), translation.z());
+		PxQuat pxRotation(rotationQuaternion.x(), rotationQuaternion.y(), rotationQuaternion.z(), rotationQuaternion.w());
+
+		return PxTransform(pxTranslation, pxRotation);
+	}
+
+	MathLib::HTransform3 FromPxTransform(const physx::PxTransform& pxTransform)
+	{
+		physx::PxVec3 pxTranslation = pxTransform.p;
+		physx::PxQuat pxRotation = pxTransform.q;
+
+		MathLib::HVector3 translation(pxTranslation.x, pxTranslation.y, pxTranslation.z);
+		MathLib::HQuaternion rotation(pxRotation.w, pxRotation.x, pxRotation.y, pxRotation.z);
+
+		MathLib::HTransform3 eigenTransform = MathLib::HTransform3::Identity();
+		eigenTransform.translate(translation);
+		eigenTransform.rotate(rotation);
+
+		return eigenTransform;
+	}
+};
+
 namespace PhysXConstructTools
 {
 	template <bool directInsertion, PxU32 gaussMapLimit>

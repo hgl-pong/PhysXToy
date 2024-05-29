@@ -11,6 +11,8 @@ namespace MathLib
 	typedef Eigen::Matrix<HReal, 4, 4> HMatrix4;
 
 	typedef Eigen::Quaternion<HReal> HQuaternion;
+	typedef Eigen::AngleAxis<HReal> HAngleAxis;
+
 	typedef Eigen::Transform<HReal, 3, Eigen::Affine> HTransform3;
 }
 
@@ -78,13 +80,13 @@ struct CollisionGeometryCreateOptions
 		MathLib::HVector3 *m_Vertices;
 		uint32_t m_iNumVertices;
 	} m_ConvexMeshParams;
+	MathLib::HVector3 m_Scale;
 };
 
 enum class PhysicsObjectType
 {
 	PHYSICS_OBJECT_TYPE_RIGID_STATIC,
 	PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC,
-	PHYSICS_OBJECT_TYPE_RIGID_KINEMATIC,
 	PHYSICS_OBJECT_TYPE_COUNT
 };
 

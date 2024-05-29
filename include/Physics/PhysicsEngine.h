@@ -30,9 +30,9 @@ public:
 	IColliderGeometry *CreateColliderGeometry(const CollisionGeometryCreateOptions &options) override;
 
 private:
-	friend bool CreatePhysXGeometry(PhysicsEngine *engine, const CollisionGeometryCreateOptions &options, PxGeometry **geometry);
-	friend bool CreatePhysXMaterial(PhysicsEngine *engine, const PhysicsMaterialCreateOptions &options, PxMaterial **material);
-
+	friend bool CreatePhysXGeometry(PhysicsEngine *engine, const CollisionGeometryCreateOptions &options, physx::PxGeometry **geometry);
+	friend bool CreatePhysXMaterial(PhysicsEngine *engine, const PhysicsMaterialCreateOptions &options, physx::PxMaterial **material);
+	friend physx::PxPhysics* GetPxPhysics();
 private:
 	PhysicsEngineOptions m_Options;
 	std::unique_ptr<physx::PxAllocatorCallback> m_AllocatorCallback;
@@ -44,3 +44,11 @@ private:
 	std::unique_ptr<physx::PxCpuDispatcher> m_Dispatcher;
 	bool m_bInitialized;
 };
+
+static PhysicsEngine *gPhysicsEngine = nullptr;
+inline physx::PxPhysics* GetPxPhysics()
+{
+	if (gPhysicsEngine == nullptr)
+		return nullptr;
+	return gPhysicsEngine->m_Physics.get();
+}

@@ -35,150 +35,74 @@
 #pragma once
 #include <ctype.h>
 #include "PxPhysicsAPI.h"
-//#include "snippetutils/SnippetUtils.h"
+#include "Physics/PhysicsCommon.h"
 #include "Physics/PhysicsEngine.h"
-#include "Physics/PhysicsScene.h"
-#include "Physics/PhysicsMaterial.h"
-using namespace physx;
+#include "Physics/PhysXUtils.h"
+#include "Physics/PhysicsObject.h"
 
-//static PxDefaultAllocator gAllocator;
-//static PxDefaultErrorCallback gErrorCallback;
-//static PxFoundation *gFoundation = NULL;
-//static PxPhysics *gPhysics = NULL;
-//static PxDefaultCpuDispatcher *gDispatcher = NULL;
-static IPhysicsEngine* gPhysicsEngine = nullptr;
 static IPhysicsMaterial *gMaterial = nullptr;
-
 static IPhysicsScene* gScene = nullptr;
-static PxPvd *gPvd = NULL;
-
 static PxReal stackZ = 10.0f;
 
-static PxRigidDynamic *createDynamic(const PxTransform &t, const PxGeometry &geometry, const PxVec3 &velocity = PxVec3(0))
+static IPhysicsObject *createDynamic(const PxTransform &t, const IColliderGeometry &geometry, const PxVec3 &velocity = PxVec3(0))
 {
-	PxRigidDynamic *dynamic = PxCreateDynamic(*gPhysics, t, geometry, *gMaterial, 10.0f);
-	dynamic->setAngularDamping(0.5f);
-	dynamic->setLinearVelocity(velocity);
-	gScene->addActor(*dynamic);
-	return dynamic;
+	PhysicsObjectCreateOptions createOptions{};
+	createOptions.m_ObjectType=PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
+	createOptions.m_Transform = ConvertUtils::FromPxTransform(t);
+	IPhysicsObject*physicsObject = gPhysicsEngine->CreateObject(createOptions);
+	PhysicsRigidDynamic* rigidDynamic= dynamic_cast<PhysicsRigidDynamic*>(physicsObject);
+	bool bIsKinematic = rigidDynamic->IsKinematic();
+	rigidDynamic->SetAngularDamping(0.5);
+	rigidDynamic->SetLinearVelocity(ConvertUtils::FromPxVec3(velocity));
+	if (gScene)
+		gScene->AddPhysicsObject(physicsObject);
+	return physicsObject;
 }
 
-template <PxConvexMeshCookingType::Enum convexMeshCookingType, bool directInsertion, PxU32 gaussMapLimit>
-static PxConvexMesh *createConvex(PxU32 numVerts, const PxVec3 *verts)
+unsigned RandomUInt(unsigned range)
 {
-	PxTolerancesScale tolerances;
-	PxCookingParams params(tolerances);
-
-	// Use the new (default) PxConvexMeshCookingType::eQUICKHULL
-	params.convexMeshCookingType = convexMeshCookingType;
-
-	// If the gaussMapLimit is chosen higher than the number of output vertices, no gauss map is added to the convex mesh data (here 256).
-	// If the gaussMapLimit is chosen lower than the number of output vertices, a gauss map is added to the convex mesh data (here 16).
-	params.gaussMapLimit = gaussMapLimit;
-
-	// Setup the convex mesh descriptor
-	PxConvexMeshDesc desc;
-
-	// We provide points only, therefore the PxConvexFlag::eCOMPUTE_CONVEX flag must be specified
-	desc.points.data = verts;
-	desc.points.count = numVerts;
-	desc.points.stride = sizeof(PxVec3);
-	desc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
-
-	PxU32 meshSize = 0;
-	PxConvexMesh *convex = NULL;
-
-	PxU64 startTime = SnippetUtils::getCurrentTimeCounterValue();
-
-	if (directInsertion)
-	{
-		// Directly insert mesh into PhysX
-		convex = PxCreateConvexMesh(params, desc, gPhysics->getPhysicsInsertionCallback());
-		PX_ASSERT(convex);
-	}
-	else
-	{
-		// Serialize the cooked mesh into a stream.
-		PxDefaultMemoryOutputStream outStream;
-		bool res = PxCookConvexMesh(params, desc, outStream);
-		PX_UNUSED(res);
-		PX_ASSERT(res);
-		meshSize = outStream.getSize();
-
-		// Create the mesh from a stream.
-		PxDefaultMemoryInputData inStream(outStream.getData(), outStream.getSize());
-		convex = gPhysics->createConvexMesh(inStream);
-		PX_ASSERT(convex);
-	}
-	return convex;
+	return rand() % range;
 }
 
 static void createStack(const PxTransform &t, PxU32 size, PxReal halfExtent)
 {
-	PxSphereGeometry geo(halfExtent);
-	//PxConvexMeshGeometry geo(convex, PxMeshScale(3.f));
-
-	//PxArray<PxVec3> triVerts;
-	//PxArray<PxU32> triIndices;
-
-	//PxReal maxEdgeLength = 1;
-
-	//createBowl(triVerts, triIndices, PxVec3(0, 4.5, 0), 6.0f, maxEdgeLength);
-	//PxTolerancesScale scale; 
-	//PxCookingParams params(scale);
-	//PxTriangleMesh* mesh = createTriMesh(params, triVerts, triIndices, 0.0f);
-	//PxTriangleMeshGeometry geo(mesh, PxMeshScale(1));
-
-	PxShape* shape = gPhysics->createShape(geo, *gMaterial);
+	CollisionGeometryCreateOptions options;
+	options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
+	options.m_SphereParams.m_Radius = halfExtent;
+	IColliderGeometry* geo = gPhysicsEngine->CreateColliderGeometry(options);
 	for (PxU32 i = 0; i < size; i++)
 	{
 		for (PxU32 j = 0; j < size - i; j++)
 		{
 			PxTransform localTm(PxVec3(PxReal(j * 2) - PxReal(size - i), PxReal(i * 2 + 1), 0) * halfExtent);
+
+			PhysicsObjectCreateOptions objectOptions;
+			objectOptions.m_ObjectType=PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
+			objectOptions.m_Transform = ConvertUtils::FromPxTransform(t.transform(localTm));
+			objectOptions.m_MaterialOptions.m_StaticFriction = 0.5f;
+			objectOptions.m_MaterialOptions.m_DynamicFriction = 0.5f;
+			objectOptions.m_MaterialOptions.m_Restitution = 0.6f;
+			objectOptions.m_MaterialOptions.m_Density = 10.0f;
+
 			if (RandomUInt(100) > 70)
 			{
-				auto* body = gPhysics->createRigidStatic(t.transform(localTm));
-				body->attachShape(*shape);
-				gScene->addActor(*body);
+				objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
 			}
 			else
 			{
-				auto* body = gPhysics->createRigidDynamic(t.transform(localTm));
-				body->attachShape(*shape);
-				PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
-
-				gScene->addActor(*body);
-			}
+				objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
+				
+			}				
+			IPhysicsObject* physicsObject = gPhysicsEngine->CreateObject(objectOptions);
+			gScene->AddPhysicsObject(physicsObject);
 		}
 	}
-	shape->release();
-	// auto *convex = createConvex<PxConvexMeshCookingType::eQUICKHULL, true, 256>(SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
-	// printf("convex vertex count: %d\n", convex->getNbVertices());
-	//// PxBoxGeometry geo(halfExtent, halfExtent, halfExtent);
-	// PxConvexMeshGeometry geo(convex, PxMeshScale(5.f));
-	// auto *body = gPhysics->createRigidDynamic(t);
-	// int counter = 0;
-	// for (PxU32 i = 0; i < size; i++)
-	//{
-	//	for (PxU32 j = 0; j < size - i; j++)
-	//	{
-	//		PxShape *shape = gPhysics->createShape(geo, *gMaterial);
-	//		PxTransform localTm(PxVec3(PxReal(j * 2) - PxReal(size - i), PxReal(i * 2 + 1), 0) * halfExtent);
-	//		shape->setLocalPose(localTm);
-	//		body->attachShape(*shape);
-	//		shape->release();
-	//		counter++;
-	//	}
-	// }
-	// printf("total vertex count: %d\n", counter * convex->getNbVertices());
-	// PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
-	// gScene->addActor(*body);
 }
 
 void initPhysics(bool interactive)
 {
 	PhysicsEngineOptions options;
-	gPhysicsEngine =new PhysicsEngine();
+	new PhysicsEngine();
 	gPhysicsEngine->Init(options);
 
 	PhysicsSceneCreateOptions sceneOptions;
@@ -191,61 +115,41 @@ void initPhysics(bool interactive)
 	materialOptions.m_StaticFriction = 0.5f;
 	materialOptions.m_DynamicFriction = 0.5f;
 	materialOptions.m_Restitution = 0.6f;
+	materialOptions.m_Density = 10.0f;
 	gMaterial = gPhysicsEngine->CreateMaterial(materialOptions);
 
-	PxRigidStatic *groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
-	gScene->addActor(*groundPlane);
+	PxRigidStatic* groundPlane = PxCreatePlane(*GetPxPhysics(), PxPlane(0, 1, 0, 0), *reinterpret_cast<PxMaterial*>(reinterpret_cast<char*>(gMaterial) + gMaterial->GetOffset()));
+	physx::PxScene* pxScene = reinterpret_cast<physx::PxScene*>(reinterpret_cast<char*>(gScene) + gScene->GetOffset());
+	pxScene->addActor(*groundPlane);
 
 	for (PxU32 i = 0; i < 5; i++)
 		createStack(PxTransform(PxVec3(0, 0, stackZ -= 10.0f)), 10, 2.0f);
 
 	if (!interactive)
-		createDynamic(PxTransform(PxVec3(0, 40, 100)), PxSphereGeometry(10), PxVec3(0, -50, -100));
+	{
+		CollisionGeometryCreateOptions options;
+		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
+		options.m_SphereParams.m_Radius = 10.0f;
+		options.m_Scale = MathLib::HVector3(1.0f, 1.0f, 1.0f);
+
+		IColliderGeometry* geometry = gPhysicsEngine->CreateColliderGeometry(options);
+		createDynamic(PxTransform(PxVec3(0, 40, 100)), *geometry, PxVec3(0, -50, -100));
+	}
 }
 
 void stepPhysics(bool /*interactive*/)
 {
-	gScene->simulate(1.0f / 60.0f);
-	gScene->fetchResults(true);
+	gScene->Tick(1.f/60.f);
 }
 
 void cleanupPhysics(bool /*interactive*/)
 {
-	PX_RELEASE(gScene);
-	PX_RELEASE(gDispatcher);
-	PX_RELEASE(gPhysics);
-	if (gPvd)
-	{
-		PxPvdTransport *transport = gPvd->getTransport();
-		gPvd->release();
-		gPvd = NULL;
-		PX_RELEASE(transport);
-	}
-	PX_RELEASE(gFoundation);
-
 	printf("SnippetHelloWorld done.\n");
-}
-
-
-PxTransform ToPxTransform(const MathLib::HTransform3& transform)
-{
-	// 提取平移部分
-	MathLib::HVector3 translation = transform.translation();
-
-	// 提取旋转部分
-	MathLib::HMatrix3 rotationMatrix = transform.rotation();
-	MathLib::HQuaternion rotationQuaternion(rotationMatrix);
-
-	// 创建PxTransform
-	PxVec3 pxTranslation(translation.x(), translation.y(), translation.z());
-	PxQuat pxRotation(rotationQuaternion.x(), rotationQuaternion.y(), rotationQuaternion.z(), rotationQuaternion.w());
-
-	return PxTransform(pxTranslation, pxRotation);
 }
 
 void keyPress(unsigned char key, const MathLib::HTransform3& camera0)
 {
-	PxTransform camera = ToPxTransform(camera0);
+	PxTransform camera =ConvertUtils::ToPxTransform(camera0);
 	switch (toupper(key))
 	{
 	case 'B':
@@ -253,7 +157,13 @@ void keyPress(unsigned char key, const MathLib::HTransform3& camera0)
 			createStack(PxTransform(PxVec3(0, 0, stackZ -= 10.0f)), 10, 2.0f);
 		break;
 	case ' ':
-		createDynamic(camera, PxSphereGeometry(3.0f), camera.rotate(PxVec3(0, 0, -1)) * 200);
+		CollisionGeometryCreateOptions options;
+		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
+		options.m_SphereParams.m_Radius = 3.0f;
+		options.m_Scale = MathLib::HVector3(1.0f, 1.0f, 1.0f);
+
+		IColliderGeometry* geometry =gPhysicsEngine->CreateColliderGeometry(options);
+		createDynamic(camera, *geometry, camera.rotate(PxVec3(0, 0, -1)) * 200);
 		break;
 	}
 }

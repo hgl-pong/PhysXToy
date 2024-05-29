@@ -33,6 +33,8 @@
 // user to create new stacks and fire a ball from the camera position
 // ****************************************************************************
 #pragma once
+//#define TEST_HELLO_WORLD
+#ifndef TEST_HELLO_WORLD
 #include <ctype.h>
 #include "PxPhysicsAPI.h"
 #include "Physics/PhysicsTypes.h"
@@ -58,153 +60,6 @@ static PxRigidDynamic* createDynamic(const PxTransform& t, const PxGeometry& geo
 	dynamic->setLinearVelocity(velocity);
 	gScene->addActor(*dynamic);
 	return dynamic;
-}
-
-void createCube(PxArray<PxVec3>& triVerts, PxArray<PxU32>& triIndices, const PxVec3& pos, PxReal scaling)
-{
-	triVerts.clear();
-	triIndices.clear();
-	triVerts.pushBack(scaling * PxVec3(0.5f, -0.5f, -0.5f) + pos);
-	triVerts.pushBack(scaling * PxVec3(0.5f, -0.5f, 0.5f) + pos);
-	triVerts.pushBack(scaling * PxVec3(-0.5f, -0.5f, 0.5f) + pos);
-	triVerts.pushBack(scaling * PxVec3(-0.5f, -0.5f, -0.5f) + pos);
-	triVerts.pushBack(scaling * PxVec3(0.5f, 0.5f, -0.5f) + pos);
-	triVerts.pushBack(scaling * PxVec3(0.5f, 0.5f, 0.5f) + pos);
-	triVerts.pushBack(scaling * PxVec3(-0.5f, 0.5f, 0.5f) + pos);
-	triVerts.pushBack(scaling * PxVec3(-0.5f, 0.5f, -0.5f) + pos);
-
-	triIndices.pushBack(1); triIndices.pushBack(2); triIndices.pushBack(3);
-	triIndices.pushBack(7); triIndices.pushBack(6); triIndices.pushBack(5);
-	triIndices.pushBack(4); triIndices.pushBack(5); triIndices.pushBack(1);
-	triIndices.pushBack(5); triIndices.pushBack(6); triIndices.pushBack(2);
-
-	triIndices.pushBack(2); triIndices.pushBack(6); triIndices.pushBack(7);
-	triIndices.pushBack(0); triIndices.pushBack(3); triIndices.pushBack(7);
-	triIndices.pushBack(0); triIndices.pushBack(1); triIndices.pushBack(3);
-	triIndices.pushBack(4); triIndices.pushBack(7); triIndices.pushBack(5);
-
-	triIndices.pushBack(0); triIndices.pushBack(4); triIndices.pushBack(1);
-	triIndices.pushBack(1); triIndices.pushBack(5); triIndices.pushBack(2);
-	triIndices.pushBack(3); triIndices.pushBack(2); triIndices.pushBack(7);
-	triIndices.pushBack(4); triIndices.pushBack(0); triIndices.pushBack(7);
-}
-
-void createConeY(PxArray<PxVec3>& triVerts, PxArray<PxU32>& triIndices, const PxVec3& center, PxReal radius, PxReal height, PxU32 numPointsOnRing = 32)
-{
-	triVerts.clear();
-	triIndices.clear();
-	for (PxU32 i = 0; i < numPointsOnRing; ++i)
-	{
-		PxReal angle = i * 2.0f * 3.1415926535898f / numPointsOnRing;
-		triVerts.pushBack(center + radius * PxVec3(PxSin(angle), 0, PxCos(angle)));
-	}
-
-	triVerts.pushBack(center);
-	triVerts.pushBack(center + PxVec3(0, height, 0));
-	for (PxU32 i = 0; i < numPointsOnRing; ++i)
-	{
-		triIndices.pushBack(numPointsOnRing);  triIndices.pushBack(i); triIndices.pushBack((i + 1) % numPointsOnRing);
-		triIndices.pushBack(numPointsOnRing + 1); triIndices.pushBack((i + 1) % numPointsOnRing); triIndices.pushBack(i);
-	}
-}
-
-void projectPointsOntoSphere(PxArray<PxVec3>& triVerts, const PxVec3& center, PxReal radius)
-{
-	for (PxU32 i = 0; i < triVerts.size(); ++i)
-	{
-		PxVec3 dir = triVerts[i] - center;
-		dir.normalize();
-		triVerts[i] = center + radius * dir;
-	}
-}
-
-void projectPointsOntoBowl(PxArray<PxVec3>& triVerts, const PxVec3& center, PxReal radius)
-{
-	for (PxU32 i = 0; i < triVerts.size(); ++i)
-	{
-		PxVec3 dir = triVerts[i] - center;
-		dir.normalize();
-
-		if (dir.y > 0.01f)
-		{
-			dir.x *= 0.9f;
-			dir.z *= 0.9f;
-			dir.y = -dir.y;
-		}
-
-		triVerts[i] = center + radius * dir;
-	}
-}
-
-void createBowl(PxArray<PxVec3>& triVerts, PxArray<PxU32>& triIndices, const PxVec3& center, PxReal radius, const PxReal maxEdgeLength)
-{
-	triVerts.clear();
-	triIndices.clear();
-	createCube(triVerts, triIndices, center, radius);
-	projectPointsOntoSphere(triVerts, center, radius);
-
-	while (PxRemeshingExt::limitMaxEdgeLength(triIndices, triVerts, maxEdgeLength, 1))
-		projectPointsOntoSphere(triVerts, center, radius);
-
-	projectPointsOntoBowl(triVerts, center, radius);
-}
-
-static PxTriangleMesh* createTriMesh(PxCookingParams& params, const PxArray<PxVec3>& triVerts, const PxArray<PxU32>& triIndices, PxReal sdfSpacing,
-	PxU32 sdfSubgridSize = 6, PxSdfBitsPerSubgridPixel::Enum bitsPerSdfSubgridPixel = PxSdfBitsPerSubgridPixel::e16_BIT_PER_PIXEL)
-{
-	PxTriangleMeshDesc meshDesc;
-	meshDesc.points.count = triVerts.size();
-	meshDesc.triangles.count = triIndices.size() / 3;
-	meshDesc.points.stride = sizeof(float) * 3;
-	meshDesc.triangles.stride = sizeof(int) * 3;
-	meshDesc.points.data = triVerts.begin();
-	meshDesc.triangles.data = triIndices.begin();
-
-	params = PxCookingParams(PxTolerancesScale());
-	params.meshPreprocessParams |= PxMeshPreprocessingFlag::eENABLE_INERTIA;
-	params.meshWeldTolerance = 1e-7f;
-
-	PxSDFDesc sdfDesc;
-
-	if (sdfSpacing > 0.f)
-	{
-		sdfDesc.spacing = sdfSpacing;
-		sdfDesc.subgridSize = sdfSubgridSize;
-		sdfDesc.bitsPerSubgridPixel = bitsPerSdfSubgridPixel;
-		sdfDesc.numThreadsForSdfConstruction = 16;
-
-		meshDesc.sdfDesc = &sdfDesc;
-	}
-
-	bool enableCaching = false;
-
-	if (enableCaching)
-	{
-		const char* path = "C:\\tmp\\PhysXSDFSnippetData.dat";
-		bool ok = false;
-		FILE* fp = fopen(path, "rb");
-		if (fp)
-		{
-			fclose(fp);
-			ok = true;
-		}
-
-		if (!ok)
-		{
-			PxDefaultFileOutputStream stream(path);
-			ok = PxCookTriangleMesh(params, meshDesc, stream);
-		}
-
-		if (ok)
-		{
-			PxDefaultFileInputData stream(path);
-			PxTriangleMesh* triangleMesh = gPhysics->createTriangleMesh(stream);
-			return triangleMesh;
-		}
-		return NULL;
-	}
-	else
-		return PxCreateTriangleMesh(params, meshDesc, gPhysics->getPhysicsInsertionCallback());
 }
 
 #include "Physics/PhysXUtils.h"
@@ -343,25 +198,9 @@ void cleanupPhysics(bool /*interactive*/)
 	printf("SnippetHelloWorld done.\n");
 }
 
-PxTransform ToPxTransform(const MathLib::HTransform3& transform)
-{
-	// 提取平移部分
-	MathLib::HVector3 translation = transform.translation();
-
-	// 提取旋转部分
-	MathLib::HMatrix3 rotationMatrix = transform.rotation();
-	MathLib::HQuaternion rotationQuaternion(rotationMatrix);
-
-	// 创建PxTransform
-	PxVec3 pxTranslation(translation.x(), translation.y(), translation.z());
-	PxQuat pxRotation(rotationQuaternion.x(), rotationQuaternion.y(), rotationQuaternion.z(), rotationQuaternion.w());
-
-	return PxTransform(pxTranslation, pxRotation);
-}
-
 void keyPress(unsigned char key, const MathLib::HTransform3& camera0)
 {
-	PxTransform camera = ToPxTransform(camera0);
+	PxTransform camera = ConvertUtils::ToPxTransform(camera0);
 	switch (toupper(key))
 	{
 	case 'B':
@@ -373,22 +212,9 @@ void keyPress(unsigned char key, const MathLib::HTransform3& camera0)
 		break;
 	}
 }
-
-int snippetMain(int, const char* const*)
-{
-#ifndef RENDER_SNIPPET
-	extern void renderLoop();
-	renderLoop();
 #else
-	static const PxU32 frameCount = 100;
-	initPhysics(false);
-	for (PxU32 i = 0; i < frameCount; i++)
-		stepPhysics(false);
-	cleanupPhysics(false);
+#include "HelloWorld.h"
 #endif
-
-	return 0;
-}
 #include "Render.h"
 int main(int argc, char** argv)
 {

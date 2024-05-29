@@ -1,8 +1,12 @@
 #include "PhysicsEngine.h"
 #include "PxPhysicsAPI.h"
 #include "Physics/PhysicsScene.h"
-
+#include "Physics/PhysicsObject.h"
+#include "Physics/PhysicsMaterial.h"
+#include "Physics/ColliderGeometry.h"
 #include "PhysxUtils.h"
+#include <assert.h>
+#include <minwinbase.h>
 
 #ifndef NDEBUG
 #define ENABLE_PVD
@@ -28,6 +32,7 @@ void *_GetFilterShader(const PhysicsSceneFilterShaderType &type) const
 
 PhysicsEngine::PhysicsEngine()
 {
+	_ASSERT(!gPhysicsEngine);
 	m_AllocatorCallback = nullptr;
 	m_ErrorCallback = nullptr;
 	m_Foundation = nullptr;
@@ -36,10 +41,13 @@ PhysicsEngine::PhysicsEngine()
 	m_Pvd = nullptr;
 	m_bInitialized = false;
 	ZeroMemory(&m_Options, sizeof(PhysicsEngineOptions));
+	gPhysicsEngine = this;
 }
 
 PhysicsEngine::~PhysicsEngine()
 {
+	_ASSERT(gPhysicsEngine);
+	gPhysicsEngine = nullptr;
 }
 
 void PhysicsEngine::Init(const PhysicsEngineOptions &options)
@@ -100,7 +108,22 @@ void PhysicsEngine::UnInit()
 
 IPhysicsObject *PhysicsEngine::CreateObject(const PhysicsObjectCreateOptions &options)
 {
-	return nullptr;
+	if (!m_bInitialized)
+		return nullptr;
+	IPhysicsMaterial *material = CreateMaterial(options.m_MaterialOptions);
+	IPhysicsObject *object = nullptr;
+	switch (options.m_ObjectType)
+	{
+	case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC:
+	{
+		object = new PhysicsRigidDynamic(material);
+		object->SetTransform(options.m_Transform);
+		object->break;
+	}
+	default:
+		break;
+	}
+	return object;
 }
 
 IPhysicsMaterial *PhysicsEngine::CreateMaterial(const PhysicsMaterialCreateOptions &options)
@@ -132,5 +155,27 @@ IPhysicsScene *PhysicsEngine::CreateScene(const PhysicsSceneCreateOptions &optio
 
 IColliderGeometry *PhysicsEngine::CreateColliderGeometry(const CollisionGeometryCreateOptions &options)
 {
+	if (!m_bInitialized)
+		return nullptr;
+	switch (options.m_Type)
+	{
+	case CollierGeometryType::Box:
+	{
+		BoxColliderGeometry *box = new BoxColliderGeometry(options.m_HalfExtents);
+		box->SetScale(options.m_Scale);
+		return box;
+		break;
+	}
+	case CollierGeometryType::Sphere:
+	{
+		SphereColliderGeometry *sphere = new SphereColliderGeometry(options.m_Radius);
+		sphere->SetScale(options.m_Scale);
+		return sphere;
+		break;
+	}
+	default:
+		break;
+	}
+
 	return nullptr;
 }

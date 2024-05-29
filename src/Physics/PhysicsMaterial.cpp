@@ -45,14 +45,16 @@ MathLib::HReal PhysicsMaterial::SetRestitution(const MathLib::HReal &value)
     return value;
 }
 
-MathLib::HReal PhysicsMaterial::GetDensity() const
-{
-	return m_Density
-}
+MathLib::HReal PhysicsMaterial::GetDensity() const {
+    return m_Density}
 
 MathLib::HReal PhysicsMaterial::SetDensity(const MathLib::HReal &value)
 {
-	m_Density = value;
+    m_Density = value;
     return value;
 }
 
+uint32_t PhysicsMaterial::GetOffset() const
+{
+    return PX_OFFSET_OF(this, m_Material.get());
+}
