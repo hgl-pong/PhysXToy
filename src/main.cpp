@@ -219,19 +219,19 @@ static void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
 	//auto* convex = PhysXConstructTools::CreateConvexMesh<true, 256>(gPhysics,SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
 	//printf("convex vertex count: %d\n", convex->getNbVertices());
 	// PxBoxGeometry geo(halfExtent, halfExtent, halfExtent);
-	//PxSphereGeometry geo(halfExtent);
+	PxSphereGeometry geo(halfExtent);
 	//PxConvexMeshGeometry geo(convex, PxMeshScale(3.f));
 
-	PxArray<PxVec3> triVerts;
-	PxArray<PxU32> triIndices;
+	//PxArray<PxVec3> triVerts;
+	//PxArray<PxU32> triIndices;
 
-	PxReal maxEdgeLength = 1;
+	//PxReal maxEdgeLength = 1;
 
-	createBowl(triVerts, triIndices, PxVec3(0, 4.5, 0), 6.0f, maxEdgeLength);
-	PxTolerancesScale scale; 
-	PxCookingParams params(scale);
-	PxTriangleMesh* mesh = createTriMesh(params, triVerts, triIndices, 0.0f);
-	PxTriangleMeshGeometry geo(mesh, PxMeshScale(1));
+	//createBowl(triVerts, triIndices, PxVec3(0, 4.5, 0), 6.0f, maxEdgeLength);
+	//PxTolerancesScale scale; 
+	//PxCookingParams params(scale);
+	//PxTriangleMesh* mesh = createTriMesh(params, triVerts, triIndices, 0.0f);
+	//PxTriangleMeshGeometry geo(mesh, PxMeshScale(1));
 
 	PxShape* shape = gPhysics->createShape(geo, *gMaterial);
 	for (PxU32 i = 0; i < size; i++)

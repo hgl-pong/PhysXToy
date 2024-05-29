@@ -115,25 +115,43 @@ static PxConvexMesh *createConvex(PxU32 numVerts, const PxVec3 *verts)
 
 static void createStack(const PxTransform &t, PxU32 size, PxReal halfExtent)
 {
-	auto *convex = createConvex<PxConvexMeshCookingType::eQUICKHULL, true, 256>(SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
-	printf("convex vertex count: %d\n", convex->getNbVertices());
-	// PxBoxGeometry geo(halfExtent, halfExtent, halfExtent);
-	// PxSphereGeometry geo(halfExtent);
-	PxConvexMeshGeometry geo(convex, PxMeshScale(3.f));
-	PxShape *shape = gPhysics->createShape(geo, *gMaterial);
+	PxSphereGeometry geo(halfExtent);
+	//PxConvexMeshGeometry geo(convex, PxMeshScale(3.f));
+
+	//PxArray<PxVec3> triVerts;
+	//PxArray<PxU32> triIndices;
+
+	//PxReal maxEdgeLength = 1;
+
+	//createBowl(triVerts, triIndices, PxVec3(0, 4.5, 0), 6.0f, maxEdgeLength);
+	//PxTolerancesScale scale; 
+	//PxCookingParams params(scale);
+	//PxTriangleMesh* mesh = createTriMesh(params, triVerts, triIndices, 0.0f);
+	//PxTriangleMeshGeometry geo(mesh, PxMeshScale(1));
+
+	PxShape* shape = gPhysics->createShape(geo, *gMaterial);
 	for (PxU32 i = 0; i < size; i++)
 	{
 		for (PxU32 j = 0; j < size - i; j++)
 		{
 			PxTransform localTm(PxVec3(PxReal(j * 2) - PxReal(size - i), PxReal(i * 2 + 1), 0) * halfExtent);
-			PxRigidDynamic *body = gPhysics->createRigidDynamic(t.transform(localTm));
-			body->attachShape(*shape);
-			PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
-			gScene->addActor(*body);
+			if (RandomUInt(100) > 70)
+			{
+				auto* body = gPhysics->createRigidStatic(t.transform(localTm));
+				body->attachShape(*shape);
+				gScene->addActor(*body);
+			}
+			else
+			{
+				auto* body = gPhysics->createRigidDynamic(t.transform(localTm));
+				body->attachShape(*shape);
+				PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
+
+				gScene->addActor(*body);
+			}
 		}
 	}
 	shape->release();
-	printf("actor count: %d\n", gScene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC));
 	// auto *convex = createConvex<PxConvexMeshCookingType::eQUICKHULL, true, 256>(SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
 	// printf("convex vertex count: %d\n", convex->getNbVertices());
 	//// PxBoxGeometry geo(halfExtent, halfExtent, halfExtent);
@@ -238,21 +256,4 @@ void keyPress(unsigned char key, const MathLib::HTransform3& camera0)
 		createDynamic(camera, PxSphereGeometry(3.0f), camera.rotate(PxVec3(0, 0, -1)) * 200);
 		break;
 	}
-}
-
-
-int snippetMain(int, const char *const *)
-{
-#ifndef RENDER_SNIPPET
-	extern void renderLoop();
-	renderLoop();
-#else
-	static const PxU32 frameCount = 100;
-	initPhysics(false);
-	for (PxU32 i = 0; i < frameCount; i++)
-		stepPhysics(false);
-	cleanupPhysics(false);
-#endif
-
-	return 0;
 }
