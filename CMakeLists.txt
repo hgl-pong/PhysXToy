@@ -16,8 +16,7 @@ set(PHYSX_TOY PhysXToy)
 file(GLOB SOURCE_FILES
     src/*
     src/SnippetRender/*
-    src/SnippetUtils/*
-    src/SnippetCommon/*
+    src/Physics/*
 )
 
 add_executable(${PHYSX_TOY} ${SOURCE_FILES})

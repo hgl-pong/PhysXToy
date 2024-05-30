@@ -14,7 +14,7 @@ namespace MathLib
 
 		HVector3 getEye() const;
 		HVector3 getDir() const;
-		HTransform3 getTransform() const;
+		HTransform3 getTransform();
 
 		void setPose(const HVector3 &eye, const HVector3 &dir);
 		void setSpeed(float speed);

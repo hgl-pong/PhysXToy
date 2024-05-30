@@ -33,7 +33,7 @@
 // user to create new stacks and fire a ball from the camera position
 // ****************************************************************************
 #pragma once
-//#define TEST_HELLO_WORLD
+#define TEST_HELLO_WORLD
 #ifndef TEST_HELLO_WORLD
 #include <ctype.h>
 #include "PxPhysicsAPI.h"

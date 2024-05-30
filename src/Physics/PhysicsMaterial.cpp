@@ -8,8 +8,7 @@ PhysicsMaterial::PhysicsMaterial()
 
 PhysicsMaterial::~PhysicsMaterial()
 {
-    m_Material->release();
-    m_Material.reset();
+    PX_RELEASE(m_Material);
 }
 
 MathLib::HReal PhysicsMaterial::GetStaticFriction() const
@@ -45,8 +44,10 @@ MathLib::HReal PhysicsMaterial::SetRestitution(const MathLib::HReal &value)
     return value;
 }
 
-MathLib::HReal PhysicsMaterial::GetDensity() const {
-    return m_Density}
+MathLib::HReal PhysicsMaterial::GetDensity() const 
+{
+    return m_Density;
+}
 
 MathLib::HReal PhysicsMaterial::SetDensity(const MathLib::HReal &value)
 {
@@ -54,7 +55,7 @@ MathLib::HReal PhysicsMaterial::SetDensity(const MathLib::HReal &value)
     return value;
 }
 
-uint32_t PhysicsMaterial::GetOffset() const
+size_t PhysicsMaterial::GetOffset() const
 {
-    return PX_OFFSET_OF(this, m_Material.get());
+    return offsetof(PhysicsMaterial, m_Material);
 }

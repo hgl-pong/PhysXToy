@@ -12,25 +12,28 @@ class PhysicsRigidDynamic : public IPhysicsObject
 {
 public:
 	PhysicsRigidDynamic(IPhysicsMaterial *material);
+	~PhysicsRigidDynamic();
 	void Update();
 	void SetKinematic(bool bKinematic);
 	bool IsKinematic() const { return m_bIsKinematic; };
-	bool IsValid() const { return m_pRigidDynamic != nullptr; };
+
+public:	
+	bool IsValid() const override { return m_RigidDynamic != nullptr; };
 	void AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) override;
 	PhysicsObjectType GetType() const override { return m_Type; };
-	uint32_t GetOffset() const override;
-	void SetTransform(const MathLib::HTransform3 &trans);
+	size_t GetOffset() const override;
+	void SetTransform(const MathLib::HTransform3 &trans) override;
 public:
 	void SetAngularDamping(const MathLib::HReal &damping);
 	void SetLinearVelocity(const MathLib::HVector3 &velocity);
 
 private:
 	PhysicsObjectType m_Type;
-	std::unique_ptr<physx::PxRigidDynamic> m_pRigidDynamic;
-	std::unique_ptr<IPhysicsMaterial> m_Material;
+	physx::PxRigidDynamic* m_RigidDynamic=nullptr;
+	IPhysicsMaterial*  m_Material=nullptr;
 	bool m_bIsKinematic;
 	MathLib::HReal m_Mass;
-	MathLib::HReal m_LinearVelocity;
+	MathLib::HVector3 m_LinearVelocity;
 	MathLib::HReal m_AngularDamping;
 	MathLib::HVector3 m_AngularVelocity;
 	MathLib::HTransform3 m_Transform;
@@ -39,9 +42,18 @@ private:
 class PhysicsRigidStatic : public IPhysicsObject
 {
 public:
-	bool IsValid() const;
+	PhysicsRigidStatic(IPhysicsMaterial* material);
+	~PhysicsRigidStatic();
+public:	
+	bool IsValid() const override { return m_RigidStatic != nullptr; };
+	void SetTransform(const MathLib::HTransform3 &trans);
+	void AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) override;
+	PhysicsObjectType GetType() const override { return m_Type; };
+	size_t GetOffset() const override;
 
 private:
-	physx::PxRigidStatic *m_pRigidStatic;
+	PhysicsObjectType m_Type;
+	physx::PxRigidStatic* m_RigidStatic=nullptr;
+	IPhysicsMaterial* m_Material = nullptr;
 	MathLib::HTransform3 m_Transform;
 };

@@ -18,8 +18,8 @@ namespace MathLib
 
 struct PhysicsEngineOptions
 {
-	uint32_t m_iNumThreads;
-	bool m_bEnablePVD;
+	uint32_t m_iNumThreads=2;
+	bool m_bEnablePVD=true;
 };
 
 enum class PhysicsSceneFilterShaderType
@@ -35,10 +35,10 @@ struct PhysicsSceneCreateOptions
 
 struct PhysicsMaterialCreateOptions
 {
-	MathLib::HReal m_StaticFriction;
-	MathLib::HReal m_DynamicFriction;
-	MathLib::HReal m_Restitution;
-	MathLib::HReal m_Density;
+	MathLib::HReal m_StaticFriction=0.5;
+	MathLib::HReal m_DynamicFriction=0.5;
+	MathLib::HReal m_Restitution=0.6;
+	MathLib::HReal m_Density=10;
 };
 
 enum class CollierGeometryType
@@ -46,6 +46,7 @@ enum class CollierGeometryType
 	COLLIER_GEOMETRY_TYPE_SPHERE,
 	COLLIER_GEOMETRY_TYPE_BOX,
 	COLLIER_GEOMETRY_TYPE_CAPSULE,
+	COLLIER_GEOMETRY_TYPE_PLANE,
 	COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH,
 	COLLIER_GEOMETRY_TYPE_CONVEX_MESH,
 	COLLIER_GEOMETRY_TYPE_COUNT
@@ -57,30 +58,35 @@ struct CollisionGeometryCreateOptions
 	MathLib::HTransform3 m_LocalTransform;
 	struct SphereParams
 	{
-		MathLib::HReal m_Radius;
+		MathLib::HReal m_Radius=1;
 	} m_SphereParams;
 	struct BoxParams
 	{
-		MathLib::HVector3 m_HalfExtents;
+		MathLib::HVector3 m_HalfExtents = {1,1,1};
 	} m_BoxParams;
 	struct CapsuleParams
 	{
-		MathLib::HReal m_Radius;
-		MathLib::HReal m_HalfHeight;
+		MathLib::HReal m_Radius=1;
+		MathLib::HReal m_HalfHeight=1;
 	} m_CapsuleParams;
+	struct PlaneParams
+	{
+		MathLib::HVector3 m_Normal = {0,1,0};
+		MathLib::HReal m_Distance=0;
+	} m_PlaneParams;
 	struct TriangleMeshParams
 	{
-		MathLib::HVector3 *m_Vertices;
-		uint32_t m_iNumVertices;
-		uint32_t *m_Indices;
-		uint32_t m_iNumIndices;
+		MathLib::HVector3 *m_Vertices=nullptr;
+		uint32_t m_iNumVertices=1;
+		uint32_t *m_Indices=nullptr;
+		uint32_t m_iNumIndices=0;
 	} m_TriangleMeshParams;
 	struct ConvexMeshParams
 	{
-		MathLib::HVector3 *m_Vertices;
-		uint32_t m_iNumVertices;
+		MathLib::HVector3 *m_Vertices=nullptr;
+		uint32_t m_iNumVertices=0;
 	} m_ConvexMeshParams;
-	MathLib::HVector3 m_Scale;
+	MathLib::HVector3 m_Scale = { 1,1,1 };
 };
 
 enum class PhysicsObjectType

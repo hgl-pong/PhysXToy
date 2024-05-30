@@ -33,27 +33,22 @@
 // user to create new stacks and fire a ball from the camera position
 // ****************************************************************************
 #pragma once
-#include <ctype.h>
-#include "PxPhysicsAPI.h"
 #include "Physics/PhysicsCommon.h"
-#include "Physics/PhysicsEngine.h"
-#include "Physics/PhysXUtils.h"
 #include "Physics/PhysicsObject.h"
-
 static IPhysicsMaterial *gMaterial = nullptr;
 static IPhysicsScene* gScene = nullptr;
-static PxReal stackZ = 10.0f;
+static MathLib::HReal stackZ = 10.0f;
 
-static IPhysicsObject *createDynamic(const PxTransform &t, const IColliderGeometry &geometry, const PxVec3 &velocity = PxVec3(0))
+static IPhysicsObject *createDynamic(const MathLib::HTransform3 &t, IColliderGeometry &geometry, const MathLib::HVector3 &velocity = MathLib::HVector3(0,0,0))
 {
 	PhysicsObjectCreateOptions createOptions{};
 	createOptions.m_ObjectType=PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
-	createOptions.m_Transform = ConvertUtils::FromPxTransform(t);
-	IPhysicsObject*physicsObject = gPhysicsEngine->CreateObject(createOptions);
+	createOptions.m_Transform = t;
+	IPhysicsObject*physicsObject = PhysicsEngineUtils::CreateObject(createOptions);
 	PhysicsRigidDynamic* rigidDynamic= dynamic_cast<PhysicsRigidDynamic*>(physicsObject);
-	bool bIsKinematic = rigidDynamic->IsKinematic();
+	physicsObject->AddColliderGeometry(&geometry, MathLib::HTransform3::Identity());
 	rigidDynamic->SetAngularDamping(0.5);
-	rigidDynamic->SetLinearVelocity(ConvertUtils::FromPxVec3(velocity));
+	rigidDynamic->SetLinearVelocity(velocity);	
 	if (gScene)
 		gScene->AddPhysicsObject(physicsObject);
 	return physicsObject;
@@ -64,25 +59,21 @@ unsigned RandomUInt(unsigned range)
 	return rand() % range;
 }
 
-static void createStack(const PxTransform &t, PxU32 size, PxReal halfExtent)
+static void createStack(const MathLib::HTransform3 &t, uint32_t size, MathLib::HReal halfExtent)
 {
 	CollisionGeometryCreateOptions options;
 	options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
 	options.m_SphereParams.m_Radius = halfExtent;
-	IColliderGeometry* geo = gPhysicsEngine->CreateColliderGeometry(options);
-	for (PxU32 i = 0; i < size; i++)
+	IColliderGeometry* geo = PhysicsEngineUtils::CreateColliderGeometry(options);
+	for (uint32_t i = 0; i < size; i++)
 	{
-		for (PxU32 j = 0; j < size - i; j++)
+		for (uint32_t j = 0; j < size - i; j++)
 		{
-			PxTransform localTm(PxVec3(PxReal(j * 2) - PxReal(size - i), PxReal(i * 2 + 1), 0) * halfExtent);
+			MathLib::HTransform3 localTm(Eigen::Translation3f(MathLib::HVector3(MathLib::HReal(j * 2) - MathLib::HReal(size - i), MathLib::HReal(i * 2 + 1), 0) * halfExtent));
 
 			PhysicsObjectCreateOptions objectOptions;
 			objectOptions.m_ObjectType=PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
-			objectOptions.m_Transform = ConvertUtils::FromPxTransform(t.transform(localTm));
-			objectOptions.m_MaterialOptions.m_StaticFriction = 0.5f;
-			objectOptions.m_MaterialOptions.m_DynamicFriction = 0.5f;
-			objectOptions.m_MaterialOptions.m_Restitution = 0.6f;
-			objectOptions.m_MaterialOptions.m_Density = 10.0f;
+			objectOptions.m_Transform = t*localTm;
 
 			if (RandomUInt(100) > 70)
 			{
@@ -93,7 +84,8 @@ static void createStack(const PxTransform &t, PxU32 size, PxReal halfExtent)
 				objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
 				
 			}				
-			IPhysicsObject* physicsObject = gPhysicsEngine->CreateObject(objectOptions);
+			IPhysicsObject* physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
+			physicsObject->AddColliderGeometry(geo,MathLib::HTransform3::Identity());
 			gScene->AddPhysicsObject(physicsObject);
 		}
 	}
@@ -102,28 +94,38 @@ static void createStack(const PxTransform &t, PxU32 size, PxReal halfExtent)
 void initPhysics(bool interactive)
 {
 	PhysicsEngineOptions options;
-	new PhysicsEngine();
-	gPhysicsEngine->Init(options);
+	IPhysicsEngine* engine = PhysicsEngineUtils::CreatePhysicsEngine();
+	engine->Init(options);
 
 	PhysicsSceneCreateOptions sceneOptions;
 	sceneOptions.m_FilterShaderType = PhysicsSceneFilterShaderType::eDEFAULT;
 	sceneOptions.m_Gravity = MathLib::HVector3(0.0f, -9.81f, 0.0f);
 
-	gScene = gPhysicsEngine->CreateScene(sceneOptions);
+	gScene = PhysicsEngineUtils::CreateScene(sceneOptions);
 
 	PhysicsMaterialCreateOptions materialOptions;
 	materialOptions.m_StaticFriction = 0.5f;
 	materialOptions.m_DynamicFriction = 0.5f;
 	materialOptions.m_Restitution = 0.6f;
 	materialOptions.m_Density = 10.0f;
-	gMaterial = gPhysicsEngine->CreateMaterial(materialOptions);
+	gMaterial = PhysicsEngineUtils::CreateMaterial(materialOptions);
 
-	PxRigidStatic* groundPlane = PxCreatePlane(*GetPxPhysics(), PxPlane(0, 1, 0, 0), *reinterpret_cast<PxMaterial*>(reinterpret_cast<char*>(gMaterial) + gMaterial->GetOffset()));
-	physx::PxScene* pxScene = reinterpret_cast<physx::PxScene*>(reinterpret_cast<char*>(gScene) + gScene->GetOffset());
-	pxScene->addActor(*groundPlane);
+	CollisionGeometryCreateOptions groundPlaneOptions;
+	groundPlaneOptions.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE;
+	groundPlaneOptions.m_PlaneParams.m_Normal = MathLib::HVector3(0, 1, 0);
+	groundPlaneOptions.m_PlaneParams.m_Distance = 0.0f;
+	IColliderGeometry* groundPlane = PhysicsEngineUtils::CreateColliderGeometry(groundPlaneOptions);
+	PhysicsObjectCreateOptions groundPlaneObjectOptions;
+	groundPlaneObjectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
+	groundPlaneObjectOptions.m_Transform = MathLib::HTransform3::Identity();
+	IPhysicsObject* groundPlaneObject = PhysicsEngineUtils::CreateObject(groundPlaneObjectOptions);
+	groundPlaneObject->AddColliderGeometry(groundPlane, MathLib::HTransform3::Identity());
+	if (gScene)
+		gScene->AddPhysicsObject(groundPlaneObject);
 
-	for (PxU32 i = 0; i < 5; i++)
-		createStack(PxTransform(PxVec3(0, 0, stackZ -= 10.0f)), 10, 2.0f);
+
+	for (uint32_t i = 0; i < 5; i++)
+		createStack(MathLib::HTransform3(Eigen::Translation3f(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
 
 	if (!interactive)
 	{
@@ -132,8 +134,12 @@ void initPhysics(bool interactive)
 		options.m_SphereParams.m_Radius = 10.0f;
 		options.m_Scale = MathLib::HVector3(1.0f, 1.0f, 1.0f);
 
-		IColliderGeometry* geometry = gPhysicsEngine->CreateColliderGeometry(options);
-		createDynamic(PxTransform(PxVec3(0, 40, 100)), *geometry, PxVec3(0, -50, -100));
+		IColliderGeometry* geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
+
+		MathLib::HVector3 translation(0, 40, 100);
+		MathLib::HTransform3 transform = Eigen::Affine3f::Identity();
+		transform.translate(translation);
+		createDynamic(transform, *geometry, MathLib::HVector3(0, -50, -100));
 	}
 }
 
@@ -147,23 +153,22 @@ void cleanupPhysics(bool /*interactive*/)
 	printf("SnippetHelloWorld done.\n");
 }
 
-void keyPress(unsigned char key, const MathLib::HTransform3& camera0)
+void keyPress(unsigned char key,const MathLib::HTransform3& camera)
 {
-	PxTransform camera =ConvertUtils::ToPxTransform(camera0);
 	switch (toupper(key))
 	{
 	case 'B':
-		for (PxU32 i = 0; i < 15; i++)
-			createStack(PxTransform(PxVec3(0, 0, stackZ -= 10.0f)), 10, 2.0f);
+		for (uint32_t i = 0; i < 15; i++)
+			createStack(MathLib::HTransform3(Eigen::Translation3f(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
 		break;
 	case ' ':
 		CollisionGeometryCreateOptions options;
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
 		options.m_SphereParams.m_Radius = 3.0f;
-		options.m_Scale = MathLib::HVector3(1.0f, 1.0f, 1.0f);
 
-		IColliderGeometry* geometry =gPhysicsEngine->CreateColliderGeometry(options);
-		createDynamic(camera, *geometry, camera.rotate(PxVec3(0, 0, -1)) * 200);
+		IColliderGeometry* geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
+
+		createDynamic(camera, *geometry, camera.rotation() * MathLib::HVector3(0, 0, -1) * 200);
 		break;
 	}
 }

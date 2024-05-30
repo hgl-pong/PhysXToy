@@ -11,6 +11,7 @@ namespace physx
 	class PxCpuDispatcher;
 	class PxCooking;
 	class PxGeometry;
+	class PxMaterial;
 };
 
 class PhysicsAllocator;
@@ -18,10 +19,10 @@ class PhysicsErrorCallback;
 
 class PhysicsEngine : public IPhysicsEngine
 {
-public:
+private:
 	PhysicsEngine();
 	~PhysicsEngine();
-
+public:
 	void Init(const PhysicsEngineOptions &options) override;
 	void UnInit() override;
 	IPhysicsObject *CreateObject(const PhysicsObjectCreateOptions &options) override;
@@ -30,25 +31,18 @@ public:
 	IColliderGeometry *CreateColliderGeometry(const CollisionGeometryCreateOptions &options) override;
 
 private:
-	friend bool CreatePhysXGeometry(PhysicsEngine *engine, const CollisionGeometryCreateOptions &options, physx::PxGeometry **geometry);
-	friend bool CreatePhysXMaterial(PhysicsEngine *engine, const PhysicsMaterialCreateOptions &options, physx::PxMaterial **material);
 	friend physx::PxPhysics* GetPxPhysics();
 private:
+	friend class PhysicsEngineUtils;
 	PhysicsEngineOptions m_Options;
-	std::unique_ptr<physx::PxAllocatorCallback> m_AllocatorCallback;
-	std::unique_ptr<physx::PxErrorCallback> m_ErrorCallback;
-	std::unique_ptr<physx::PxCooking> m_Cooking;
-	std::unique_ptr<physx::PxPvd> m_Pvd;
-	std::unique_ptr<physx::PxFoundation> m_Foundation;
-	std::unique_ptr<physx::PxPhysics> m_Physics;
-	std::unique_ptr<physx::PxCpuDispatcher> m_Dispatcher;
+	physx::PxAllocatorCallback* m_AllocatorCallback;
+	physx::PxErrorCallback* m_ErrorCallback;
+	physx::PxCooking* m_Cooking;
+	physx::PxPvd* m_Pvd;
+	physx::PxFoundation* m_Foundation;
+	physx::PxPhysics* m_Physics;
+	physx::PxCpuDispatcher* m_Dispatcher;
 	bool m_bInitialized;
 };
 
 static PhysicsEngine *gPhysicsEngine = nullptr;
-inline physx::PxPhysics* GetPxPhysics()
-{
-	if (gPhysicsEngine == nullptr)
-		return nullptr;
-	return gPhysicsEngine->m_Physics.get();
-}

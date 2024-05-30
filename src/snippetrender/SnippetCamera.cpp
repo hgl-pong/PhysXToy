@@ -65,7 +65,7 @@ namespace MathLib
         mMouseY = y;
     }
 
-    HTransform3 Camera::getTransform() const
+    HTransform3 Camera::getTransform()
     {
         HVector3 viewY = mDir.cross(HVector3(0, 1, 0));
 

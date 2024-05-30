@@ -1,12 +1,12 @@
-#include "PhysicsEngine.h"
+#include "Physics/PhysicsEngine.h"
 #include "PxPhysicsAPI.h"
+#include "physx/cooking/PxCooking.h"
 #include "Physics/PhysicsScene.h"
 #include "Physics/PhysicsObject.h"
 #include "Physics/PhysicsMaterial.h"
 #include "Physics/ColliderGeometry.h"
 #include "PhysxUtils.h"
 #include <assert.h>
-#include <minwinbase.h>
 
 #ifndef NDEBUG
 #define ENABLE_PVD
@@ -15,7 +15,7 @@
 #define PHYSX_PVD_HOST "127.0.0.1"
 using namespace physx;
 
-void *_GetFilterShader(const PhysicsSceneFilterShaderType &type) const
+inline void *_GetFilterShader(const PhysicsSceneFilterShaderType &type) 
 {
 	switch (type)
 	{
@@ -40,14 +40,11 @@ PhysicsEngine::PhysicsEngine()
 	m_Dispatcher = nullptr;
 	m_Pvd = nullptr;
 	m_bInitialized = false;
-	ZeroMemory(&m_Options, sizeof(PhysicsEngineOptions));
-	gPhysicsEngine = this;
+	memset(&m_Options, sizeof(PhysicsEngineOptions),0);
 }
 
 PhysicsEngine::~PhysicsEngine()
 {
-	_ASSERT(gPhysicsEngine);
-	gPhysicsEngine = nullptr;
 }
 
 void PhysicsEngine::Init(const PhysicsEngineOptions &options)
@@ -60,23 +57,23 @@ void PhysicsEngine::Init(const PhysicsEngineOptions &options)
 
 	// Init Physx
 	{
-		m_AllocatorCallback = std::make_unique<PxDefaultAllocator>();
-		m_ErrorCallback = std::make_unique<PxDefaultErrorCallback>();
+		m_AllocatorCallback = new PxDefaultAllocator();
+		m_ErrorCallback = new PxDefaultErrorCallback();
 
-		m_Foundation = std::make_unique<PxFoundation>(PxCreateFoundation(PX_PHYSICS_VERSION, *m_AllocatorCallback, *m_ErrorCallback));
+		m_Foundation = PxCreateFoundation(PX_PHYSICS_VERSION, *m_AllocatorCallback, *m_ErrorCallback);
 
 		if (m_Options.m_bEnablePVD)
 		{
-			m_Pvd = std::make_unique<PxPvd>(PxCreatePvd(*m_Foundation));
-			PxPvdTransport *transport = std::make_unique<PxPvdTransport>(PxDefaultPvdSocketTransportCreate(PHYSX_PVD_HOST, 5425, 10));
+			m_Pvd = PxCreatePvd(*m_Foundation);
+			PxPvdTransport *transport = PxDefaultPvdSocketTransportCreate(PHYSX_PVD_HOST, 5425, 10);
 			m_Pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
 		}
 		PxTolerancesScale toleranceScale;
 		PxCookingParams cookingParams(toleranceScale);
 
-		m_Physics = std::make_unique<PxPhysics>(PxCreatePhysics(PX_PHYSICS_VERSION, *m_pFoundation, toleranceScale, true, m_Pvd));
-		m_Dispatcher = std::make_unique<PxCpuDispatcher>(PxDefaultCpuDispatcherCreate(options.m_iNumThreads == 0 ? 1 : options.m_iNumThreads));
-		m_Cooking = std::make_unique<PxCooking>(PxCreateCooking(PX_PHYSICS_VERSION, *m_Foundation, cookingParams));
+		m_Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, toleranceScale, true, m_Pvd);
+		m_Dispatcher = PxDefaultCpuDispatcherCreate(options.m_iNumThreads == 0 ? 1 : options.m_iNumThreads);
+		//m_Cooking = std::make_unique<PxCooking>(PxCreateCooking(PX_PHYSICS_VERSION, *m_Foundation.get(), cookingParams));
 	}
 
 	m_bInitialized = true;
@@ -84,25 +81,15 @@ void PhysicsEngine::Init(const PhysicsEngineOptions &options)
 
 void PhysicsEngine::UnInit()
 {
-	if (m_pPvd)
+	if (m_Pvd)
 	{
 		PxPvdTransport *transport = m_Pvd->getTransport();
-		m_Pvd->release();
-		transport->release();
+		PX_RELEASE(m_Pvd);
+		PX_RELEASE(transport);
 	}
+	PX_RELEASE(m_Physics); 
+	PX_RELEASE(m_Foundation);
 
-	m_Dispatcher->release();
-	m_Physics->release();
-	m_Foundation->release();
-	m_Cooking->release();
-
-	m_Pvd.reset();
-	m_Dispatcher.reset();
-	m_Cooking.reset();
-	m_Physics.reset();
-	m_Foundation.reset();
-	m_ErrorCallback.reset();
-	m_AllocatorCallback.reset();
 	m_bInitialized = false;
 }
 
@@ -114,11 +101,17 @@ IPhysicsObject *PhysicsEngine::CreateObject(const PhysicsObjectCreateOptions &op
 	IPhysicsObject *object = nullptr;
 	switch (options.m_ObjectType)
 	{
+	case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC:
+	{
+		object = new PhysicsRigidStatic(material);
+		object->SetTransform(options.m_Transform);
+		break;
+	}
 	case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC:
 	{
 		object = new PhysicsRigidDynamic(material);
 		object->SetTransform(options.m_Transform);
-		object->break;
+		break;
 	}
 	default:
 		break;
@@ -132,7 +125,7 @@ IPhysicsMaterial *PhysicsEngine::CreateMaterial(const PhysicsMaterialCreateOptio
 		return nullptr;
 
 	PhysicsMaterial *material = new PhysicsMaterial();
-	material->m_Material = std::make_unique<PxMaterial>(m_Physics->createMaterial(options.m_fStaticFriction, options.m_fDynamicFriction, options.m_fRestitution));
+	material->m_Material = m_Physics->createMaterial(options.m_StaticFriction, options.m_DynamicFriction, options.m_Restitution);
 	material->m_Density = options.m_Density;
 	return material;
 }
@@ -147,8 +140,8 @@ IPhysicsScene *PhysicsEngine::CreateScene(const PhysicsSceneCreateOptions &optio
 	PxSceneDesc sceneDesc(m_Physics->getTolerancesScale());
 	sceneDesc.gravity = PxVec3(gravity[0], gravity[1], gravity[2]);
 	sceneDesc.cpuDispatcher = m_Dispatcher;
-	sceneDesc.filterShader = _GetFilterShader(options.m_FilterShaderType);
-	scene->m_Scene = std::make_unique<PxScene>(m_Physics->createScene(sceneDesc));
+	sceneDesc.filterShader = reinterpret_cast<physx::PxSimulationFilterShader>(_GetFilterShader(options.m_FilterShaderType));
+	scene->m_Scene = make_physx_ptr<PxScene>(m_Physics->createScene(sceneDesc));
 	scene->Init();
 	return scene;
 }
@@ -157,20 +150,27 @@ IColliderGeometry *PhysicsEngine::CreateColliderGeometry(const CollisionGeometry
 {
 	if (!m_bInitialized)
 		return nullptr;
-	switch (options.m_Type)
+	switch (options.m_GeometryType)
 	{
-	case CollierGeometryType::Box:
+	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX:
 	{
-		BoxColliderGeometry *box = new BoxColliderGeometry(options.m_HalfExtents);
+		BoxColliderGeometry *box = new BoxColliderGeometry(options.m_BoxParams.m_HalfExtents);
 		box->SetScale(options.m_Scale);
 		return box;
 		break;
 	}
-	case CollierGeometryType::Sphere:
+	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE:
 	{
-		SphereColliderGeometry *sphere = new SphereColliderGeometry(options.m_Radius);
+		SphereColliderGeometry *sphere = new SphereColliderGeometry(options.m_SphereParams.m_Radius);
 		sphere->SetScale(options.m_Scale);
 		return sphere;
+		break;
+	}
+	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE:
+	{
+		PlaneColliderGeometry *plane = new PlaneColliderGeometry(options.m_PlaneParams.m_Normal,options.m_PlaneParams.m_Distance);
+		plane->SetScale(options.m_Scale);
+		return plane;
 		break;
 	}
 	default:

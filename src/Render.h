@@ -38,7 +38,7 @@ using namespace physx;
 extern void initPhysics(bool interactive);
 extern void stepPhysics(bool interactive);
 extern void cleanupPhysics(bool interactive);
-extern void keyPress(unsigned char key, const PxTransform& camera);
+extern void keyPress(unsigned char key, MathLib::HTransform3& camera);
 
 namespace
 {
