@@ -14,11 +14,54 @@ namespace MathLib
 	typedef Eigen::AngleAxis<HReal> HAngleAxis;
 
 	typedef Eigen::Transform<HReal, 3, Eigen::Affine> HTransform3;
+
+	typedef Eigen::Translation<HReal, 3> HTranslation3;
+}
+#define DEFAULT_CPU_DISPATCHER_NUM_THREADS 2
+
+template <typename T>
+struct PhysicsDeleter
+{
+	void operator()(T* ptr) const {
+		if (ptr)
+		{
+			ptr->Release();
+			delete ptr;
+			ptr = nullptr;
+		}
+	}
+};
+
+template <typename T>
+using PhysicsPtr = std::unique_ptr<T, PhysicsDeleter<T>>;
+template <typename T>
+PhysicsPtr<T> make_physics_ptr(T* ptr) {
+	return PhysicsPtr<T>(ptr);
+}
+
+template <typename T>
+struct PhysXDeleter
+{
+	void operator()(T* ptr) const {
+		if (ptr)
+		{ 
+			ptr->release();
+			ptr = nullptr;
+		}
+	}
+};
+
+template <typename T>
+using PhysXPtr = std::unique_ptr<T, PhysXDeleter<T>>;
+
+template <typename T>
+PhysXPtr<T> make_physx_ptr(T* ptr) {
+	return PhysXPtr<T>(ptr);
 }
 
 struct PhysicsEngineOptions
 {
-	uint32_t m_iNumThreads=2;
+	uint32_t m_iNumThreads= DEFAULT_CPU_DISPATCHER_NUM_THREADS;
 	bool m_bEnablePVD=true;
 };
 
@@ -76,15 +119,12 @@ struct CollisionGeometryCreateOptions
 	} m_PlaneParams;
 	struct TriangleMeshParams
 	{
-		MathLib::HVector3 *m_Vertices=nullptr;
-		uint32_t m_iNumVertices=1;
-		uint32_t *m_Indices=nullptr;
-		uint32_t m_iNumIndices=0;
+		std::vector<MathLib::HVector3> m_Vertices;
+		std::vector<uint32_t> m_Indices;
 	} m_TriangleMeshParams;
 	struct ConvexMeshParams
 	{
-		MathLib::HVector3 *m_Vertices=nullptr;
-		uint32_t m_iNumVertices=0;
+		std::vector<MathLib::HVector3> m_Vertices;
 	} m_ConvexMeshParams;
 	MathLib::HVector3 m_Scale = { 1,1,1 };
 };
@@ -108,4 +148,15 @@ struct PhysicsObjectCreateOptions
 	PhysicsObjectType m_ObjectType;
 	MathLib::HTransform3 m_Transform;
 	PhysicsMaterialCreateOptions m_MaterialOptions;
+};
+
+struct PhysicsMeshData
+{
+	std::vector<MathLib::HVector3> m_Vertices;
+	std::vector<uint32_t> m_Indices;
+};
+
+struct ConvexDecomposeOptions
+{
+	MathLib::HReal m_SkinWidth=0.01;
 };

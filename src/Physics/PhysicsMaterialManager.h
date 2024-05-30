@@ -8,7 +8,7 @@ namespace std
 	{
 		size_t operator()(const PhysicsMaterialCreateOptions& material) const
 		{
-			return hash<float>()(material.m_Restitution) ^ hash<float>()(material.m_StaticFriction) ^ hash<float>()(material.m_DynamicFriction) ^ hash<float>()(material.m_Density);
+			return hash<MathLib::HReal>()(material.m_Restitution) ^ hash<MathLib::HReal>()(material.m_StaticFriction) ^ hash<MathLib::HReal>()(material.m_DynamicFriction) ^ hash<MathLib::HReal>()(material.m_Density);
 		}
 	};
 

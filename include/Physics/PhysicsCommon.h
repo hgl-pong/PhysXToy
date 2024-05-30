@@ -13,8 +13,6 @@ class IPhysicsMaterial;
 class IPhysicsEngine
 {
 public:
-	virtual void Init(const PhysicsEngineOptions &options) = 0;
-	virtual void UnInit() = 0;
 	virtual IPhysicsObject *CreateObject(const PhysicsObjectCreateOptions &options) = 0;
 	virtual IPhysicsMaterial *CreateMaterial(const PhysicsMaterialCreateOptions &options) = 0;
 	virtual IPhysicsScene *CreateScene(const PhysicsSceneCreateOptions &options) = 0;
@@ -24,16 +22,20 @@ public:
 class IPhysicsScene
 {
 public:
-	virtual void Tick(float deltaTime) = 0;
+	virtual void Release() = 0;
+	virtual void Tick(MathLib::HReal deltaTime) = 0;
 	virtual bool AddPhysicsObject(IPhysicsObject *physicsObject) = 0;
 	virtual void RemovePhysicsObject(IPhysicsObject *physicsObject) = 0;
 	virtual uint32_t GetPhysicsObjectCount() const = 0;
+	virtual uint32_t GetPhysicsRigidDynamicCount()const = 0;
+	virtual uint32_t GetPhysicsRigidStaticCount()const = 0;
 	virtual size_t GetOffset()const = 0;
 };
 
 class IColliderGeometry
 {
 public:
+	virtual void Release() = 0;
 	virtual CollierGeometryType GetType() const = 0;
 	virtual void SetScale(const MathLib::HVector3 &scale) = 0;
 };
@@ -41,7 +43,8 @@ public:
 class IPhysicsObject
 {
 public:
-	virtual void AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) = 0;
+	virtual void Release() = 0;
+	virtual bool AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) = 0;
 	virtual PhysicsObjectType GetType() const = 0;
 	virtual size_t GetOffset() const = 0;
 	virtual void SetTransform(const MathLib::HTransform3 &trans) = 0;
@@ -51,6 +54,7 @@ public:
 class IPhysicsMaterial
 {
 public:
+	virtual void Release() = 0;
 	virtual MathLib::HReal GetStaticFriction() const = 0;
 	virtual MathLib::HReal GetDynamicFriction() const = 0;
 	virtual MathLib::HReal GetRestitution() const = 0;
@@ -65,7 +69,7 @@ public:
 class PhysicsEngineUtils
 {
 public:
-	static IPhysicsEngine* CreatePhysicsEngine();
+	static IPhysicsEngine* CreatePhysicsEngine(const PhysicsEngineOptions& options);
 	static void DestroyPhysicsEngine();
 	static IPhysicsEngine* GetPhysicsEngine();
 	static IPhysicsObject* CreateObject(const PhysicsObjectCreateOptions& options) ;

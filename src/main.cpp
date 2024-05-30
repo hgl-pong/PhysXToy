@@ -213,7 +213,7 @@ void keyPress(unsigned char key, const MathLib::HTransform3& camera0)
 	}
 }
 #else
-#include "HelloWorld.h"
+#include "TestPhysicsEngine.h"
 #endif
 #include "Render.h"
 int main(int argc, char** argv)

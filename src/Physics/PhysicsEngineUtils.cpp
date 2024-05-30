@@ -1,9 +1,10 @@
 #include "Physics/PhysicsCommon.h"
 #include "Physics/PhysicsEngine.h"
-
-IPhysicsEngine* PhysicsEngineUtils::CreatePhysicsEngine()
+PhysicsEngine* gPhysicsEngine = nullptr;
+IPhysicsEngine* PhysicsEngineUtils::CreatePhysicsEngine(const PhysicsEngineOptions& options)
 {
-	gPhysicsEngine = new PhysicsEngine();
+	_ASSERT(!gPhysicsEngine);
+	gPhysicsEngine = new PhysicsEngine(options);
 	return gPhysicsEngine;
 }
 
@@ -11,7 +12,6 @@ void PhysicsEngineUtils::DestroyPhysicsEngine()
 {
 	if (gPhysicsEngine)
 	{
-		gPhysicsEngine->UnInit();
 		delete gPhysicsEngine;
 		gPhysicsEngine = nullptr;
 	}

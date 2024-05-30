@@ -21,7 +21,7 @@ namespace MathLib
         mMouseY = y;
     }
 
-    bool Camera::handleKey(unsigned char key, int x, int y, float speed)
+    bool Camera::handleKey(unsigned char key, int x, int y, MathLib::HReal speed)
     {
         (void)x;
         (void)y;
@@ -38,7 +38,7 @@ namespace MathLib
         return true;
     }
 
-    void Camera::handleAnalogMove(float x, float y)
+    void Camera::handleAnalogMove(MathLib::HReal x, MathLib::HReal y)
     {
         HVector3 viewY = mDir.cross(HVector3(0, 1, 0)).normalized();
         mEye += mDir * y;
@@ -52,7 +52,7 @@ namespace MathLib
 
         const HVector3 viewY = mDir.cross(HVector3(0, 1, 0)).normalized();
 
-        const float Sensitivity = H_PI * 0.5f / 180.0f;
+        const MathLib::HReal Sensitivity = H_PI * 0.5f / 180.0f;
 
         const AngleAxisf qx(Sensitivity * dx, HVector3(0, 1, 0));
         mDir = qx * mDir;
@@ -92,7 +92,7 @@ namespace MathLib
         mDir = dir.normalized();
     }
 
-    void Camera::setSpeed(float speed)
+    void Camera::setSpeed(MathLib::HReal speed)
     {
         mSpeed = speed;
     }

@@ -12,14 +12,14 @@ class PhysicsRigidDynamic : public IPhysicsObject
 {
 public:
 	PhysicsRigidDynamic(IPhysicsMaterial *material);
-	~PhysicsRigidDynamic();
+	void Release()override;
 	void Update();
 	void SetKinematic(bool bKinematic);
 	bool IsKinematic() const { return m_bIsKinematic; };
 
 public:	
 	bool IsValid() const override { return m_RigidDynamic != nullptr; };
-	void AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) override;
+	bool AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) override;
 	PhysicsObjectType GetType() const override { return m_Type; };
 	size_t GetOffset() const override;
 	void SetTransform(const MathLib::HTransform3 &trans) override;
@@ -29,8 +29,8 @@ public:
 
 private:
 	PhysicsObjectType m_Type;
-	physx::PxRigidDynamic* m_RigidDynamic=nullptr;
-	IPhysicsMaterial*  m_Material=nullptr;
+	PhysXPtr<physx::PxRigidDynamic> m_RigidDynamic;
+	PhysicsPtr<IPhysicsMaterial>  m_Material;
 	bool m_bIsKinematic;
 	MathLib::HReal m_Mass;
 	MathLib::HVector3 m_LinearVelocity;
@@ -43,17 +43,17 @@ class PhysicsRigidStatic : public IPhysicsObject
 {
 public:
 	PhysicsRigidStatic(IPhysicsMaterial* material);
-	~PhysicsRigidStatic();
+	void Release()override;
 public:	
 	bool IsValid() const override { return m_RigidStatic != nullptr; };
 	void SetTransform(const MathLib::HTransform3 &trans);
-	void AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) override;
+	bool AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) override;
 	PhysicsObjectType GetType() const override { return m_Type; };
 	size_t GetOffset() const override;
 
 private:
 	PhysicsObjectType m_Type;
-	physx::PxRigidStatic* m_RigidStatic=nullptr;
-	IPhysicsMaterial* m_Material = nullptr;
+	PhysXPtr<physx::PxRigidStatic> m_RigidStatic;
+	PhysicsPtr<IPhysicsMaterial> m_Material;
 	MathLib::HTransform3 m_Transform;
 };

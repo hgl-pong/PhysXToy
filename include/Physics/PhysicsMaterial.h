@@ -8,9 +8,8 @@ namespace physx
 class PhysicsMaterial : public IPhysicsMaterial
 {
 public:
-	PhysicsMaterial();
-	~PhysicsMaterial();
-
+	PhysicsMaterial(const PhysicsMaterialCreateOptions& options);
+	void Release()override;
 	MathLib::HReal GetStaticFriction() const override;
 	MathLib::HReal GetDynamicFriction() const override;
 	MathLib::HReal GetRestitution() const override;
@@ -22,7 +21,6 @@ public:
 	size_t GetOffset() const override;
 
 private:
-	friend class PhysicsEngine;
-	physx::PxMaterial* m_Material = nullptr;
+	PhysXPtr<physx::PxMaterial> m_Material;
 	MathLib::HReal m_Density;
 };

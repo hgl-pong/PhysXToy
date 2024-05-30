@@ -2,13 +2,15 @@
 #include "PxPhysicsAPI.h"
 using namespace physx;
 
-PhysicsMaterial::PhysicsMaterial()
+PhysicsMaterial::PhysicsMaterial(const PhysicsMaterialCreateOptions& options)
 {
+    m_Material = make_physx_ptr<PxMaterial>(PxGetPhysics().createMaterial(options.m_StaticFriction, options.m_DynamicFriction, options.m_Restitution));
+    m_Density = options.m_Density;
 }
 
-PhysicsMaterial::~PhysicsMaterial()
+void PhysicsMaterial::Release()
 {
-    PX_RELEASE(m_Material);
+    m_Material.reset();
 }
 
 MathLib::HReal PhysicsMaterial::GetStaticFriction() const

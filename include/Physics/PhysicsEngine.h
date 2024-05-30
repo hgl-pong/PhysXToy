@@ -1,6 +1,6 @@
 #pragma once
 #include "Physics/PhysicsCommon.h"
-
+#include "physx/extensions/PxDefaultCpuDispatcher.h"
 namespace physx
 {
 	class PxAllocatorCallback;
@@ -20,18 +20,14 @@ class PhysicsErrorCallback;
 class PhysicsEngine : public IPhysicsEngine
 {
 private:
-	PhysicsEngine();
+	PhysicsEngine(const PhysicsEngineOptions &options);
 	~PhysicsEngine();
 public:
-	void Init(const PhysicsEngineOptions &options) override;
-	void UnInit() override;
 	IPhysicsObject *CreateObject(const PhysicsObjectCreateOptions &options) override;
 	IPhysicsMaterial *CreateMaterial(const PhysicsMaterialCreateOptions &options) override;
 	IPhysicsScene *CreateScene(const PhysicsSceneCreateOptions &options) override;
 	IColliderGeometry *CreateColliderGeometry(const CollisionGeometryCreateOptions &options) override;
 
-private:
-	friend physx::PxPhysics* GetPxPhysics();
 private:
 	friend class PhysicsEngineUtils;
 	PhysicsEngineOptions m_Options;
@@ -41,8 +37,9 @@ private:
 	physx::PxPvd* m_Pvd;
 	physx::PxFoundation* m_Foundation;
 	physx::PxPhysics* m_Physics;
-	physx::PxCpuDispatcher* m_Dispatcher;
+	physx::PxCpuDispatcher* m_CpuDispatcher;
 	bool m_bInitialized;
+
 };
 
-static PhysicsEngine *gPhysicsEngine = nullptr;
+

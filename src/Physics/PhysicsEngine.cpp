@@ -15,40 +15,17 @@
 #define PHYSX_PVD_HOST "127.0.0.1"
 using namespace physx;
 
-inline void *_GetFilterShader(const PhysicsSceneFilterShaderType &type) 
+PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions& options)
 {
-	switch (type)
-	{
-	case PhysicsSceneFilterShaderType::eDEFAULT:
-	{
-		return PxDefaultSimulationFilterShader;
-		break;
-	}
-	default:
-		break;
-	}
-	return nullptr;
-}
-
-PhysicsEngine::PhysicsEngine()
-{
-	_ASSERT(!gPhysicsEngine);
 	m_AllocatorCallback = nullptr;
 	m_ErrorCallback = nullptr;
 	m_Foundation = nullptr;
 	m_Physics = nullptr;
-	m_Dispatcher = nullptr;
 	m_Pvd = nullptr;
+	m_CpuDispatcher = nullptr;
 	m_bInitialized = false;
 	memset(&m_Options, sizeof(PhysicsEngineOptions),0);
-}
 
-PhysicsEngine::~PhysicsEngine()
-{
-}
-
-void PhysicsEngine::Init(const PhysicsEngineOptions &options)
-{
 #ifdef ENABLE_PVD
 	m_Options.m_bEnablePVD = true;
 #else
@@ -65,21 +42,21 @@ void PhysicsEngine::Init(const PhysicsEngineOptions &options)
 		if (m_Options.m_bEnablePVD)
 		{
 			m_Pvd = PxCreatePvd(*m_Foundation);
-			PxPvdTransport *transport = PxDefaultPvdSocketTransportCreate(PHYSX_PVD_HOST, 5425, 10);
+			PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate(PHYSX_PVD_HOST, 5425, 10);
 			m_Pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
 		}
 		PxTolerancesScale toleranceScale;
 		PxCookingParams cookingParams(toleranceScale);
 
 		m_Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, toleranceScale, true, m_Pvd);
-		m_Dispatcher = PxDefaultCpuDispatcherCreate(options.m_iNumThreads == 0 ? 1 : options.m_iNumThreads);
-		//m_Cooking = std::make_unique<PxCooking>(PxCreateCooking(PX_PHYSICS_VERSION, *m_Foundation.get(), cookingParams));
+		m_CpuDispatcher = PxDefaultCpuDispatcherCreate(options.m_iNumThreads == 0 ? DEFAULT_CPU_DISPATCHER_NUM_THREADS : options.m_iNumThreads);
+		//m_Cooking = PxCreateCooking(PX_PHYSICS_VERSION, *m_Foundation, cookingParams);
 	}
 
 	m_bInitialized = true;
 }
 
-void PhysicsEngine::UnInit()
+PhysicsEngine::~PhysicsEngine()
 {
 	if (m_Pvd)
 	{
@@ -123,11 +100,7 @@ IPhysicsMaterial *PhysicsEngine::CreateMaterial(const PhysicsMaterialCreateOptio
 {
 	if (!m_bInitialized)
 		return nullptr;
-
-	PhysicsMaterial *material = new PhysicsMaterial();
-	material->m_Material = m_Physics->createMaterial(options.m_StaticFriction, options.m_DynamicFriction, options.m_Restitution);
-	material->m_Density = options.m_Density;
-	return material;
+	return new PhysicsMaterial(options);
 }
 
 IPhysicsScene *PhysicsEngine::CreateScene(const PhysicsSceneCreateOptions &options)
@@ -135,15 +108,7 @@ IPhysicsScene *PhysicsEngine::CreateScene(const PhysicsSceneCreateOptions &optio
 	if (!m_bInitialized)
 		return nullptr;
 
-	PhysicsScene *scene = new PhysicsScene();
-	const MathLib::HVector3 &gravity = options.m_Gravity;
-	PxSceneDesc sceneDesc(m_Physics->getTolerancesScale());
-	sceneDesc.gravity = PxVec3(gravity[0], gravity[1], gravity[2]);
-	sceneDesc.cpuDispatcher = m_Dispatcher;
-	sceneDesc.filterShader = reinterpret_cast<physx::PxSimulationFilterShader>(_GetFilterShader(options.m_FilterShaderType));
-	scene->m_Scene = make_physx_ptr<PxScene>(m_Physics->createScene(sceneDesc));
-	scene->Init();
-	return scene;
+	return new PhysicsScene(options,m_CpuDispatcher);
 }
 
 IColliderGeometry *PhysicsEngine::CreateColliderGeometry(const CollisionGeometryCreateOptions &options)
@@ -171,6 +136,27 @@ IColliderGeometry *PhysicsEngine::CreateColliderGeometry(const CollisionGeometry
 		PlaneColliderGeometry *plane = new PlaneColliderGeometry(options.m_PlaneParams.m_Normal,options.m_PlaneParams.m_Distance);
 		plane->SetScale(options.m_Scale);
 		return plane;
+		break;
+	}
+	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CAPSULE:
+	{
+		CapsuleColliderGeometry *capsule = new CapsuleColliderGeometry(options.m_CapsuleParams.m_Radius,options.m_CapsuleParams.m_HalfHeight);
+		capsule->SetScale(options.m_Scale);
+		return capsule;
+		break;
+	}
+	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH:
+	{
+		TriangleMeshColliderGeometry *mesh = new TriangleMeshColliderGeometry(options.m_TriangleMeshParams.m_Vertices,options.m_TriangleMeshParams.m_Indices);
+		mesh->SetScale(options.m_Scale);
+		return mesh;
+		break;
+	}
+	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH:
+	{
+		ConvexMeshColliderGeometry *mesh = new ConvexMeshColliderGeometry(options.m_ConvexMeshParams.m_Vertices);
+		mesh->SetScale(options.m_Scale);
+		return mesh;
 		break;
 	}
 	default:

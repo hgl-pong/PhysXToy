@@ -26,8 +26,4 @@ vcpkg install Eigen3
 
 ## 运行结果
 
-以下是一些示例结果：
-
-### Demo 运行效果
-
-<!-- ![demo](./doc/demo.gif) -->
+![demo](./img/result.jpg)
