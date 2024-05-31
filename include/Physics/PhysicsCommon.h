@@ -76,5 +76,6 @@ public:
 	static IPhysicsMaterial* CreateMaterial(const PhysicsMaterialCreateOptions& options) ;
 	static IPhysicsScene* CreateScene(const PhysicsSceneCreateOptions& options) ;
 	static IColliderGeometry* CreateColliderGeometry(const CollisionGeometryCreateOptions& options) ;
+	static void ConvexDecomposition(const PhysicsMeshData& meshData, const ConvexDecomposeOptions& params, std::vector<PhysicsMeshData>& convexMeshesData);
 };
 

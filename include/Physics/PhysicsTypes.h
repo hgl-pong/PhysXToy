@@ -13,6 +13,8 @@ namespace MathLib
 	typedef Eigen::Quaternion<HReal> HQuaternion;
 	typedef Eigen::AngleAxis<HReal> HAngleAxis;
 
+	typedef Eigen::AlignedBox<HReal, 3> HAABBox3D;
+
 	typedef Eigen::Transform<HReal, 3, Eigen::Affine> HTransform3;
 
 	typedef Eigen::Translation<HReal, 3> HTranslation3;
@@ -158,5 +160,8 @@ struct PhysicsMeshData
 
 struct ConvexDecomposeOptions
 {
-	MathLib::HReal m_SkinWidth=0.01;
+	uint32_t m_MaximumNumberOfHulls = 8;  // Maximum number of convex hull generated
+	uint32_t m_MaximumNumberOfVerticesPerHull = 64;  // (default=64, range=4-1024)
+	uint32_t m_VoxelGridResolution = 1000000;        //(default=1,000,000, range=10,000-16,000,000).
+	MathLib::HReal m_Concavity = 0.0025f;                     // Value between 0 and 1
 };

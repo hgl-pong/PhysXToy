@@ -17,18 +17,23 @@ file(GLOB SOURCE_FILES
     src/*
     src/SnippetRender/*
     src/Physics/*
+    src/Physics/VHACD/*
 )
 
+add_definitions(-DOPENCL_FOUND)
+add_definitions(-DOPENCL_CL_FILES=\"${PROJECT_SOURCE_DIR}/src/Physics/VHACD/cl/vhacdKernels.cl\")
+add_definitions(-DUSE_OPENMP)
 add_executable(${PHYSX_TOY} ${SOURCE_FILES})
 find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)
 find_package(GLEW REQUIRED)  
 find_package(GLUT REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
+find_package(OpenCL REQUIRED)
 
 target_include_directories(${PHYSX_TOY} PUBLIC ./include
     PRIVATE)
 
-target_link_libraries(${PHYSX_TOY} PRIVATE unofficial::omniverse-physx-sdk::sdk GLEW::GLEW GLUT::GLUT Eigen3::Eigen)
+target_link_libraries(${PHYSX_TOY} PRIVATE unofficial::omniverse-physx-sdk::sdk GLEW::GLEW GLUT::GLUT Eigen3::Eigen OpenCL::OpenCL)
 
 add_custom_command(TARGET ${PHYSX_TOY} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different

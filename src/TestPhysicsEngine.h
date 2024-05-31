@@ -27,6 +27,73 @@ unsigned RandomUInt(unsigned range)
 	return rand() % range;
 }
 
+static void CreateDeComposeConveXStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
+{
+	std::vector<MathLib::HVector3> triVerts;
+	std::vector<uint32_t> triIndices;
+
+	uint32_t numVerts = MeshGenerateUtils::Bunny_getNbVerts();
+	uint32_t numFaces = MeshGenerateUtils::Bunny_getNbFaces();
+
+	triVerts.resize(numVerts);
+	triIndices.resize(numFaces * 3);
+
+	memcpy(triVerts.data(), MeshGenerateUtils::Bunny_getVerts(), sizeof(MathLib::HVector3) * numVerts);
+	memcpy(triIndices.data(), MeshGenerateUtils::Bunny_getFaces(), sizeof(uint32_t) * numFaces * 3);
+	PhysicsMeshData meshdata;
+
+	meshdata.m_Vertices = triVerts;
+	meshdata.m_Indices = triIndices;
+
+	ConvexDecomposeOptions decomposeOptions;
+	decomposeOptions.m_VoxelGridResolution = 1000;
+	decomposeOptions.m_MaximumNumberOfHulls = 3;
+	std::vector<PhysicsMeshData> decomposedMeshes;
+	PhysicsEngineUtils::ConvexDecomposition(meshdata, decomposeOptions, decomposedMeshes);
+
+	std::vector<PhysicsPtr<IColliderGeometry>> geos(decomposedMeshes.size());
+	for(size_t i=0;i<decomposedMeshes.size();i++)
+	{
+		CollisionGeometryCreateOptions options;
+		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH;
+		options.m_ConvexMeshParams.m_Vertices = decomposedMeshes[i].m_Vertices;
+		options.m_Scale = MathLib::HVector3(3.0f, 3.0f, 3.0f);
+		geos[i] = make_physics_ptr<IColliderGeometry>(PhysicsEngineUtils::CreateColliderGeometry(options));
+	}
+
+	for (uint32_t i = 0; i < size; i++)
+	{
+		for (uint32_t j = 0; j < size - i; j++)
+		{
+			MathLib::HTransform3 localTm(MathLib::HTranslation3(MathLib::HVector3(MathLib::HReal(j * 2) - MathLib::HReal(size - i), MathLib::HReal(i * 2 + 1), 0) * halfExtent));
+
+			PhysicsObjectCreateOptions objectOptions;
+			objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
+			objectOptions.m_Transform = t * localTm;
+
+			if (RandomUInt(100) > 70)
+			{
+				objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
+			}
+			else
+			{
+				objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
+
+			}
+			IPhysicsObject* physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
+			for (size_t i = 0; i < geos.size(); i++)
+			{
+				if (!physicsObject->AddColliderGeometry(geos[i].get(), MathLib::HTransform3::Identity()))
+				{
+					physicsObject->AddColliderGeometry(geos[0].get(), MathLib::HTransform3::Identity());
+				}
+			}
+			gScene->AddPhysicsObject(physicsObject);
+		}
+	}
+
+}
+
 static void createStack(const MathLib::HTransform3 &t, uint32_t size, MathLib::HReal halfExtent)
 {
 	CollisionGeometryCreateOptions options;
@@ -58,6 +125,14 @@ static void createStack(const MathLib::HTransform3 &t, uint32_t size, MathLib::H
 		meshdata.m_Vertices = triVerts;
 		meshdata.m_Indices = triIndices;
 	}
+
+	ConvexDecomposeOptions decomposeOptions;
+	decomposeOptions.m_VoxelGridResolution = 10000;
+	std::vector<PhysicsMeshData> decomposedMeshes;
+	PhysicsEngineUtils::ConvexDecomposition(meshdata, decomposeOptions, decomposedMeshes);
+	printf("Number of decomposed meshes: %d\n", decomposedMeshes.size());
+	meshdata.m_Vertices=decomposedMeshes[0].m_Vertices;
+	meshdata.m_Indices=decomposedMeshes[0].m_Indices;
 
 	//options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CAPSULE;
 	//options.m_CapsuleParams.m_HalfHeight = halfExtent/2;
@@ -143,7 +218,7 @@ void initPhysics(bool interactive)
 
 
 	for (uint32_t i = 0; i < 5; i++)
-		createStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
+		CreateDeComposeConveXStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
 
 	if (!interactive)
 	{
