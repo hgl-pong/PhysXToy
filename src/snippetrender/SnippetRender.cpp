@@ -44,7 +44,7 @@
 #include "SnippetRender.h"
 #endif
 
-#include "SnippetCamera.h"
+#include "Camera.h"
 #include "foundation/PxArray.h"
 #include "foundation/PxMathUtils.h"
 #include <vector>

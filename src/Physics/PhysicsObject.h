@@ -8,24 +8,31 @@ namespace physx
 	class PxHeightField;
 }
 
-class PhysicsRigidDynamic : public IPhysicsObject
+class PhysicsRigidDynamic : public IPhysicsObject,virtual public IDynamicObject
 {
 public:
 	PhysicsRigidDynamic(IPhysicsMaterial *material);
-	void Release()override;
+
 	void Update();
-	void SetKinematic(bool bKinematic);
-	bool IsKinematic() const { return m_bIsKinematic; };
 
 public:	
+	void Release()override;
 	bool IsValid() const override { return m_RigidDynamic != nullptr; };
 	bool AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) override;
 	PhysicsObjectType GetType() const override { return m_Type; };
 	size_t GetOffset() const override;
 	void SetTransform(const MathLib::HTransform3 &trans) override;
+	const MathLib::HTransform3 &GetTransform() const override { return m_Transform; };
 public:
-	void SetAngularDamping(const MathLib::HReal &damping);
-	void SetLinearVelocity(const MathLib::HVector3 &velocity);
+	void SetAngularDamping(const MathLib::HReal &damping)override;
+	void SetLinearVelocity(const MathLib::HVector3& velocity)override;
+	void SetAngularVelocity(const MathLib::HVector3& velocity)override;
+	void SetKinematic(bool bKinematic)override;
+	bool IsKinematic() const override{ return m_bIsKinematic; };
+	MathLib::HReal GetMass() const override { return m_Mass; };
+	MathLib::HVector3 GetLinearVelocity() const override { return m_LinearVelocity; };
+	MathLib::HReal GetAngularDamping() const override { return m_AngularDamping; };
+	MathLib::HVector3 GetAngularVelocity() const override { return m_AngularVelocity; };
 
 private:
 	PhysicsObjectType m_Type;
@@ -47,6 +54,7 @@ public:
 public:	
 	bool IsValid() const override { return m_RigidStatic != nullptr; };
 	void SetTransform(const MathLib::HTransform3 &trans);
+	const MathLib::HTransform3 &GetTransform() const override { return m_Transform; };
 	bool AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) override;
 	PhysicsObjectType GetType() const override { return m_Type; };
 	size_t GetOffset() const override;

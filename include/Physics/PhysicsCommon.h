@@ -48,7 +48,22 @@ public:
 	virtual PhysicsObjectType GetType() const = 0;
 	virtual size_t GetOffset() const = 0;
 	virtual void SetTransform(const MathLib::HTransform3 &trans) = 0;
+	virtual const MathLib::HTransform3 &GetTransform() const = 0;
 	virtual bool IsValid() const = 0;
+};
+
+class IDynamicObject
+{
+public:
+	virtual void SetAngularDamping(const MathLib::HReal &damping) = 0;
+	virtual void SetLinearVelocity(const MathLib::HVector3 &velocity) = 0;
+	virtual void SetAngularVelocity(const MathLib::HVector3 &velocity) = 0;
+	virtual void SetKinematic(bool bKinematic) = 0;
+	virtual bool IsKinematic() const = 0;
+	virtual MathLib::HReal GetMass() const = 0;
+	virtual MathLib::HVector3 GetLinearVelocity() const = 0;
+	virtual MathLib::HReal GetAngularDamping() const = 0;
+	virtual MathLib::HVector3 GetAngularVelocity() const = 0;
 };
 
 class IPhysicsMaterial
@@ -69,13 +84,14 @@ public:
 class PhysicsEngineUtils
 {
 public:
-	static IPhysicsEngine* CreatePhysicsEngine(const PhysicsEngineOptions& options);
+	static IPhysicsEngine* CreatePhysicsEngine(const PhysicsEngineOptions& options,const bool createConvexDecomposer=true);
 	static void DestroyPhysicsEngine();
 	static IPhysicsEngine* GetPhysicsEngine();
 	static IPhysicsObject* CreateObject(const PhysicsObjectCreateOptions& options) ;
 	static IPhysicsMaterial* CreateMaterial(const PhysicsMaterialCreateOptions& options) ;
 	static IPhysicsScene* CreateScene(const PhysicsSceneCreateOptions& options) ;
 	static IColliderGeometry* CreateColliderGeometry(const CollisionGeometryCreateOptions& options) ;
-	static void ConvexDecomposition(const PhysicsMeshData& meshData, const ConvexDecomposeOptions& params, std::vector<PhysicsMeshData>& convexMeshesData);
+	static void BuildConvexMesh(const std::vector<MathLib::HVector3>& vertices, const std::vector<uint32_t>& indices, PhysicsMeshData& meshdata);
+	static bool ConvexDecomposition(const PhysicsMeshData& meshData, const ConvexDecomposeOptions& params, std::vector<PhysicsMeshData>& convexMeshesData);
 };
 

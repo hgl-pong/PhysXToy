@@ -33,113 +33,210 @@
 // user to create new stacks and fire a ball from the camera position
 // ****************************************************************************
 #pragma once
-#define TEST_HELLO_WORLD
-#ifndef TEST_HELLO_WORLD
+//#define PARTICLE_RENDER
+#ifdef PARTICLE_RENDER
+#include "Physics/PhysicsTypes.h"
 #include <ctype.h>
 #include "PxPhysicsAPI.h"
-#include "Physics/PhysicsTypes.h"
-//#include "snippetutils/SnippetUtils.h"
-#include "extensions/PxRemeshingExt.h"
-using namespace physx;
+#include "extensions/PxParticleExt.h"
 
-static PxDefaultAllocator gAllocator;
-static PxDefaultErrorCallback gErrorCallback;
+using namespace physx;
+using namespace ExtGpu;
+
+static PxDefaultAllocator				gAllocator;
+static PxDefaultErrorCallback			gErrorCallback;
 static PxFoundation* gFoundation = NULL;
 static PxPhysics* gPhysics = NULL;
 static PxDefaultCpuDispatcher* gDispatcher = NULL;
 static PxScene* gScene = NULL;
 static PxMaterial* gMaterial = NULL;
 static PxPvd* gPvd = NULL;
+static PxPBDParticleSystem* gParticleSystem = NULL;
+static PxParticleAndDiffuseBuffer* gParticleBuffer = NULL;
+static bool								gIsRunning = true;
+static bool								gStep = true;
 
-static PxReal stackZ = 10.0f;
 
-static PxRigidDynamic* createDynamic(const PxTransform& t, const PxGeometry& geometry, const PxVec3& velocity = PxVec3(0))
+PxRigidDynamic* movingWall;
+
+static void initObstacles()
 {
-	PxRigidDynamic* dynamic = PxCreateDynamic(*gPhysics, t, geometry, *gMaterial, 10.0f);
-	dynamic->setAngularDamping(0.5f);
-	dynamic->setLinearVelocity(velocity);
-	gScene->addActor(*dynamic);
-	return dynamic;
+	PxShape* shape = gPhysics->createShape(PxCapsuleGeometry(1.0f, 2.5f), *gMaterial);
+	PxRigidDynamic* body = gPhysics->createRigidDynamic(PxTransform(PxVec3(3.5f, 3.5f, 0), PxQuat(PxPi * -0.5f, PxVec3(0, 0, 1))));
+	body->attachShape(*shape);
+	body->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+	gScene->addActor(*body);
+	shape->release();
+
+	shape = gPhysics->createShape(PxBoxGeometry(1.0f, 1.0f, 5.0f), *gMaterial);
+	body = gPhysics->createRigidDynamic(PxTransform(PxVec3(3.5f, 0.75f, 0)));
+	body->attachShape(*shape);
+	body->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+	gScene->addActor(*body);
+	shape->release();
 }
 
-#include "Physics/PhysXUtils.h"
+static int								gMaxDiffuseParticles = 0;
 
-unsigned RandomUInt(unsigned range)
+// -----------------------------------------------------------------------------------------------------------------
+static void initScene()
 {
-	return rand() % range;
-}
-
-static void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
-{
-	//auto* convex = PhysXConstructTools::CreateConvexMesh<true, 256>(gPhysics,SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
-	//printf("convex vertex count: %d\n", convex->getNbVertices());
-	// PxBoxGeometry geo(halfExtent, halfExtent, halfExtent);
-	PxSphereGeometry geo(halfExtent);
-	//PxConvexMeshGeometry geo(convex, PxMeshScale(3.f));
-
-	//PxArray<PxVec3> triVerts;
-	//PxArray<PxU32> triIndices;
-
-	//PxReal maxEdgeLength = 1;
-
-	//createBowl(triVerts, triIndices, PxVec3(0, 4.5, 0), 6.0f, maxEdgeLength);
-	//PxTolerancesScale scale; 
-	//PxCookingParams params(scale);
-	//PxTriangleMesh* mesh = createTriMesh(params, triVerts, triIndices, 0.0f);
-	//PxTriangleMeshGeometry geo(mesh, PxMeshScale(1));
-
-	PxShape* shape = gPhysics->createShape(geo, *gMaterial);
-	for (PxU32 i = 0; i < size; i++)
+	PxCudaContextManager* cudaContextManager = NULL;
+	if (PxGetSuggestedCudaDeviceOrdinal(gFoundation->getErrorCallback()) >= 0)
 	{
-		for (PxU32 j = 0; j < size - i; j++)
+		// initialize CUDA
+		PxCudaContextManagerDesc cudaContextManagerDesc;
+		cudaContextManager = PxCreateCudaContextManager(*gFoundation, cudaContextManagerDesc, PxGetProfilerCallback());
+		//cudaContextManager = &gOpenCLContextManager;
+		
+		if (cudaContextManager && !cudaContextManager->contextIsValid())
 		{
-			PxTransform localTm(PxVec3(PxReal(j * 2) - PxReal(size - i), PxReal(i * 2 + 1), 0) * halfExtent);
-			if (RandomUInt(100)>70)
-			{
-				auto* body = gPhysics->createRigidStatic(t.transform(localTm));
-				body->attachShape(*shape);
-				gScene->addActor(*body);
-			}
-			else
-			{
-				auto* body = gPhysics->createRigidDynamic(t.transform(localTm));
-				body->attachShape(*shape);
-				PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
-
-				body->setRigidBodyFlag(PxRigidBodyFlag::eENABLE_GYROSCOPIC_FORCES, true);
-				body->setRigidBodyFlag(PxRigidBodyFlag::eENABLE_SPECULATIVE_CCD, true);
-				gScene->addActor(*body);
-			}
+			cudaContextManager->release();
+			cudaContextManager = NULL;
 		}
 	}
-	shape->release();
-	printf("actor count: %d\n", gScene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC));
-	//convex->release();
+	if (cudaContextManager == NULL)
+	{
+		PxGetFoundation().error(PxErrorCode::eINVALID_OPERATION, PX_FL, "Failed to initialize CUDA!\n");
+	}
 
-	//auto *convex = createConvex<PxConvexMeshCookingType::eQUICKHULL, true, 256>(SnippetUtils::Bunny_getNbVerts(), SnippetUtils::Bunny_getVerts());
-	//printf("convex vertex count: %d\n", convex->getNbVertices());
-	//// PxBoxGeometry geo(halfExtent, halfExtent, halfExtent);
-	//PxConvexMeshGeometry geo(convex, PxMeshScale(5.f));
-	//auto *body = gPhysics->createRigidDynamic(t);
-	//int counter = 0;
-	//for (PxU32 i = 0; i < size; i++)
-	//{
-	//	for (PxU32 j = 0; j < size - i; j++)
-	//	{
-	//		PxShape *shape = gPhysics->createShape(geo, *gMaterial);
-	//		PxTransform localTm(PxVec3(PxReal(j * 2) - PxReal(size - i), PxReal(i * 2 + 1), 0) * halfExtent);
-	//		shape->setLocalPose(localTm);
-	//		body->attachShape(*shape);
-	//		shape->release();
-	//		counter++;
-	//	}
-	//}
-	//printf("total vertex count: %d\n", counter * convex->getNbVertices());
-	//PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
-	//gScene->addActor(*body);
+	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
+	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
+	gDispatcher = PxDefaultCpuDispatcherCreate(2);
+	sceneDesc.cpuDispatcher = gDispatcher;
+	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+	sceneDesc.cudaContextManager = cudaContextManager;
+	sceneDesc.staticStructure = PxPruningStructureType::eDYNAMIC_AABB_TREE;
+	sceneDesc.flags |= PxSceneFlag::eENABLE_PCM;
+	sceneDesc.flags |= PxSceneFlag::eENABLE_GPU_DYNAMICS;
+	sceneDesc.broadPhaseType = PxBroadPhaseType::eGPU;
+	sceneDesc.solverType = PxSolverType::eTGS;
+	gScene = gPhysics->createScene(sceneDesc);
 }
 
-void initPhysics(bool interactive)
+int getNumDiffuseParticles()
+{
+	return gMaxDiffuseParticles;
+}
+
+// -----------------------------------------------------------------------------------------------------------------
+static void initParticles(const PxU32 numX, const PxU32 numY, const PxU32 numZ, const PxVec3& position = PxVec3(0, 0, 0), const PxReal particleSpacing = 0.2f, const PxReal fluidDensity = 1000.f, const PxU32 maxDiffuseParticles = 100000)
+{
+	PxCudaContextManager* cudaContextManager = gScene->getCudaContextManager();
+	if (cudaContextManager == NULL)
+		return;
+
+	const PxU32 maxParticles = numX * numY * numZ;
+
+	const PxReal restOffset = 0.5f * particleSpacing / 0.6f;
+
+	// Material setup
+	PxPBDMaterial* defaultMat = gPhysics->createPBDMaterial(0.05f, 0.05f, 0.f, 0.001f, 0.5f, 0.005f, 0.01f, 0.f, 0.f);
+
+	defaultMat->setViscosity(0.001f);
+	defaultMat->setSurfaceTension(0.00704f);
+	defaultMat->setCohesion(0.0704f);
+	defaultMat->setVorticityConfinement(10.f);
+
+	PxPBDParticleSystem* particleSystem = gPhysics->createPBDParticleSystem(*cudaContextManager, 96);
+	gParticleSystem = particleSystem;
+
+	// General particle system setting
+
+	const PxReal solidRestOffset = restOffset;
+	const PxReal fluidRestOffset = restOffset * 0.6f;
+	const PxReal particleMass = fluidDensity * 1.333f * 3.14159f * particleSpacing * particleSpacing * particleSpacing;
+	particleSystem->setRestOffset(restOffset);
+	particleSystem->setContactOffset(restOffset + 0.01f);
+	particleSystem->setParticleContactOffset(fluidRestOffset / 0.6f);
+	particleSystem->setSolidRestOffset(solidRestOffset);
+	particleSystem->setFluidRestOffset(fluidRestOffset);
+	particleSystem->enableCCD(false);
+	particleSystem->setMaxVelocity(solidRestOffset * 100.f);
+
+	gScene->addActor(*particleSystem);
+
+	// Diffuse particles setting
+	PxDiffuseParticleParams dpParams;
+	dpParams.threshold = 300.0f;
+	dpParams.bubbleDrag = 0.9f;
+	dpParams.buoyancy = 0.9f;
+	dpParams.airDrag = 0.0f;
+	dpParams.kineticEnergyWeight = 0.01f;
+	dpParams.pressureWeight = 1.0f;
+	dpParams.divergenceWeight = 10.f;
+	dpParams.lifetime = 1.0f;
+	dpParams.useAccurateVelocity = false;
+
+	gMaxDiffuseParticles = maxDiffuseParticles;
+
+	// Create particles and add them to the particle system
+	const PxU32 particlePhase = particleSystem->createPhase(defaultMat, PxParticlePhaseFlags(PxParticlePhaseFlag::eParticlePhaseFluid | PxParticlePhaseFlag::eParticlePhaseSelfCollide));
+
+	PxU32* phase = cudaContextManager->allocPinnedHostBuffer<PxU32>(maxParticles);
+	PxVec4* positionInvMass = cudaContextManager->allocPinnedHostBuffer<PxVec4>(maxParticles);
+	PxVec4* velocity = cudaContextManager->allocPinnedHostBuffer<PxVec4>(maxParticles);
+
+	PxReal x = position.x;
+	PxReal y = position.y;
+	PxReal z = position.z;
+
+	for (PxU32 i = 0; i < numX; ++i)
+	{
+		for (PxU32 j = 0; j < numY; ++j)
+		{
+			for (PxU32 k = 0; k < numZ; ++k)
+			{
+				const PxU32 index = i * (numY * numZ) + j * numZ + k;
+
+				PxVec4 pos(x, y, z, 1.0f / particleMass);
+				phase[index] = particlePhase;
+				positionInvMass[index] = pos;
+				velocity[index] = PxVec4(0.0f);
+
+				z += particleSpacing;
+			}
+			z = position.z;
+			y += particleSpacing;
+		}
+		y = position.y;
+		x += particleSpacing;
+	}
+
+
+	ExtGpu::PxParticleAndDiffuseBufferDesc bufferDesc;
+	bufferDesc.maxParticles = maxParticles;
+	bufferDesc.numActiveParticles = maxParticles;
+	bufferDesc.maxDiffuseParticles = maxDiffuseParticles;
+	bufferDesc.maxActiveDiffuseParticles = maxDiffuseParticles;
+	bufferDesc.diffuseParams = dpParams;
+
+	bufferDesc.positions = positionInvMass;
+	bufferDesc.velocities = velocity;
+	bufferDesc.phases = phase;
+
+	gParticleBuffer = physx::ExtGpu::PxCreateAndPopulateParticleAndDiffuseBuffer(bufferDesc, cudaContextManager);
+	gParticleSystem->addParticleBuffer(gParticleBuffer);
+
+	cudaContextManager->freePinnedHostBuffer(positionInvMass);
+	cudaContextManager->freePinnedHostBuffer(velocity);
+	cudaContextManager->freePinnedHostBuffer(phase);
+}
+
+PxPBDParticleSystem* getParticleSystem()
+{
+	return gParticleSystem;
+}
+
+PxParticleAndDiffuseBuffer* getParticleBuffer()
+{
+	return gParticleBuffer;
+}
+
+
+
+// -----------------------------------------------------------------------------------------------------------------
+void initPhysics(bool /*interactive*/)
 {
 	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
 
@@ -149,12 +246,7 @@ void initPhysics(bool interactive)
 
 	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
 
-	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
-	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
-	gDispatcher = PxDefaultCpuDispatcherCreate(2);
-	sceneDesc.cpuDispatcher = gDispatcher;
-	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
-	gScene = gPhysics->createScene(sceneDesc);
+	initScene();
 
 	PxPvdSceneClient* pvdClient = gScene->getScenePvdClient();
 	if (pvdClient)
@@ -165,20 +257,85 @@ void initPhysics(bool interactive)
 	}
 	gMaterial = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
 
-	PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
-	gScene->addActor(*groundPlane);
+	// Setup PBF
+	bool useLargeFluid = true;
+	bool useMovingWall = true;
 
-	for (PxU32 i = 0; i < 5; i++)
-		createStack(PxTransform(PxVec3(0, 0, stackZ -= 10.0f)), 10, 2.0f);
+	const PxReal fluidDensity = 1000.0f;
 
-	if (!interactive)
-		createDynamic(PxTransform(PxVec3(0, 40, 100)), PxSphereGeometry(10), PxVec3(0, -50, -100));
+	const PxU32 maxDiffuseParticles = useLargeFluid ? 2000000 : 100000;
+	initParticles(50, 120 * (useLargeFluid ? 5 : 1), 30, PxVec3(-2.5f, 3.f, 0.5f), 0.1f, fluidDensity, maxDiffuseParticles);
+
+	initObstacles();
+
+	// Setup container
+	gScene->addActor(*PxCreatePlane(*gPhysics, PxPlane(0.f, 1.f, 0.f, 0.0f), *gMaterial));
+	gScene->addActor(*PxCreatePlane(*gPhysics, PxPlane(-1.f, 0.f, 0.f, 7.5f), *gMaterial));
+	gScene->addActor(*PxCreatePlane(*gPhysics, PxPlane(0.f, 0.f, 1.f, 7.5f), *gMaterial));
+	gScene->addActor(*PxCreatePlane(*gPhysics, PxPlane(0.f, 0.f, -1.f, 7.5f), *gMaterial));
+
+	if (!useMovingWall)
+	{
+		gScene->addActor(*PxCreatePlane(*gPhysics, PxPlane(1.f, 0.f, 0.f, 7.5f), *gMaterial));
+		movingWall = NULL;
+	}
+	else
+	{
+		PxTransform trans = PxTransformFromPlaneEquation(PxPlane(1.f, 0.f, 0.f, 5.f));
+		movingWall = gPhysics->createRigidDynamic(trans);
+		movingWall->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+		PxRigidActorExt::createExclusiveShape(*movingWall, PxPlaneGeometry(), *gMaterial);
+		gScene->addActor(*movingWall);
+	}
+
+	// Setup rigid bodies
+	const PxReal dynamicsDensity = fluidDensity * 0.5f;
+	const PxReal boxSize = 1.0f;
+	const PxReal boxMass = boxSize * boxSize * boxSize * dynamicsDensity;
+	PxShape* shape = gPhysics->createShape(PxBoxGeometry(0.5f * boxSize, 0.5f * boxSize, 0.5f * boxSize), *gMaterial);
+	for (int i = 0; i < 5; ++i)
+	{
+		PxRigidDynamic* body = gPhysics->createRigidDynamic(PxTransform(PxVec3(i - 3.0f, 10, 7.5f)));
+		body->attachShape(*shape);
+		PxRigidBodyExt::updateMassAndInertia(*body, boxMass);
+		gScene->addActor(*body);
+	}
+	shape->release();
 }
+
+// ---------------------------------------------------
 
 void stepPhysics(bool /*interactive*/)
 {
-	gScene->simulate(1.0f / 60.0f);
-	gScene->fetchResults(true);
+	if (gIsRunning || gStep)
+	{
+		gStep = false;
+		const PxReal dt = 1.0f / 60.0f;
+
+		if (movingWall)
+		{
+			static bool moveOut = false;
+			const PxReal speed = 3.0f;
+			PxTransform pose = movingWall->getGlobalPose();
+			if (moveOut)
+			{
+				pose.p.x += dt * speed;
+				if (pose.p.x > -7.f)
+					moveOut = false;
+			}
+			else
+			{
+				pose.p.x -= dt * speed;
+				if (pose.p.x < -15.f)
+					moveOut = true;
+			}
+			movingWall->setKinematicTarget(pose);
+		}
+
+		gScene->simulate(dt);
+		gScene->fetchResults(true);
+		gScene->fetchResultsParticleSystem();
+	}
 }
 
 void cleanupPhysics(bool /*interactive*/)
@@ -189,33 +346,28 @@ void cleanupPhysics(bool /*interactive*/)
 	if (gPvd)
 	{
 		PxPvdTransport* transport = gPvd->getTransport();
-		gPvd->release();
-		gPvd = NULL;
+		gPvd->release();	gPvd = NULL;
 		PX_RELEASE(transport);
 	}
 	PX_RELEASE(gFoundation);
 
-	printf("SnippetHelloWorld done.\n");
+	printf("SnippetPBFFluid done.\n");
 }
 
-void keyPress(unsigned char key, const MathLib::HTransform3& camera0)
+void keyPress(unsigned char key, const MathLib::HTransform3& /*camera*/)
 {
-	PxTransform camera = ConvertUtils::ToPxTransform(camera0);
 	switch (toupper(key))
 	{
-	case 'B':
-		for (PxU32 i = 0; i < 15; i++)
-			createStack(PxTransform(PxVec3(0, 0, stackZ -= 10.0f)), 10, 2.0f);
-		break;
-	case ' ':
-		createDynamic(camera, PxSphereGeometry(3.0f), camera.rotate(PxVec3(0, 0, -1)) * 200);
-		break;
+	case 'P':	gIsRunning = !gIsRunning;	break;
+	case 'O':	gIsRunning = false; gStep = true;	break;
 	}
 }
+
 #else
 #include "TestPhysicsEngine.h"
 #endif
 #include "Render.h"
+
 int main(int argc, char** argv)
 {
 	extern void renderLoop();

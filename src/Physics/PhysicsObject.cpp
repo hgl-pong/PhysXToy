@@ -1,8 +1,8 @@
-#include "Physics/PhysicsObject.h"
+#include "PhysicsObject.h"
 #include "PxPhysicsAPI.h"
 #include "PxRigidDynamic.h"
-#include "Physics/ColliderGeometry.h"
-#include "Physics/PhysicsMaterial.h"
+#include "ColliderGeometry.h"
+#include "PhysicsMaterial.h"
 #include "PhysXUtils.h"
 using namespace physx;
 class ShapeFactory
@@ -155,6 +155,16 @@ void PhysicsRigidDynamic::SetLinearVelocity(const MathLib::HVector3 &velocity)
 	m_RigidDynamic->setLinearVelocity(ConvertUtils::ToPxVec3(velocity));
 	m_LinearVelocity = velocity;
 }
+
+void PhysicsRigidDynamic::SetAngularVelocity(const MathLib::HVector3& velocity)
+{
+	if (m_RigidDynamic == nullptr)
+		return;
+	m_RigidDynamic->setAngularVelocity(ConvertUtils::ToPxVec3(velocity));
+	m_AngularVelocity = velocity;
+}
+
+
 
 /////////////////RigidStatic////////////////////////
 PhysicsRigidStatic::PhysicsRigidStatic(IPhysicsMaterial *material)

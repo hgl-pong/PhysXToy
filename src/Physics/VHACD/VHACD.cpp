@@ -24,7 +24,7 @@
 #include <omp.h>
 #endif // _OPENMP
 
-#include "Physics/VHACD/VHACD.h"
+#include "VHACD.h"
 #include "btConvexHullComputer.h"
 #include "vhacdICHull.h"
 #include "vhacdMesh.h"

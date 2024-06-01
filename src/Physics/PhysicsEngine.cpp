@@ -1,10 +1,10 @@
-#include "Physics/PhysicsEngine.h"
+#include "PhysicsEngine.h"
 #include "PxPhysicsAPI.h"
 #include "physx/cooking/PxCooking.h"
-#include "Physics/PhysicsScene.h"
-#include "Physics/PhysicsObject.h"
-#include "Physics/PhysicsMaterial.h"
-#include "Physics/ColliderGeometry.h"
+#include "PhysicsScene.h"
+#include "PhysicsObject.h"
+#include "PhysicsMaterial.h"
+#include "ColliderGeometry.h"
 #include "PhysxUtils.h"
 #include <assert.h>
 

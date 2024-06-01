@@ -1,8 +1,7 @@
-#include "Physics/PhysicsScene.h"
+#include "PhysicsScene.h"
 #include "PxPhysicsAPI.h"
-#include "Physics/PhysicsObject.h"
+#include "PhysicsObject.h"
 #include "PhysXUtils.h"
-
 #ifndef NDEBUG
 #define ENABLE_PVD
 #endif
@@ -41,7 +40,6 @@ void PhysicsScene::Tick(MathLib::HReal deltaTime)
 
 bool PhysicsScene::AddPhysicsObject(IPhysicsObject *physicsObject)
 {
-    // m_Scene->addActor(physicsObject->GetPhysicsObject());
     const size_t offset = physicsObject->GetOffset();
     bool result = false;
     switch(physicsObject->GetType())
@@ -49,6 +47,8 @@ bool PhysicsScene::AddPhysicsObject(IPhysicsObject *physicsObject)
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC:
     {
         PxRigidStatic* pRigidStatic = reinterpret_cast<PhysXPtr<PxRigidStatic>*>(reinterpret_cast<char*>(physicsObject) + offset)->get();
+        if(pRigidStatic->getNbShapes() == 0)
+            return false;
         if(m_Scene->addActor(*pRigidStatic))
             result = m_RigidStatic.emplace(dynamic_cast<PhysicsRigidStatic *>(physicsObject)).second;
         if(!result)
@@ -58,6 +58,8 @@ bool PhysicsScene::AddPhysicsObject(IPhysicsObject *physicsObject)
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC:
     {
         PxRigidDynamic* pRigidDynamic = reinterpret_cast<PhysXPtr<PxRigidDynamic>*>(reinterpret_cast<char*>(physicsObject) + offset)->get();
+        if(pRigidDynamic->getNbShapes() == 0)
+			return false;
         if(m_Scene->addActor(*pRigidDynamic))
             result = m_RigidDynamic.emplace(dynamic_cast<PhysicsRigidDynamic *>(physicsObject)).second;
         if (!result)

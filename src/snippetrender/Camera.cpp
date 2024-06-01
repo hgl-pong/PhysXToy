@@ -1,8 +1,4 @@
-#include "SnippetCamera.h"
-#include <ctype.h>
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
-
+#include "Camera.h"
 using namespace Eigen;
 
 namespace MathLib

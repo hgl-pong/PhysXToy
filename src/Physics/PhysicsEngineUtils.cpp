@@ -1,13 +1,15 @@
 #include "Physics/PhysicsCommon.h"
-#include "Physics/PhysicsEngine.h"
+#include "PhysicsEngine.h"
 #include "ConvexMeshDecomposer.h"
+#include "PhysicsConvexUtils.h"
 static PhysicsEngine* gPhysicsEngine = nullptr;
 static ConvexMeshDecomposer* gConvexMeshDecomposer = nullptr;
-IPhysicsEngine* PhysicsEngineUtils::CreatePhysicsEngine(const PhysicsEngineOptions& options)
+IPhysicsEngine* PhysicsEngineUtils::CreatePhysicsEngine(const PhysicsEngineOptions& options, const bool createConvexDecomposer)
 {
 	_ASSERT(!gPhysicsEngine);
 	gPhysicsEngine = new PhysicsEngine(options);
-	gConvexMeshDecomposer =new ConvexMeshDecomposer();
+	if(createConvexDecomposer)
+		gConvexMeshDecomposer =new ConvexMeshDecomposer();
 	return gPhysicsEngine;
 }
 
@@ -48,8 +50,14 @@ IColliderGeometry* PhysicsEngineUtils::CreateColliderGeometry(const CollisionGeo
 	return gPhysicsEngine->CreateColliderGeometry(options);
 }
 
-void PhysicsEngineUtils::ConvexDecomposition(const PhysicsMeshData& meshData, const ConvexDecomposeOptions& params, std::vector<PhysicsMeshData>& convexMeshesData)
+bool PhysicsEngineUtils::ConvexDecomposition(const PhysicsMeshData& meshData, const ConvexDecomposeOptions& params, std::vector<PhysicsMeshData>& convexMeshesData)
 {
-	if (gConvexMeshDecomposer)
-		gConvexMeshDecomposer->Decompose(meshData, params, convexMeshesData);
+	if (!gConvexMeshDecomposer)
+		return false;
+	gConvexMeshDecomposer->Decompose(meshData, params, convexMeshesData);
+}
+
+void PhysicsEngineUtils::BuildConvexMesh(const std::vector<MathLib::HVector3>& vertices, const std::vector<uint32_t>& indices, PhysicsMeshData& meshdata)
+{
+	PhysicsConvexUtils::BuildConvexMesh(vertices, indices, meshdata);
 }

@@ -35,6 +35,11 @@ target_include_directories(${PHYSX_TOY} PUBLIC ./include
 
 target_link_libraries(${PHYSX_TOY} PRIVATE unofficial::omniverse-physx-sdk::sdk GLEW::GLEW GLUT::GLUT Eigen3::Eigen OpenCL::OpenCL)
 
+# add_custom_command(TARGET ${PHYSX_TOY} POST_BUILD
+#                         COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#                         $<TARGET_FILE:unofficial::omniverse-physx-sdk::gpu-library>
+#                         $<TARGET_FILE_DIR:${PHYSX_TOY}>)
+
 add_custom_command(TARGET ${PHYSX_TOY} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 $<TARGET_FILE:unofficial::omniverse-physx-sdk::gpu-device-library>

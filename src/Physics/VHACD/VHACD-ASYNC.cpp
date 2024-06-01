@@ -1,4 +1,4 @@
-#include "Physics/VHACD/VHACD.h"
+#include "VHACD.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>

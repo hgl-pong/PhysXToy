@@ -1,7 +1,8 @@
 #pragma once
 #include "Physics/PhysicsCommon.h"
-#include "Physics/VHACD/VHACD.h"
+#include "VHACD/VHACD.h"
 #include "OCLAcceleration.h"
+#define PRINT_OCL_INFO 0
 
 class ConvexMeshDecomposer
 {
@@ -14,6 +15,7 @@ public:
 
 	~ConvexMeshDecomposer()
 	{
+		m_OCLAcceleration.reset();
 	};
 
 	void EnableOCLAcceleration(bool bEnable)
@@ -27,7 +29,7 @@ public:
 		return m_bUseOCLAcceleration;
 	}
 
-	void Decompose(const PhysicsMeshData& meshData, const ConvexDecomposeOptions& params, std::vector<PhysicsMeshData>& convexMeshesData)
+	bool Decompose(const PhysicsMeshData& meshData, const ConvexDecomposeOptions& params, std::vector<PhysicsMeshData>& convexMeshesData)
 	{
 		VHACD::IVHACD* m_VHACD = VHACD::CreateVHACD();
 
@@ -103,6 +105,7 @@ public:
 			m_VHACD->Release();
 			m_VHACD = nullptr;
 		}
+		return true;
 	}
 private:
 	void _InitOCLAcceleration()
@@ -111,10 +114,10 @@ private:
 		{
 			if (!m_OCLAcceleration)
 			{
-				m_OCLAcceleration = new OCLAcceleration();
+				m_OCLAcceleration = std::make_unique<OCLAcceleration>();
 				bool res = InitOCL(0,
 					0,
-					*m_OCLAcceleration);
+					*m_OCLAcceleration,PRINT_OCL_INFO);
 				if (!res) {
 					return ;
 				}
@@ -122,14 +125,11 @@ private:
 		}
 		else
 		{
-			if (m_OCLAcceleration)
-			{
-				delete m_OCLAcceleration;
-				m_OCLAcceleration = nullptr;
-			}
+			m_OCLAcceleration.reset();
 		}
 	}
 private:
 	bool m_bUseOCLAcceleration = false;
-	OCLAcceleration* m_OCLAcceleration = nullptr;
+	std::unique_ptr<	OCLAcceleration> m_OCLAcceleration;
+
 };
