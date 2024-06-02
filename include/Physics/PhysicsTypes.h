@@ -29,7 +29,6 @@ struct PhysicsDeleter
 		if (ptr)
 		{
 			ptr->Release();
-			delete ptr;
 			ptr = nullptr;
 		}
 	}

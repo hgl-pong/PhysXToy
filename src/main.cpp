@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 //#define PARTICLE_DEMO
 #ifdef PARTICLE_DEMO
 #include "Physics/PhysicsTypes.h"
@@ -332,10 +332,20 @@ void keyPress(unsigned char key, const MathLib::HTransform3& /*camera*/)
 #else
 #include "TestPhysicsEngine.h"
 #endif
-#include "Render.h"
+//#include "Render.h"
 
-int main(int argc, char** argv)
+//int main(int argc, char** argv)
+//{
+//	extern void renderLoop();
+//	renderLoop();
+//}
+
+#include "Render/Application.h"
+int main(int argc, char** argv) 
 {
-	extern void renderLoop();
-	renderLoop();
+	PhysicsPtr<PhysicsEngineTestingApplication> app = make_physics_ptr(CreatePhysicsEngineTestingApplication(argc, argv));
+	return app->Run();
 }
+
+
+

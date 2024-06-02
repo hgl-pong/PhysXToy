@@ -31,11 +31,35 @@ find_package(GLUT REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(OpenCL REQUIRED)
 find_package(tinyobjloader CONFIG REQUIRED)
+find_package(Magnum REQUIRED
+    GL
+    MeshTools
+    Primitives
+    SceneGraph
+    Shaders
+    Trade
+    Text
+    Sdl2Application)
 
 target_include_directories(${PHYSX_TOY} PUBLIC ./include
     PRIVATE)
 
-target_link_libraries(${PHYSX_TOY} PRIVATE unofficial::omniverse-physx-sdk::sdk GLEW::GLEW GLUT::GLUT Eigen3::Eigen OpenCL::OpenCL tinyobjloader::tinyobjloader)
+target_link_libraries(${PHYSX_TOY} PRIVATE 
+    unofficial::omniverse-physx-sdk::sdk 
+    GLEW::GLEW
+    GLUT::GLUT
+    Eigen3::Eigen 
+    OpenCL::OpenCL 
+    tinyobjloader::tinyobjloader
+    Magnum::Application
+    Magnum::GL
+    Magnum::MeshTools
+    Magnum::Primitives
+    Magnum::Shaders
+    Magnum::Trade
+    Magnum::Text
+    Magnum::SceneGraph
+    Magnum::Sdl2Application)
 
 add_custom_command(TARGET ${PHYSX_TOY} POST_BUILD
                         COMMAND ${CMAKE_COMMAND} -E copy_if_different
