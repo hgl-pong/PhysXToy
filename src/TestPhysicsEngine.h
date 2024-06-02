@@ -40,10 +40,10 @@ void initPhysics(bool interactive)
 	if (gScene)
 		gScene->AddPhysicsObject(groundPlaneObject);
 
-	//TestRigidBody::CreateTestingMeshData();//Bunny
+	TestRigidBody::CreateTestingMeshData();//Bunny
 	//TestRigidBody::CreateTestingMeshData("..\\..\\asset\\model\\teapot.obj", 0.2);
 	//TestRigidBody::CreateTestingMeshData("..\\..\\asset\\model\\banana.obj", 1);
-	TestRigidBody::CreateTestingMeshData("..\\..\\asset\\model\\armadillo.obj",0.4);
+	//TestRigidBody::CreateTestingMeshData("..\\..\\asset\\model\\armadillo.obj",0.4);
 	TestRigidBody::TestRigidBodyCreate();
 
 	if (!interactive)
