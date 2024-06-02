@@ -13,10 +13,10 @@ class IPhysicsMaterial;
 class IPhysicsEngine
 {
 public:
-	virtual IPhysicsObject *CreateObject(const PhysicsObjectCreateOptions &options) = 0;
-	virtual IPhysicsMaterial *CreateMaterial(const PhysicsMaterialCreateOptions &options) = 0;
-	virtual IPhysicsScene *CreateScene(const PhysicsSceneCreateOptions &options) = 0;
-	virtual IColliderGeometry *CreateColliderGeometry(const CollisionGeometryCreateOptions &options) = 0;
+	virtual PhysicsPtr<IPhysicsObject> CreateObject(const PhysicsObjectCreateOptions &options) = 0;
+	virtual PhysicsPtr<IPhysicsMaterial> CreateMaterial(const PhysicsMaterialCreateOptions &options) = 0;
+	virtual PhysicsPtr<IPhysicsScene> CreateScene(const PhysicsSceneCreateOptions &options) = 0;
+	virtual PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions &options) = 0;
 };
 
 class IPhysicsScene
@@ -24,12 +24,12 @@ class IPhysicsScene
 public:
 	virtual void Release() = 0;
 	virtual void Tick(MathLib::HReal deltaTime) = 0;
-	virtual bool AddPhysicsObject(IPhysicsObject *physicsObject) = 0;
-	virtual void RemovePhysicsObject(IPhysicsObject *physicsObject) = 0;
+	virtual bool AddPhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject) = 0;
+	virtual void RemovePhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject) = 0;
 	virtual uint32_t GetPhysicsObjectCount() const = 0;
-	virtual uint32_t GetPhysicsRigidDynamicCount()const = 0;
-	virtual uint32_t GetPhysicsRigidStaticCount()const = 0;
-	virtual size_t GetOffset()const = 0;
+	virtual uint32_t GetPhysicsRigidDynamicCount() const = 0;
+	virtual uint32_t GetPhysicsRigidStaticCount() const = 0;
+	virtual size_t GetOffset() const = 0;
 };
 
 class IColliderGeometry
@@ -44,7 +44,7 @@ class IPhysicsObject
 {
 public:
 	virtual void Release() = 0;
-	virtual bool AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) = 0;
+	virtual bool AddColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry, const MathLib::HTransform3 &localTrans) = 0;
 	virtual PhysicsObjectType GetType() const = 0;
 	virtual size_t GetOffset() const = 0;
 	virtual void SetTransform(const MathLib::HTransform3 &trans) = 0;
@@ -84,14 +84,13 @@ public:
 class PhysicsEngineUtils
 {
 public:
-	static IPhysicsEngine* CreatePhysicsEngine(const PhysicsEngineOptions& options,const bool createConvexDecomposer=true);
+	static IPhysicsEngine *CreatePhysicsEngine(const PhysicsEngineOptions &options, const bool createConvexDecomposer = true);
 	static void DestroyPhysicsEngine();
-	static IPhysicsEngine* GetPhysicsEngine();
-	static IPhysicsObject* CreateObject(const PhysicsObjectCreateOptions& options) ;
-	static IPhysicsMaterial* CreateMaterial(const PhysicsMaterialCreateOptions& options) ;
-	static IPhysicsScene* CreateScene(const PhysicsSceneCreateOptions& options) ;
-	static IColliderGeometry* CreateColliderGeometry(const CollisionGeometryCreateOptions& options) ;
-	static void BuildConvexMesh(const std::vector<MathLib::HVector3>& vertices, const std::vector<uint32_t>& indices, PhysicsMeshData& meshdata);
-	static bool ConvexDecomposition(const PhysicsMeshData& meshData, const ConvexDecomposeOptions& params, std::vector<PhysicsMeshData>& convexMeshesData);
+	static IPhysicsEngine *GetPhysicsEngine();
+	static PhysicsPtr<IPhysicsObject> CreateObject(const PhysicsObjectCreateOptions &options);
+	static PhysicsPtr<IPhysicsMaterial> CreateMaterial(const PhysicsMaterialCreateOptions &options);
+	static PhysicsPtr<IPhysicsScene> CreateScene(const PhysicsSceneCreateOptions &options);
+	static PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions &options);
+	static void BuildConvexMesh(const std::vector<MathLib::HVector3> &vertices, const std::vector<uint32_t> &indices, PhysicsMeshData &meshdata);
+	static bool ConvexDecomposition(const PhysicsMeshData &meshData, const ConvexDecomposeOptions &params, std::vector<PhysicsMeshData> &convexMeshesData);
 };
-

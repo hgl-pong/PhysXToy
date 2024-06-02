@@ -1,11 +1,11 @@
 #pragma once
-#ifndef PARTICLE_RENDER
+#ifndef PARTICLE_DEMO
 #include <vector>
 
 #include "PxPhysicsAPI.h"
 
-#include "snippetrender/SnippetRender.h"
-#include "snippetrender/Camera.h"
+#include "Render/DebugRender.h"
+#include "Render/Camera.h"
 
 using namespace physx;
 
@@ -57,7 +57,7 @@ void renderLoop()
 {
 	sCamera = new MathLib::Camera(MathLib::HVector3(50.0f, 50.0f, 50.0f), MathLib::HVector3(-0.6f, -0.2f, -0.7f));
 
-	Snippets::setupDefault("PhysX Snippet HelloWorld", sCamera, keyPress, renderCallback, exitCallback);
+	Snippets::setupDefault("Test Physics Engine", sCamera, keyPress, renderCallback, exitCallback);
 
 	initPhysics(true);
 	Snippets::initFPS();

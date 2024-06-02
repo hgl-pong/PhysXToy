@@ -7,14 +7,20 @@
 class ConvexMeshDecomposer
 {
 public:
-	ConvexMeshDecomposer()
+	ConvexMeshDecomposer(const bool useOCLAcceleration=true)
 	{
-		m_bUseOCLAcceleration = true;
+		m_VHACD = VHACD::CreateVHACD();
+		m_bUseOCLAcceleration = useOCLAcceleration;
 		_InitOCLAcceleration();
 	}
 
 	~ConvexMeshDecomposer()
 	{
+		if (m_VHACD)
+		{
+			m_VHACD->Release();
+			m_VHACD = nullptr;
+		}
 		m_OCLAcceleration.reset();
 	};
 
@@ -31,8 +37,6 @@ public:
 
 	bool Decompose(const PhysicsMeshData& meshData, const ConvexDecomposeOptions& params, std::vector<PhysicsMeshData>& convexMeshesData)
 	{
-		VHACD::IVHACD* m_VHACD = VHACD::CreateVHACD();
-
 		VHACD::IVHACD::Parameters vhacdParams;
 		vhacdParams.m_maxNumVerticesPerCH = params.m_MaximumNumberOfVerticesPerHull;
 		vhacdParams.m_maxConvexHulls = params.m_MaximumNumberOfHulls;
@@ -40,16 +44,6 @@ public:
 		vhacdParams.m_concavity = params.m_Concavity;
 		vhacdParams.m_oclAcceleration = m_bUseOCLAcceleration;
 		vhacdParams.m_minVolumePerCH = 0.003f;
-
-		if (m_bUseOCLAcceleration)
-		{
-			_InitOCLAcceleration();
-			bool res = m_VHACD->OCLInit(m_OCLAcceleration->GetDevice());
-			if (!res)
-			{
-				vhacdParams.m_oclAcceleration = false;
-			}
-		}
 
 		std::vector<float > vertices;
 		vertices.resize(meshData.m_Vertices.size() * 3);
@@ -96,15 +90,7 @@ public:
 			}
 		}
 
-		if (m_bUseOCLAcceleration)
-		{			
-			m_VHACD->OCLRelease();
-		}
-		if (m_VHACD)
-		{
-			m_VHACD->Release();
-			m_VHACD = nullptr;
-		}
+		m_VHACD->Clean();
 		return true;
 	}
 private:
@@ -122,14 +108,20 @@ private:
 					return ;
 				}
 			}
+			bool res = m_VHACD->OCLInit(m_OCLAcceleration->GetDevice());
+			if (!res)
+			{
+				m_bUseOCLAcceleration = false;
+			}
 		}
 		else
 		{
+			m_VHACD->OCLRelease();
 			m_OCLAcceleration.reset();
 		}
 	}
 private:
 	bool m_bUseOCLAcceleration = false;
+	VHACD::IVHACD* m_VHACD = nullptr;
 	std::unique_ptr<	OCLAcceleration> m_OCLAcceleration;
-
 };

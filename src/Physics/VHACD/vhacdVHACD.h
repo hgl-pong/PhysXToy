@@ -89,7 +89,6 @@ public:
             delete m_convexHulls[p];
         }
         m_convexHulls.Clear();
-        Init();
     }
     void Release(void)
     {

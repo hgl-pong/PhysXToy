@@ -5,7 +5,7 @@
 #include "PhysicsObject.h"
 #include "PhysicsMaterial.h"
 #include "ColliderGeometry.h"
-#include "PhysxUtils.h"
+#include "Utility/PhysxUtils.h"
 #include <assert.h>
 
 #ifndef NDEBUG
@@ -15,7 +15,7 @@
 #define PHYSX_PVD_HOST "127.0.0.1"
 using namespace physx;
 
-PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions& options)
+PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
 {
 	m_AllocatorCallback = nullptr;
 	m_ErrorCallback = nullptr;
@@ -24,7 +24,7 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions& options)
 	m_Pvd = nullptr;
 	m_CpuDispatcher = nullptr;
 	m_bInitialized = false;
-	memset(&m_Options, sizeof(PhysicsEngineOptions),0);
+	memset(&m_Options, sizeof(PhysicsEngineOptions), 0);
 
 #ifdef ENABLE_PVD
 	m_Options.m_bEnablePVD = true;
@@ -42,7 +42,7 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions& options)
 		if (m_Options.m_bEnablePVD)
 		{
 			m_Pvd = PxCreatePvd(*m_Foundation);
-			PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate(PHYSX_PVD_HOST, 5425, 10);
+			PxPvdTransport *transport = PxDefaultPvdSocketTransportCreate(PHYSX_PVD_HOST, 5425, 10);
 			m_Pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
 		}
 		PxTolerancesScale toleranceScale;
@@ -50,7 +50,7 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions& options)
 
 		m_Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, toleranceScale, true, m_Pvd);
 		m_CpuDispatcher = PxDefaultCpuDispatcherCreate(options.m_iNumThreads == 0 ? DEFAULT_CPU_DISPATCHER_NUM_THREADS : options.m_iNumThreads);
-		//m_Cooking = PxCreateCooking(PX_PHYSICS_VERSION, *m_Foundation, cookingParams);
+		// m_Cooking = PxCreateCooking(PX_PHYSICS_VERSION, *m_Foundation, cookingParams);
 	}
 
 	m_bInitialized = true;
@@ -64,17 +64,17 @@ PhysicsEngine::~PhysicsEngine()
 		PX_RELEASE(m_Pvd);
 		PX_RELEASE(transport);
 	}
-	PX_RELEASE(m_Physics); 
+	PX_RELEASE(m_Physics);
 	PX_RELEASE(m_Foundation);
 
 	m_bInitialized = false;
 }
 
-IPhysicsObject *PhysicsEngine::CreateObject(const PhysicsObjectCreateOptions &options)
+PhysicsPtr<IPhysicsObject> PhysicsEngine::CreateObject(const PhysicsObjectCreateOptions &options)
 {
 	if (!m_bInitialized)
 		return nullptr;
-	IPhysicsMaterial *material = CreateMaterial(options.m_MaterialOptions);
+	PhysicsPtr<IPhysicsMaterial>material = CreateMaterial(options.m_MaterialOptions);
 	IPhysicsObject *object = nullptr;
 	switch (options.m_ObjectType)
 	{
@@ -93,75 +93,65 @@ IPhysicsObject *PhysicsEngine::CreateObject(const PhysicsObjectCreateOptions &op
 	default:
 		break;
 	}
-	return object;
+	return make_physics_ptr(object);
 }
 
-IPhysicsMaterial *PhysicsEngine::CreateMaterial(const PhysicsMaterialCreateOptions &options)
+PhysicsPtr<IPhysicsMaterial> PhysicsEngine::CreateMaterial(const PhysicsMaterialCreateOptions &options)
 {
 	if (!m_bInitialized)
 		return nullptr;
-	return new PhysicsMaterial(options);
+	return make_physics_ptr(new PhysicsMaterial(options));
 }
 
-IPhysicsScene *PhysicsEngine::CreateScene(const PhysicsSceneCreateOptions &options)
+PhysicsPtr<IPhysicsScene> PhysicsEngine::CreateScene(const PhysicsSceneCreateOptions &options)
 {
 	if (!m_bInitialized)
 		return nullptr;
 
-	return new PhysicsScene(options,m_CpuDispatcher);
+	return make_physics_ptr(new PhysicsScene(options, m_CpuDispatcher));
 }
 
-IColliderGeometry *PhysicsEngine::CreateColliderGeometry(const CollisionGeometryCreateOptions &options)
+PhysicsPtr<IColliderGeometry> PhysicsEngine::CreateColliderGeometry(const CollisionGeometryCreateOptions &options)
 {
 	if (!m_bInitialized)
 		return nullptr;
+	IColliderGeometry *geometry = nullptr;
 	switch (options.m_GeometryType)
 	{
 	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX:
 	{
-		BoxColliderGeometry *box = new BoxColliderGeometry(options.m_BoxParams.m_HalfExtents);
-		box->SetScale(options.m_Scale);
-		return box;
+		geometry = new BoxColliderGeometry(options.m_BoxParams.m_HalfExtents);
+		geometry->SetScale(options.m_Scale);
 		break;
 	}
 	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE:
 	{
-		SphereColliderGeometry *sphere = new SphereColliderGeometry(options.m_SphereParams.m_Radius);
-		sphere->SetScale(options.m_Scale);
-		return sphere;
+		geometry = new SphereColliderGeometry(options.m_SphereParams.m_Radius);
 		break;
 	}
 	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE:
 	{
-		PlaneColliderGeometry *plane = new PlaneColliderGeometry(options.m_PlaneParams.m_Normal,options.m_PlaneParams.m_Distance);
-		plane->SetScale(options.m_Scale);
-		return plane;
+		geometry = new PlaneColliderGeometry(options.m_PlaneParams.m_Normal, options.m_PlaneParams.m_Distance);
 		break;
 	}
 	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CAPSULE:
 	{
-		CapsuleColliderGeometry *capsule = new CapsuleColliderGeometry(options.m_CapsuleParams.m_Radius,options.m_CapsuleParams.m_HalfHeight);
-		capsule->SetScale(options.m_Scale);
-		return capsule;
+		geometry = new CapsuleColliderGeometry(options.m_CapsuleParams.m_Radius, options.m_CapsuleParams.m_HalfHeight);
 		break;
 	}
 	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH:
 	{
-		TriangleMeshColliderGeometry *mesh = new TriangleMeshColliderGeometry(options.m_TriangleMeshParams.m_Vertices,options.m_TriangleMeshParams.m_Indices);
-		mesh->SetScale(options.m_Scale);
-		return mesh;
+		geometry = new TriangleMeshColliderGeometry(options.m_TriangleMeshParams.m_Vertices, options.m_TriangleMeshParams.m_Indices);
 		break;
 	}
 	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH:
 	{
-		ConvexMeshColliderGeometry *mesh = new ConvexMeshColliderGeometry(options.m_ConvexMeshParams.m_Vertices);
-		mesh->SetScale(options.m_Scale);
-		return mesh;
+		geometry = new ConvexMeshColliderGeometry(options.m_ConvexMeshParams.m_Vertices);
 		break;
 	}
 	default:
 		break;
 	}
-
-	return nullptr;
+	geometry->SetScale(options.m_Scale);
+	return make_physics_ptr(geometry);
 }

@@ -1,7 +1,7 @@
 #include "Physics/PhysicsCommon.h"
 #include "PhysicsEngine.h"
 #include "ConvexMeshDecomposer.h"
-#include "PhysicsConvexUtils.h"
+#include "Utility/PhysicsConvexUtils.h"
 static PhysicsEngine* gPhysicsEngine = nullptr;
 static ConvexMeshDecomposer* gConvexMeshDecomposer = nullptr;
 IPhysicsEngine* PhysicsEngineUtils::CreatePhysicsEngine(const PhysicsEngineOptions& options, const bool createConvexDecomposer)
@@ -33,19 +33,19 @@ IPhysicsEngine* PhysicsEngineUtils::GetPhysicsEngine()
 	return gPhysicsEngine;
 }
 
-IPhysicsObject* PhysicsEngineUtils::CreateObject(const PhysicsObjectCreateOptions& options) 
+PhysicsPtr < IPhysicsObject> PhysicsEngineUtils::CreateObject(const PhysicsObjectCreateOptions& options)
 {
 	return gPhysicsEngine->CreateObject(options);
 }
-IPhysicsMaterial* PhysicsEngineUtils::CreateMaterial(const PhysicsMaterialCreateOptions& options) 
+PhysicsPtr < IPhysicsMaterial> PhysicsEngineUtils::CreateMaterial(const PhysicsMaterialCreateOptions& options)
 {
 	return gPhysicsEngine->CreateMaterial(options);
 }
-IPhysicsScene* PhysicsEngineUtils::CreateScene(const PhysicsSceneCreateOptions& options) 
+PhysicsPtr < IPhysicsScene> PhysicsEngineUtils::CreateScene(const PhysicsSceneCreateOptions& options)
 {
 	return gPhysicsEngine->CreateScene(options);
 }
-IColliderGeometry* PhysicsEngineUtils::CreateColliderGeometry(const CollisionGeometryCreateOptions& options) 
+PhysicsPtr < IColliderGeometry> PhysicsEngineUtils::CreateColliderGeometry(const CollisionGeometryCreateOptions& options)
 {
 	return gPhysicsEngine->CreateColliderGeometry(options);
 }

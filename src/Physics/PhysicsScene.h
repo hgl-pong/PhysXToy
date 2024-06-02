@@ -16,8 +16,8 @@ public:
 	PhysicsScene(const PhysicsSceneCreateOptions& options,physx::PxCpuDispatcher* );
 	void Release() override;
 	void Tick(MathLib::HReal deltaTime) override;
-	bool AddPhysicsObject(IPhysicsObject *physicsObject) override;
-	void RemovePhysicsObject(IPhysicsObject *physicsObject) override;
+	bool AddPhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject) override;
+	void RemovePhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject) override;
 	uint32_t GetPhysicsObjectCount() const override;
 	uint32_t GetPhysicsRigidDynamicCount() const override;
 	uint32_t GetPhysicsRigidStaticCount() const override;
@@ -25,6 +25,6 @@ public:
 
 private:
 	PhysXPtr<physx::PxScene> m_Scene;
-	std::unordered_set<PhysicsRigidStatic *> m_RigidStatic;
-	std::unordered_set<PhysicsRigidDynamic *> m_RigidDynamic;
+	std::unordered_set< PhysicsPtr<IPhysicsObject >> m_RigidStatic;
+	std::unordered_set< PhysicsPtr<IPhysicsObject >> m_RigidDynamic;
 };

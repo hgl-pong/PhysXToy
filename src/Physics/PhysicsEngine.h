@@ -23,10 +23,10 @@ private:
 	PhysicsEngine(const PhysicsEngineOptions &options);
 	~PhysicsEngine();
 public:
-	IPhysicsObject *CreateObject(const PhysicsObjectCreateOptions &options) override;
-	IPhysicsMaterial *CreateMaterial(const PhysicsMaterialCreateOptions &options) override;
-	IPhysicsScene *CreateScene(const PhysicsSceneCreateOptions &options) override;
-	IColliderGeometry *CreateColliderGeometry(const CollisionGeometryCreateOptions &options) override;
+	PhysicsPtr < IPhysicsObject >CreateObject(const PhysicsObjectCreateOptions &options) override;
+	PhysicsPtr < IPhysicsMaterial >CreateMaterial(const PhysicsMaterialCreateOptions &options) override;
+	PhysicsPtr < IPhysicsScene >CreateScene(const PhysicsSceneCreateOptions &options) override;
+	PhysicsPtr < IColliderGeometry >CreateColliderGeometry(const CollisionGeometryCreateOptions &options) override;
 
 private:
 	friend class PhysicsEngineUtils;

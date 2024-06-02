@@ -3,7 +3,7 @@
 #include "PxRigidDynamic.h"
 #include "ColliderGeometry.h"
 #include "PhysicsMaterial.h"
-#include "PhysXUtils.h"
+#include "Utility/PhysXUtils.h"
 using namespace physx;
 class ShapeFactory
 {
@@ -80,10 +80,10 @@ public:
 	};
 };
 
-PhysicsRigidDynamic::PhysicsRigidDynamic(IPhysicsMaterial *material)
+PhysicsRigidDynamic::PhysicsRigidDynamic(PhysicsPtr < IPhysicsMaterial >&material)
 {
 	m_RigidDynamic = make_physx_ptr<PxRigidDynamic>(PxGetPhysics().createRigidDynamic(PxTransform(PxIdentity)));
-	m_Material = make_physics_ptr<IPhysicsMaterial>(material);
+	m_Material = material;
 	m_bIsKinematic = false;
 	m_Mass = 0.0f;
 	m_LinearVelocity.setZero();
@@ -112,11 +112,11 @@ void PhysicsRigidDynamic::SetKinematic(bool bKinematic)
 	m_bIsKinematic = bKinematic;
 }
 
-bool PhysicsRigidDynamic::AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans)
+bool PhysicsRigidDynamic::AddColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry, const MathLib::HTransform3 &localTrans)
 {
 	if (m_RigidDynamic == nullptr || colliderGeometry == nullptr || colliderGeometry->GetType() == CollierGeometryType::COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH)
 		return false;
-	physx::PxShape *shape = ShapeFactory::CreateShape(colliderGeometry, m_Material.get());
+	physx::PxShape *shape = ShapeFactory::CreateShape(colliderGeometry.get(), m_Material.get());
 	if (shape == nullptr)
 		return false;
 	shape->setLocalPose(ConvertUtils::ToPxTransform(localTrans));
@@ -167,10 +167,10 @@ void PhysicsRigidDynamic::SetAngularVelocity(const MathLib::HVector3& velocity)
 
 
 /////////////////RigidStatic////////////////////////
-PhysicsRigidStatic::PhysicsRigidStatic(IPhysicsMaterial *material)
+PhysicsRigidStatic::PhysicsRigidStatic(PhysicsPtr < IPhysicsMaterial >&material)
 {
 	m_RigidStatic = make_physx_ptr<PxRigidStatic>(PxGetPhysics().createRigidStatic(PxTransform(PxIdentity)));
-	m_Material = make_physics_ptr<IPhysicsMaterial>(material);
+	m_Material = material;
 	m_Transform.setIdentity();
 	m_Type = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
 }
@@ -180,16 +180,16 @@ void PhysicsRigidStatic::Release()
 	PX_RELEASE(m_RigidStatic);
 }
 
-bool PhysicsRigidStatic::AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans)
+bool PhysicsRigidStatic::AddColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry, const MathLib::HTransform3 &localTrans)
 {
 	if (m_RigidStatic == nullptr || colliderGeometry == nullptr ) 
 		return false;
-	physx::PxShape *shape = ShapeFactory::CreateShape(colliderGeometry, m_Material.get());
+	physx::PxShape *shape = ShapeFactory::CreateShape(colliderGeometry.get(), m_Material.get());
 	if (shape == nullptr)
 		return false;
 	if(colliderGeometry->GetType()==CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE)
 	{
-		const PlaneColliderGeometry *plane = static_cast<const PlaneColliderGeometry *>(colliderGeometry);
+		const PlaneColliderGeometry *plane = static_cast<const PlaneColliderGeometry *>(colliderGeometry.get());
 		const MathLib::HVector3 &normal = plane->GetNormal();
 		const MathLib::HReal &distance = plane->GetDistance();
 		auto trans = PxTransformFromPlaneEquation(PxPlane(normal[0], normal[1], normal[2], distance));

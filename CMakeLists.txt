@@ -15,9 +15,10 @@ set(PHYSX_TOY PhysXToy)
 
 file(GLOB SOURCE_FILES
     src/*
-    src/SnippetRender/*
+    src/Render/*
     src/Physics/*
     src/Physics/VHACD/*
+    src/Physics/Utility/*
 )
 
 add_definitions(-DOPENCL_FOUND)
@@ -29,16 +30,17 @@ find_package(GLEW REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(OpenCL REQUIRED)
+find_package(tinyobjloader CONFIG REQUIRED)
 
 target_include_directories(${PHYSX_TOY} PUBLIC ./include
     PRIVATE)
 
-target_link_libraries(${PHYSX_TOY} PRIVATE unofficial::omniverse-physx-sdk::sdk GLEW::GLEW GLUT::GLUT Eigen3::Eigen OpenCL::OpenCL)
+target_link_libraries(${PHYSX_TOY} PRIVATE unofficial::omniverse-physx-sdk::sdk GLEW::GLEW GLUT::GLUT Eigen3::Eigen OpenCL::OpenCL tinyobjloader::tinyobjloader)
 
-# add_custom_command(TARGET ${PHYSX_TOY} POST_BUILD
-#                         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#                         $<TARGET_FILE:unofficial::omniverse-physx-sdk::gpu-library>
-#                         $<TARGET_FILE_DIR:${PHYSX_TOY}>)
+add_custom_command(TARGET ${PHYSX_TOY} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        $<TARGET_FILE:unofficial::omniverse-physx-sdk::gpu-library>
+                        $<TARGET_FILE_DIR:${PHYSX_TOY}>)
 
 add_custom_command(TARGET ${PHYSX_TOY} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different

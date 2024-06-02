@@ -11,14 +11,14 @@ namespace physx
 class PhysicsRigidDynamic : public IPhysicsObject,virtual public IDynamicObject
 {
 public:
-	PhysicsRigidDynamic(IPhysicsMaterial *material);
+	PhysicsRigidDynamic(PhysicsPtr < IPhysicsMaterial >&material);
 
 	void Update();
 
 public:	
 	void Release()override;
 	bool IsValid() const override { return m_RigidDynamic != nullptr; };
-	bool AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) override;
+	bool AddColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry, const MathLib::HTransform3 &localTrans) override;
 	PhysicsObjectType GetType() const override { return m_Type; };
 	size_t GetOffset() const override;
 	void SetTransform(const MathLib::HTransform3 &trans) override;
@@ -49,13 +49,13 @@ private:
 class PhysicsRigidStatic : public IPhysicsObject
 {
 public:
-	PhysicsRigidStatic(IPhysicsMaterial* material);
+	PhysicsRigidStatic(PhysicsPtr < IPhysicsMaterial>& material);
 	void Release()override;
 public:	
 	bool IsValid() const override { return m_RigidStatic != nullptr; };
 	void SetTransform(const MathLib::HTransform3 &trans);
 	const MathLib::HTransform3 &GetTransform() const override { return m_Transform; };
-	bool AddColliderGeometry(IColliderGeometry *colliderGeometry, const MathLib::HTransform3 &localTrans) override;
+	bool AddColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry, const MathLib::HTransform3 &localTrans) override;
 	PhysicsObjectType GetType() const override { return m_Type; };
 	size_t GetOffset() const override;
 

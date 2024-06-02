@@ -1,59 +1,77 @@
 #pragma once
-
+#include "MeshDataLoader.h"
 inline  unsigned RandomUInt(unsigned range)
 {
 	return rand() % range;
 }
 namespace TestRigidBody
 {
-	static MathLib::HReal stackZ = 10.0f;
-	static IPhysicsObject* CreateDynamic(const MathLib::HTransform3& t, IColliderGeometry& geometry, const MathLib::HVector3& velocity = MathLib::HVector3(0, 0, 0))
+	static MathLib::HReal stackZ = 15.0f;
+	static PhysicsMeshData TriangleMeshData;
+	static PhysicsMeshData ConvexMeshData;
+	static std::vector<PhysicsMeshData> ConvexDecomposedMeshData;
+
+	static void CreateTestingMeshData(const char* path =nullptr,const MathLib::HReal scale =1)
+	{
+		if (path == nullptr || (!LoadObj(path,TriangleMeshData,scale)))
+		{		
+			uint32_t numVerts = 0;
+			uint32_t numFaces = 0;
+
+			numVerts = MeshGenerateUtils::Bunny_getNbVerts();
+			numFaces = MeshGenerateUtils::Bunny_getNbFaces();
+
+			TriangleMeshData.m_Vertices.resize(numVerts);
+			TriangleMeshData.m_Indices.resize(numFaces * 3);
+
+			memcpy(TriangleMeshData.m_Vertices.data(), MeshGenerateUtils::Bunny_getVerts(), sizeof(MathLib::HVector3) * numVerts);
+			memcpy(TriangleMeshData.m_Indices.data(), MeshGenerateUtils::Bunny_getFaces(), sizeof(uint32_t) * numFaces * 3);
+		}
+		PhysicsEngineUtils::BuildConvexMesh(TriangleMeshData.m_Vertices, TriangleMeshData.m_Indices, ConvexMeshData);
+		ConvexDecomposeOptions decomposeOptions;
+		decomposeOptions.m_VoxelGridResolution = 1000;
+		decomposeOptions.m_MaximumNumberOfHulls = 16;
+		PhysicsEngineUtils::ConvexDecomposition(TriangleMeshData, decomposeOptions, ConvexDecomposedMeshData);
+	}
+
+	static IPhysicsObject* CreateDynamic(const MathLib::HTransform3& t, PhysicsPtr < IColliderGeometry>& geometry, const MathLib::HVector3& velocity = MathLib::HVector3(0, 0, 0))
 	{
 		PhysicsObjectCreateOptions createOptions{};
 		createOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
 		createOptions.m_Transform = t;
-		IPhysicsObject* physicsObject = PhysicsEngineUtils::CreateObject(createOptions);
-		IDynamicObject* rigidDynamic = dynamic_cast<IDynamicObject*>(physicsObject);
-		physicsObject->AddColliderGeometry(&geometry, MathLib::HTransform3::Identity());
+		PhysicsPtr< IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(createOptions);
+		IDynamicObject* rigidDynamic = dynamic_cast<IDynamicObject*>(physicsObject.get());
+		physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
 		rigidDynamic->SetAngularDamping(0.5);
 		rigidDynamic->SetLinearVelocity(velocity);
 		if (gScene)
 			gScene->AddPhysicsObject(physicsObject);
-		return physicsObject;
+		return physicsObject.get();
+	}
+
+	static void RandomRigidBodyType(PhysicsObjectType& objectType)
+	{
+		if (RandomUInt(100) > 70)
+		{
+			objectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
+		}
+		else
+		{
+			objectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
+		}
 	}
 
 	static void CreateDeComposeConvexStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
 	{
-		std::vector<MathLib::HVector3> triVerts;
-		std::vector<uint32_t> triIndices;
 
-		uint32_t numVerts = MeshGenerateUtils::Bunny_getNbVerts();
-		uint32_t numFaces = MeshGenerateUtils::Bunny_getNbFaces();
-
-		triVerts.resize(numVerts);
-		triIndices.resize(numFaces * 3);
-
-		memcpy(triVerts.data(), MeshGenerateUtils::Bunny_getVerts(), sizeof(MathLib::HVector3) * numVerts);
-		memcpy(triIndices.data(), MeshGenerateUtils::Bunny_getFaces(), sizeof(uint32_t) * numFaces * 3);
-		PhysicsMeshData meshdata;
-
-		meshdata.m_Vertices = triVerts;
-		meshdata.m_Indices = triIndices;
-
-		ConvexDecomposeOptions decomposeOptions;
-		decomposeOptions.m_VoxelGridResolution = 1000;
-		decomposeOptions.m_MaximumNumberOfHulls = 5;
-		std::vector<PhysicsMeshData> decomposedMeshes;
-		PhysicsEngineUtils::ConvexDecomposition(meshdata, decomposeOptions, decomposedMeshes);
-
-		std::vector<PhysicsPtr<IColliderGeometry>> geos(decomposedMeshes.size());
-		for (size_t i = 0; i < decomposedMeshes.size(); i++)
+		std::vector<PhysicsPtr<IColliderGeometry>> geos(ConvexDecomposedMeshData.size());
+		for (size_t i = 0; i < ConvexDecomposedMeshData.size(); i++)
 		{
 			CollisionGeometryCreateOptions options;
 			options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH;
-			options.m_ConvexMeshParams.m_Vertices = decomposedMeshes[i].m_Vertices;
+			options.m_ConvexMeshParams.m_Vertices = ConvexDecomposedMeshData[i].m_Vertices;
 			options.m_Scale = MathLib::HVector3(3.0f, 3.0f, 3.0f);
-			geos[i] = make_physics_ptr<IColliderGeometry>(PhysicsEngineUtils::CreateColliderGeometry(options));
+			geos[i] = PhysicsEngineUtils::CreateColliderGeometry(options);
 		}
 
 		for (uint32_t i = 0; i < size; i++)
@@ -65,21 +83,13 @@ namespace TestRigidBody
 				PhysicsObjectCreateOptions objectOptions;
 				objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
 				objectOptions.m_Transform = t * localTm;
-
-				if (RandomUInt(100) > 70)
-				{
-					objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
-				}
-				else
-				{
-					objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
-				}
-				IPhysicsObject* physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
+				RandomRigidBodyType(objectOptions.m_ObjectType);
+				PhysicsPtr < IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
 				for (size_t i = 0; i < geos.size(); i++)
 				{
-					if (!physicsObject->AddColliderGeometry(geos[i].get(), MathLib::HTransform3::Identity()))
+					if (!physicsObject->AddColliderGeometry(geos[i], MathLib::HTransform3::Identity()))
 					{
-						physicsObject->AddColliderGeometry(geos[0].get(), MathLib::HTransform3::Identity());
+						physicsObject->AddColliderGeometry(geos[0], MathLib::HTransform3::Identity());
 					}
 				}
 				gScene->AddPhysicsObject(physicsObject);
@@ -93,7 +103,7 @@ namespace TestRigidBody
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX;
 		options.m_BoxParams.m_HalfExtents = MathLib::HVector3(halfExtent, halfExtent, halfExtent);
 
-		PhysicsPtr<IColliderGeometry> geometry = make_physics_ptr<IColliderGeometry>(PhysicsEngineUtils::CreateColliderGeometry(options));
+		PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
 
 		for (uint32_t i = 0; i < size; i++)
 		{
@@ -113,8 +123,8 @@ namespace TestRigidBody
 				{
 					objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
 				}
-				IPhysicsObject* physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
-				physicsObject->AddColliderGeometry(geometry.get(), MathLib::HTransform3::Identity());
+				PhysicsPtr<IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
+				physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
 				gScene->AddPhysicsObject(physicsObject);
 			}
 		}
@@ -126,7 +136,7 @@ namespace TestRigidBody
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
 		options.m_SphereParams.m_Radius = halfExtent;
 
-		PhysicsPtr<IColliderGeometry> geometry = make_physics_ptr<IColliderGeometry>(PhysicsEngineUtils::CreateColliderGeometry(options));
+		PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
 
 		for (uint32_t i = 0; i < size; i++)
 		{
@@ -137,18 +147,9 @@ namespace TestRigidBody
 				PhysicsObjectCreateOptions objectOptions;
 				objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
 				objectOptions.m_Transform = t * localTm;
-
-				if (RandomUInt(100) > 70)
-				{
-					objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
-				}
-				else
-				{
-					objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
-				}
-
-				IPhysicsObject* physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
-				physicsObject->AddColliderGeometry(geometry.get(), MathLib::HTransform3::Identity());
+				RandomRigidBodyType(objectOptions.m_ObjectType);
+				PhysicsPtr < IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
+				physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
 				gScene->AddPhysicsObject(physicsObject);
 			}
 		}
@@ -161,7 +162,7 @@ namespace TestRigidBody
 		options.m_CapsuleParams.m_HalfHeight = halfExtent / 2;
 		options.m_CapsuleParams.m_Radius = halfExtent / 2;
 
-		PhysicsPtr<IColliderGeometry> geometry = make_physics_ptr<IColliderGeometry>(PhysicsEngineUtils::CreateColliderGeometry(options));
+		PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
 
 		for (uint32_t i = 0; i < size; i++)
 		{
@@ -172,18 +173,9 @@ namespace TestRigidBody
 				PhysicsObjectCreateOptions objectOptions;
 				objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
 				objectOptions.m_Transform = t * localTm;
-
-				if (RandomUInt(100) > 70)
-				{
-					objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
-				}
-				else
-				{
-					objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
-				}
-
-				IPhysicsObject* physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
-				physicsObject->AddColliderGeometry(geometry.get(), MathLib::HTransform3::Identity());
+				RandomRigidBodyType(objectOptions.m_ObjectType);
+				PhysicsPtr < IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
+				physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
 				gScene->AddPhysicsObject(physicsObject);
 			}
 		}
@@ -191,31 +183,18 @@ namespace TestRigidBody
 
 	static void CreateTriangleMeshStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
 	{
-		std::vector<MathLib::HVector3> triVerts;
-		std::vector<uint32_t> triIndices;
-
-		uint32_t numVerts = MeshGenerateUtils::Bunny_getNbVerts();
-		uint32_t numFaces = MeshGenerateUtils::Bunny_getNbFaces();
-
-		triVerts.resize(numVerts);
-		triIndices.resize(numFaces * 3);
-
-		memcpy(triVerts.data(), MeshGenerateUtils::Bunny_getVerts(), sizeof(MathLib::HVector3) * numVerts);
-		memcpy(triIndices.data(), MeshGenerateUtils::Bunny_getFaces(), sizeof(uint32_t) * numFaces * 3);
-		PhysicsMeshData meshdata;
 
 		CollisionGeometryCreateOptions options;
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH;
-		options.m_TriangleMeshParams.m_Vertices = triVerts;
-		options.m_TriangleMeshParams.m_Indices = triIndices;
+		options.m_TriangleMeshParams.m_Vertices = TriangleMeshData.m_Vertices;
+		options.m_TriangleMeshParams.m_Indices = TriangleMeshData.m_Indices;
 		options.m_Scale = MathLib::HVector3(3.0f, 3.0f, 3.0f);
 
-		PhysicsPtr<IColliderGeometry> geometry0 = make_physics_ptr<IColliderGeometry>(PhysicsEngineUtils::CreateColliderGeometry(options));
-		PhysicsEngineUtils::BuildConvexMesh(triVerts, triIndices, meshdata);
+		PhysicsPtr<IColliderGeometry> geometry0 = PhysicsEngineUtils::CreateColliderGeometry(options);
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH;
-		options.m_ConvexMeshParams.m_Vertices = meshdata.m_Vertices;
+		options.m_ConvexMeshParams.m_Vertices = ConvexMeshData.m_Vertices;
 		options.m_Scale = MathLib::HVector3(3.0f, 3.0f, 3.0f);
-		PhysicsPtr<IColliderGeometry> geometry1 = make_physics_ptr<IColliderGeometry>(PhysicsEngineUtils::CreateColliderGeometry(options));
+		PhysicsPtr<IColliderGeometry> geometry1 = PhysicsEngineUtils::CreateColliderGeometry(options);
 
 		for (uint32_t i = 0; i < size; i++)
 		{
@@ -226,19 +205,10 @@ namespace TestRigidBody
 				PhysicsObjectCreateOptions objectOptions;
 				objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
 				objectOptions.m_Transform = t * localTm;
-
-				if (RandomUInt(100) > 70)
-				{
-					objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
-				}
-				else
-				{
-					objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
-				}
-
-				IPhysicsObject* physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
-				if (!physicsObject->AddColliderGeometry(geometry0.get(), MathLib::HTransform3::Identity()))
-					physicsObject->AddColliderGeometry(geometry1.get(), MathLib::HTransform3::Identity());
+				RandomRigidBodyType(objectOptions.m_ObjectType);
+				PhysicsPtr < IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
+				if (!physicsObject->AddColliderGeometry(geometry0, MathLib::HTransform3::Identity()))
+					physicsObject->AddColliderGeometry(geometry1, MathLib::HTransform3::Identity());
 				gScene->AddPhysicsObject(physicsObject);
 			}
 		}
@@ -246,27 +216,12 @@ namespace TestRigidBody
 
 	static void CreateSimpleConvexMeshStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
 	{
-		std::vector<MathLib::HVector3> triVerts;
-		std::vector<uint32_t> triIndices;
-
-		uint32_t numVerts = MeshGenerateUtils::Bunny_getNbVerts();
-		uint32_t numFaces = MeshGenerateUtils::Bunny_getNbFaces();
-
-		triVerts.resize(numVerts);
-		triIndices.resize(numFaces * 3);
-
-		memcpy(triVerts.data(), MeshGenerateUtils::Bunny_getVerts(), sizeof(MathLib::HVector3) * numVerts);
-		memcpy(triIndices.data(), MeshGenerateUtils::Bunny_getFaces(), sizeof(uint32_t) * numFaces * 3);
-		PhysicsMeshData meshdata;
-
-		PhysicsEngineUtils::BuildConvexMesh(triVerts, triIndices, meshdata);
-
 		CollisionGeometryCreateOptions options;
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH;
-		options.m_ConvexMeshParams.m_Vertices = meshdata.m_Vertices;
+		options.m_ConvexMeshParams.m_Vertices = ConvexMeshData.m_Vertices;
 		options.m_Scale = MathLib::HVector3(3.0f, 3.0f, 3.0f);
 
-		PhysicsPtr<IColliderGeometry> geometry = make_physics_ptr<IColliderGeometry>(PhysicsEngineUtils::CreateColliderGeometry(options));
+		PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
 
 		for (uint32_t i = 0; i < size; i++)
 		{
@@ -277,18 +232,9 @@ namespace TestRigidBody
 				PhysicsObjectCreateOptions objectOptions;
 				objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
 				objectOptions.m_Transform = t * localTm;
-
-				if (RandomUInt(100) > 70)
-				{
-					objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
-				}
-				else
-				{
-					objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
-				}
-
-				IPhysicsObject* physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
-				physicsObject->AddColliderGeometry(geometry.get(), MathLib::HTransform3::Identity());
+				RandomRigidBodyType(objectOptions.m_ObjectType);
+				PhysicsPtr < IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
+				physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
 				gScene->AddPhysicsObject(physicsObject);
 			}
 		}

@@ -1,7 +1,7 @@
 #include "PhysicsScene.h"
 #include "PxPhysicsAPI.h"
 #include "PhysicsObject.h"
-#include "PhysXUtils.h"
+#include "Utility/PhysXUtils.h"
 #ifndef NDEBUG
 #define ENABLE_PVD
 #endif
@@ -34,11 +34,11 @@ void PhysicsScene::Release()
 
 void PhysicsScene::Tick(MathLib::HReal deltaTime)
 {
-    m_Scene->simulate(1.0f / 60.0f);
+    m_Scene->simulate(deltaTime);
     m_Scene->fetchResults(true);
 }
 
-bool PhysicsScene::AddPhysicsObject(IPhysicsObject *physicsObject)
+bool PhysicsScene::AddPhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject)
 {
     const size_t offset = physicsObject->GetOffset();
     bool result = false;
@@ -46,22 +46,22 @@ bool PhysicsScene::AddPhysicsObject(IPhysicsObject *physicsObject)
     {
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC:
     {
-        PxRigidStatic* pRigidStatic = reinterpret_cast<PhysXPtr<PxRigidStatic>*>(reinterpret_cast<char*>(physicsObject) + offset)->get();
+        PxRigidStatic* pRigidStatic = reinterpret_cast<PhysXPtr<PxRigidStatic>*>(reinterpret_cast<char*>(physicsObject.get()) + offset)->get();
         if(pRigidStatic->getNbShapes() == 0)
             return false;
         if(m_Scene->addActor(*pRigidStatic))
-            result = m_RigidStatic.emplace(dynamic_cast<PhysicsRigidStatic *>(physicsObject)).second;
+            result = m_RigidStatic.emplace(physicsObject).second;
         if(!result)
             m_Scene->removeActor(*pRigidStatic);
         break;
     }
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC:
     {
-        PxRigidDynamic* pRigidDynamic = reinterpret_cast<PhysXPtr<PxRigidDynamic>*>(reinterpret_cast<char*>(physicsObject) + offset)->get();
+        PxRigidDynamic* pRigidDynamic = reinterpret_cast<PhysXPtr<PxRigidDynamic>*>(reinterpret_cast<char*>(physicsObject.get()) + offset)->get();
         if(pRigidDynamic->getNbShapes() == 0)
 			return false;
         if(m_Scene->addActor(*pRigidDynamic))
-            result = m_RigidDynamic.emplace(dynamic_cast<PhysicsRigidDynamic *>(physicsObject)).second;
+            result = m_RigidDynamic.emplace(physicsObject).second;
         if (!result)
             m_Scene->removeActor(*pRigidDynamic);
         break;
@@ -72,16 +72,16 @@ bool PhysicsScene::AddPhysicsObject(IPhysicsObject *physicsObject)
     return result;
 }
 
-void PhysicsScene::RemovePhysicsObject(IPhysicsObject *physicsObject)
+void PhysicsScene::RemovePhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject)
 {
     // m_Scene->removeActor(physicsObject->GetPhysicsObject());
     switch (physicsObject->GetType())
     {
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC:
-        m_RigidStatic.erase(dynamic_cast<PhysicsRigidStatic*>(physicsObject));
+        m_RigidStatic.erase(physicsObject);
         break;
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC:
-        m_RigidDynamic.erase(dynamic_cast<PhysicsRigidDynamic*>(physicsObject));
+        m_RigidDynamic.erase(physicsObject);
         break;
     default:
         break;
