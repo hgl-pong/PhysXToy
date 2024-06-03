@@ -51,8 +51,6 @@
 #include <vector>
 
 #define MAX_NUM_ACTOR_SHAPES 256
-#define INITIAL_SCREEN_WIDTH 768
-#define INITIAL_SCREEN_HEIGHT 768
 
 using namespace physx;
 using namespace MathLib;

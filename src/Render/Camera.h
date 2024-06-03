@@ -21,17 +21,22 @@ namespace MathLib
 
 		void setPose(const HVector3 &eye, const HVector3 &dir);
 		void setSpeed(MathLib::HReal speed);
+	private:
+		void _UpdateMatrix();
 
 	private:
 		HVector3 mEye;
 		HVector3 mDir;
-		MathLib::HReal mAspectRatio = 1.f;
+		MathLib::HReal mAspectRatio;
 		MathLib::HReal mNearClip = 1.0f;
 		MathLib::HReal mFarClip = 10000.0f;
 		MathLib::HReal mFOV = 60.0f;
 		int mMouseX;
 		int mMouseY;
 		MathLib::HReal mSpeed;
+		MathLib::HMatrix4 mViewMatrix;
+		MathLib::HMatrix4 mProjectMatrix;
+		MathLib::HMatrix4 mViewProjectMatrix;
 	};
 
 }

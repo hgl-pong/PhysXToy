@@ -14,7 +14,12 @@ public:
 	void SetScale(const MathLib::HVector3 &scale) override { m_Scale = scale; }
 	MathLib::HVector3 GetHalfSize() const { return m_HalfExtents; }
 	MathLib::HVector3 GetScale() const { return m_Scale; }
-
+	void GetParams(CollisionGeometryCreateOptions& options)
+	{
+		options.m_GeometryType=CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX;
+		options.m_BoxParams.m_HalfExtents = m_HalfExtents;
+		options.m_Scale = m_Scale;
+	}
 private:
 	MathLib::HVector3 m_HalfExtents;
 	MathLib::HVector3 m_Scale;
@@ -29,7 +34,12 @@ public:
 	void SetScale(const MathLib::HVector3 &scale) override { m_Scale = scale; }
 	MathLib::HReal GetRadius() const { return m_Radius; }
 	MathLib::HVector3 GetScale() const { return m_Scale; }
-
+	void GetParams(CollisionGeometryCreateOptions& options)
+	{
+		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
+		options.m_SphereParams.m_Radius = m_Radius;
+		options.m_Scale = m_Scale;
+	}
 private:
 	MathLib::HReal m_Radius;
 	MathLib::HVector3 m_Scale;
@@ -45,6 +55,13 @@ public:
 	MathLib::HVector3 GetNormal() const { return m_Normal; }
 	MathLib::HReal GetDistance() const { return m_Distance; }
 	MathLib::HVector3 GetScale() const { return m_Scale; }
+	void GetParams(CollisionGeometryCreateOptions& options)
+	{
+		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE;
+		options.m_PlaneParams.m_Normal = m_Normal;
+		options.m_PlaneParams.m_Distance = m_Distance;
+		options.m_Scale = m_Scale;
+	}
 private:
 	MathLib::HVector3 m_Normal;
 	MathLib::HReal m_Distance;
@@ -61,6 +78,13 @@ public:
 	MathLib::HReal GetRadius() const { return m_Radius; }
 	MathLib::HReal GetHalfHeight() const { return m_HalfHeight; }
 	MathLib::HVector3 GetScale() const { return m_Scale; }
+	void GetParams(CollisionGeometryCreateOptions& options)
+	{
+		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CAPSULE;
+		options.m_CapsuleParams.m_Radius = m_Radius;
+		options.m_CapsuleParams.m_HalfHeight = m_HalfHeight;
+		options.m_Scale = m_Scale;
+	}
 private:
 	MathLib::HReal m_Radius;
 	MathLib::HReal m_HalfHeight;
@@ -77,6 +101,13 @@ public:
 	const std::vector<MathLib::HVector3> &GetVertices() const { return m_Vertices; }
 	const std::vector<uint32_t> &GetIndices() const { return m_Indices; }
 	MathLib::HVector3 GetScale() const { return m_Scale; }
+	void GetParams(CollisionGeometryCreateOptions& options)
+	{
+		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH;
+		options.m_TriangleMeshParams.m_Vertices = m_Vertices;
+		options.m_TriangleMeshParams.m_Indices = m_Indices;
+		options.m_Scale = m_Scale;
+	}
 private:
 	std::vector<MathLib::HVector3> m_Vertices;
 	std::vector<uint32_t> m_Indices;
@@ -92,6 +123,12 @@ public:
 	void SetScale(const MathLib::HVector3 &scale) override { m_Scale = scale; }
 	const std::vector<MathLib::HVector3> &GetVertices() const { return m_Vertices; }
 	MathLib::HVector3 GetScale() const { return m_Scale; }
+	void GetParams(CollisionGeometryCreateOptions& options)
+	{
+		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH;
+		options.m_ConvexMeshParams.m_Vertices = m_Vertices;
+		options.m_Scale = m_Scale;
+	}
 private:
 	std::vector<MathLib::HVector3> m_Vertices;
 	MathLib::HVector3 m_Scale;

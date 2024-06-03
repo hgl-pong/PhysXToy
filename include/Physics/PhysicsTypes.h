@@ -1,9 +1,12 @@
 #pragma once
+#include <Eigen/Core>
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 namespace MathLib
 {
 	typedef float HReal;
 	static HReal H_PI = 3.14159265358979323846f;
+	typedef Eigen::Matrix<HReal, 2, 1> HVector2;
 	typedef Eigen::Matrix<HReal, 3, 1> HVector3;
 	typedef Eigen::Matrix<HReal, 4, 1> HVector4;
 

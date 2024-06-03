@@ -33,6 +33,9 @@
 #include "foundation/PxPreprocessor.h"
 #include "Physics/PhysicsTypes.h"
 
+#define INITIAL_SCREEN_WIDTH 768
+#define INITIAL_SCREEN_HEIGHT 768
+
 #if PX_WINDOWS
 	#include <windows.h>
 	#pragma warning(disable: 4505)

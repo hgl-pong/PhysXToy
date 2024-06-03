@@ -55,7 +55,7 @@ namespace
 
 void renderLoop()
 {
-	sCamera = new MathLib::Camera(MathLib::HVector3(50.0f, 50.0f, 50.0f), MathLib::HVector3(-0.6f, -0.2f, -0.7f));
+	sCamera = new MathLib::Camera(MathLib::HVector3(50.0f, 50.0f, 50.0f), MathLib::HVector3(-0.6f, -0.2f, -0.7f), MathLib::HReal(INITIAL_SCREEN_WIDTH) /INITIAL_SCREEN_HEIGHT);
 
 	Snippets::setupDefault("Test Physics Engine", sCamera, keyPress, renderCallback, exitCallback);
 

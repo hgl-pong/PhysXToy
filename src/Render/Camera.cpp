@@ -3,10 +3,33 @@ using namespace Eigen;
 
 namespace MathLib
 {
-    Camera::Camera(const HVector3& eye, const HVector3& dir, const MathLib::HReal& aspectRatio) : mMouseX(0), mMouseY(0), mSpeed(2.0f),mAspectRatio(aspectRatio)
+    HMatrix4 LookAt(const HVector3& eye, const HVector3& target, const HVector3& up) {
+        const HVector3 backward = (eye - target).normalized();
+        const HVector3 right = up.cross(backward).normalized();
+        const HVector3 realUp = backward.cross(right);
+        HMatrix4 matrix;
+        matrix << right[0], right[1], right[2],0,
+			realUp[0], realUp[1], realUp[2],0,
+			backward[0], backward[1], backward[2],0,
+			eye[0], eye[1], eye[2],1;
+        return matrix;
+    }
+
+    HMatrix4 Perspective(MathLib::HReal fovy, MathLib::HReal& aspectRatio, MathLib::HReal zNear, MathLib::HReal zFar) {
+        HVector2 scaleXY = - 2 * zNear * tan(fovy / 2) * 0.5 * HVector2(1, 1 / aspectRatio);
+		HMatrix4 matrix;
+		matrix << scaleXY[0] , 0, 0, 0,
+			0, scaleXY[1], 0, 0,
+			0, 0, (zNear + zFar) / (zNear - zFar), -1,
+            0, 0, 2 * zNear * zFar / (zNear - zFar), 0;
+		return matrix;
+	}
+
+    Camera::Camera(const HVector3& eye, const HVector3& dir,  const MathLib::HReal& aspectRatio) : mMouseX(0), mMouseY(0), mSpeed(2.0f), mAspectRatio(aspectRatio)
     {
         mEye = eye;
         mDir = dir.normalized();
+        _UpdateMatrix();
     }
 
     void Camera::handleMouse(int button, int state, int x, int y)
@@ -29,8 +52,11 @@ namespace MathLib
         case 'S':   mEye -= mDir * mSpeed * speed; break;
         case 'A':   mEye -= viewY * mSpeed * speed; break;
         case 'D':   mEye += viewY * mSpeed * speed; break;
+        case 'Q':   mEye += HVector3(0, 1, 0) * mSpeed * speed; break;
+        case 'E':   mEye -= HVector3(0, 1, 0) * mSpeed * speed; break;
         default:                                return false;
         }
+        _UpdateMatrix();
         return true;
     }
 
@@ -39,6 +65,7 @@ namespace MathLib
         HVector3 viewY = mDir.cross(HVector3(0, 1, 0)).normalized();
         mEye += mDir * y;
         mEye += viewY * x;
+        _UpdateMatrix();
     }
 
     void Camera::handleMotion(int x, int y)
@@ -59,6 +86,8 @@ namespace MathLib
 
         mMouseX = x;
         mMouseY = y;
+
+        _UpdateMatrix();
     }
 
     HTransform3 Camera::getTransform()
@@ -74,34 +103,17 @@ namespace MathLib
 
     HMatrix4 Camera::getViewMatrix()
     {
-        HVector3 viewZ = -mDir.normalized(); // 视图方向，指向相机的后方
-        HVector3 viewX = HVector3(0, 1, 0).cross(viewZ).normalized(); // 右方向
-        HVector3 viewY = viewZ.cross(viewX).normalized(); // 上方向
-
-        MathLib::HMatrix4 viewMatrix;
-        viewMatrix << viewX.x(), viewX.y(), viewX.z(), -mEye.dot(viewX),
-            viewY.x(), viewY.y(), viewY.z(), -mEye.dot(viewY),
-            viewZ.x(), viewZ.y(), viewZ.z(), -mEye.dot(viewZ),
-            0, 0, 0, 1;
-        return viewMatrix;
+        return mViewMatrix;
     }
 
     HMatrix4 Camera::getProjectMatrix()
     {
-        MathLib::HReal tanHalfFov = tan(mFOV * 0.5f * MathLib::H_PI / 180.0f);
-        MathLib::HReal range = mNearClip - mFarClip;
-
-        MathLib::HMatrix4 projMatrix;
-        projMatrix << 1.0f / (mAspectRatio * tanHalfFov), 0, 0, 0,
-            0, 1.0f / tanHalfFov, 0, 0,
-            0, 0, (mNearClip + mFarClip) / range, 2 * mNearClip * mFarClip / range,
-            0, 0, -1, 0;
-        return projMatrix;
+        return mProjectMatrix;
     }
 
     HMatrix4 Camera::getViewProjectMatrix()
     {
-        return getProjectMatrix() * getViewMatrix();
+        return mViewProjectMatrix;
     }
 
     HVector3 Camera::getEye() const
@@ -123,5 +135,12 @@ namespace MathLib
     void Camera::setSpeed(MathLib::HReal speed)
     {
         mSpeed = speed;
+    }
+
+    void Camera::_UpdateMatrix()
+    {
+        mViewMatrix = LookAt(mEye, mEye + mDir, HVector3(0, 1, 0));
+        mProjectMatrix = Perspective(mFOV, mAspectRatio, mNearClip, mFarClip);
+        mViewProjectMatrix = mViewMatrix * mProjectMatrix;
     }
 }

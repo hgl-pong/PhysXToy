@@ -332,20 +332,18 @@ void keyPress(unsigned char key, const MathLib::HTransform3& /*camera*/)
 #else
 #include "TestPhysicsEngine.h"
 #endif
-//#include "Render.h"
-//
-//int main(int argc, char** argv)
-//{
-//	extern void renderLoop();
-//	renderLoop();
-//}
+#include "Render.h"
 
-#include "Render/Application.h"
-int main(int argc, char** argv) 
+int main(int argc, char** argv)
 {
-	PhysicsPtr<PhysicsEngineTestingApplication> app = make_physics_ptr(CreatePhysicsEngineTestingApplication(argc, argv));
-	return app->Run();
+	extern void renderLoop();
+	renderLoop();
 }
 
-
+//#include "Render/Application.h"
+//int main(int argc, char** argv) 
+//{
+//	PhysicsPtr<PhysicsEngineTestingApplication> app = make_physics_ptr(CreatePhysicsEngineTestingApplication(argc, argv));
+//	return app->Run();
+//}
 

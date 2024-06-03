@@ -38,6 +38,7 @@ public:
 	virtual void Release() = 0;
 	virtual CollierGeometryType GetType() const = 0;
 	virtual void SetScale(const MathLib::HVector3 &scale) = 0;
+	virtual void GetParams(CollisionGeometryCreateOptions& options) = 0;
 };
 
 class IPhysicsObject
