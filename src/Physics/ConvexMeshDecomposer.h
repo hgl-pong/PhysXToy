@@ -61,9 +61,9 @@ public:
 		for (size_t i = 0; i < meshData.m_Vertices.size(); i++)
 		{
 			const MathLib::HVector3& v = meshData.m_Vertices[i];
-			vertices[i * 3] = v[0];
-			vertices[i * 3 + 1] = v[1];
-			vertices[i * 3 + 2] = v[2];
+			vertices[i * 3] = (v[0] - min[0]) / (max[0] - min[0]);
+			vertices[i * 3 + 1] = (v[1] - min[1]) / (max[1] - min[1]);
+			vertices[i * 3 + 2] = (v[2] - min[2]) / (max[2] - min[2]);
 		}
 		
 		m_VHACD->Compute(vertices.data(), vertices.size()/3, meshData.m_Indices.data(), meshData.m_Indices.size() / 3, vhacdParams);
@@ -78,8 +78,10 @@ public:
 			PhysicsMeshData& convexMeshData = convexMeshesData[i];
 			convexMeshData.m_Vertices.resize(ch.m_nPoints);
 			for (size_t j = 0; j < ch.m_nPoints; j++)
-			{
-				convexMeshData.m_Vertices[j] = MathLib::HVector3(ch.m_points[j * 3], ch.m_points[j * 3 + 1], ch.m_points[j * 3 + 2]);
+			{   const MathLib::HVector3 v(ch.m_points[j * 3], ch.m_points[j * 3 + 1], ch.m_points[j * 3 + 2]);
+				convexMeshData.m_Vertices[j] = MathLib::HVector3(v[0] * (max[0] - min[0]) + min[0],
+					v[1] * (max[1] - min[1]) + min[1],
+					v[2] * (max[2] - min[2]) + min[2]);
 			}
 			convexMeshData.m_Indices.resize(ch.m_nTriangles * 3);
 			for (size_t j = 0; j < ch.m_nTriangles; j++)

@@ -1,5 +1,6 @@
 #pragma once
 #include "MeshDataLoader.h"
+#include "TestMeshGenerator.h"
 inline  unsigned RandomUInt(unsigned range)
 {
 	return rand() % range;

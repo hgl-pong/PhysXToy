@@ -45,6 +45,7 @@ class IPhysicsObject
 public:
 	virtual void Release() = 0;
 	virtual bool AddColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry, const MathLib::HTransform3 &localTrans) = 0;
+	virtual void GetColliderGeometries(std::vector<PhysicsPtr<IColliderGeometry>>& geomeries) = 0;
 	virtual PhysicsObjectType GetType() const = 0;
 	virtual size_t GetOffset() const = 0;
 	virtual void SetTransform(const MathLib::HTransform3 &trans) = 0;

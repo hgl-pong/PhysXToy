@@ -19,6 +19,7 @@ public:
 	void Release()override;
 	bool IsValid() const override { return m_RigidDynamic != nullptr; };
 	bool AddColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry, const MathLib::HTransform3 &localTrans) override;
+	void GetColliderGeometries(std::vector<PhysicsPtr<IColliderGeometry>>& geomeries) override { geomeries = m_ColliderGeometries; };
 	PhysicsObjectType GetType() const override { return m_Type; };
 	size_t GetOffset() const override;
 	void SetTransform(const MathLib::HTransform3 &trans) override;
@@ -38,6 +39,7 @@ private:
 	PhysicsObjectType m_Type;
 	PhysXPtr<physx::PxRigidDynamic> m_RigidDynamic;
 	PhysicsPtr<IPhysicsMaterial>  m_Material;
+	std::vector<PhysicsPtr<IColliderGeometry>> m_ColliderGeometries;
 	bool m_bIsKinematic;
 	MathLib::HReal m_Mass;
 	MathLib::HVector3 m_LinearVelocity;
@@ -55,7 +57,8 @@ public:
 	bool IsValid() const override { return m_RigidStatic != nullptr; };
 	void SetTransform(const MathLib::HTransform3 &trans);
 	const MathLib::HTransform3 &GetTransform() const override { return m_Transform; };
-	bool AddColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry, const MathLib::HTransform3 &localTrans) override;
+	bool AddColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry, const MathLib::HTransform3 &localTrans) override;	
+	void GetColliderGeometries(std::vector<PhysicsPtr<IColliderGeometry>>& geomeries) override { geomeries = m_ColliderGeometries; };
 	PhysicsObjectType GetType() const override { return m_Type; };
 	size_t GetOffset() const override;
 
@@ -63,5 +66,6 @@ private:
 	PhysicsObjectType m_Type;
 	PhysXPtr<physx::PxRigidStatic> m_RigidStatic;
 	PhysicsPtr<IPhysicsMaterial> m_Material;
+	std::vector<PhysicsPtr<IColliderGeometry>> m_ColliderGeometries;
 	MathLib::HTransform3 m_Transform;
 };

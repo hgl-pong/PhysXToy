@@ -124,6 +124,7 @@ bool PhysicsRigidDynamic::AddColliderGeometry(PhysicsPtr < IColliderGeometry >&c
 	PxRigidBodyExt::updateMassAndInertia(*m_RigidDynamic, m_Material->GetDensity());
 	PX_RELEASE(shape);
 	m_Mass= m_RigidDynamic->getMass();
+	m_ColliderGeometries.push_back(colliderGeometry);
 	return true;
 }
 
@@ -199,6 +200,7 @@ bool PhysicsRigidStatic::AddColliderGeometry(PhysicsPtr < IColliderGeometry >&co
 	shape->setLocalPose(ConvertUtils::ToPxTransform(localTrans));
 	m_RigidStatic->attachShape(*shape);
 	PX_RELEASE(shape);
+	m_ColliderGeometries.push_back(colliderGeometry);
 	return true;
 }
 

@@ -3,7 +3,7 @@ using namespace Eigen;
 
 namespace MathLib
 {
-    Camera::Camera(const HVector3& eye, const HVector3& dir) : mMouseX(0), mMouseY(0), mSpeed(2.0f)
+    Camera::Camera(const HVector3& eye, const HVector3& dir, const MathLib::HReal& aspectRatio) : mMouseX(0), mMouseY(0), mSpeed(2.0f),mAspectRatio(aspectRatio)
     {
         mEye = eye;
         mDir = dir.normalized();
@@ -70,6 +70,38 @@ namespace MathLib
 
         const HMatrix3 m = (HMatrix3() << mDir.cross(viewY), viewY, -mDir).finished();
         return HTransform3(Translation3f(mEye) * HQuaternion(m));
+    }
+
+    HMatrix4 Camera::getViewMatrix()
+    {
+        HVector3 viewZ = -mDir.normalized(); // 视图方向，指向相机的后方
+        HVector3 viewX = HVector3(0, 1, 0).cross(viewZ).normalized(); // 右方向
+        HVector3 viewY = viewZ.cross(viewX).normalized(); // 上方向
+
+        MathLib::HMatrix4 viewMatrix;
+        viewMatrix << viewX.x(), viewX.y(), viewX.z(), -mEye.dot(viewX),
+            viewY.x(), viewY.y(), viewY.z(), -mEye.dot(viewY),
+            viewZ.x(), viewZ.y(), viewZ.z(), -mEye.dot(viewZ),
+            0, 0, 0, 1;
+        return viewMatrix;
+    }
+
+    HMatrix4 Camera::getProjectMatrix()
+    {
+        MathLib::HReal tanHalfFov = tan(mFOV * 0.5f * MathLib::H_PI / 180.0f);
+        MathLib::HReal range = mNearClip - mFarClip;
+
+        MathLib::HMatrix4 projMatrix;
+        projMatrix << 1.0f / (mAspectRatio * tanHalfFov), 0, 0, 0,
+            0, 1.0f / tanHalfFov, 0, 0,
+            0, 0, (mNearClip + mFarClip) / range, 2 * mNearClip * mFarClip / range,
+            0, 0, -1, 0;
+        return projMatrix;
+    }
+
+    HMatrix4 Camera::getViewProjectMatrix()
+    {
+        return getProjectMatrix() * getViewMatrix();
     }
 
     HVector3 Camera::getEye() const
