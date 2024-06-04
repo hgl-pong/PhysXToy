@@ -34,23 +34,22 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
 
 	// Init Physx
 	{
-		m_AllocatorCallback = new PxDefaultAllocator();
-		m_ErrorCallback = new PxDefaultErrorCallback();
+		m_AllocatorCallback = std::make_unique<PxDefaultAllocator>();
+		m_ErrorCallback = std::make_unique <PxDefaultErrorCallback>();
 
-		m_Foundation = PxCreateFoundation(PX_PHYSICS_VERSION, *m_AllocatorCallback, *m_ErrorCallback);
+		m_Foundation = make_physx_ptr(PxCreateFoundation(PX_PHYSICS_VERSION, *m_AllocatorCallback, *m_ErrorCallback));
 
 		if (m_Options.m_bEnablePVD)
 		{
-			m_Pvd = PxCreatePvd(*m_Foundation);
+			m_Pvd = make_physx_ptr(PxCreatePvd(*m_Foundation));
 			PxPvdTransport *transport = PxDefaultPvdSocketTransportCreate(PHYSX_PVD_HOST, 5425, 10);
 			m_Pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
 		}
 		PxTolerancesScale toleranceScale;
 		PxCookingParams cookingParams(toleranceScale);
 
-		m_Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, toleranceScale, true, m_Pvd);
-		m_CpuDispatcher = PxDefaultCpuDispatcherCreate(options.m_iNumThreads == 0 ? DEFAULT_CPU_DISPATCHER_NUM_THREADS : options.m_iNumThreads);
-		// m_Cooking = PxCreateCooking(PX_PHYSICS_VERSION, *m_Foundation, cookingParams);
+		m_Physics = make_physx_ptr(PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, toleranceScale, true, m_Pvd.get()));
+		m_CpuDispatcher = std::unique_ptr <PxCpuDispatcher>(PxDefaultCpuDispatcherCreate(options.m_iNumThreads == 0 ? DEFAULT_CPU_DISPATCHER_NUM_THREADS : options.m_iNumThreads));
 	}
 
 	m_bInitialized = true;
@@ -58,15 +57,16 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
 
 PhysicsEngine::~PhysicsEngine()
 {
+	m_CpuDispatcher.reset();
+	m_Physics.reset();
 	if (m_Pvd)
 	{
-		PxPvdTransport *transport = m_Pvd->getTransport();
-		PX_RELEASE(m_Pvd);
+		PxPvdTransport *transport = m_Pvd->getTransport();		
+		m_Pvd->disconnect();
+		m_Pvd.reset();
 		PX_RELEASE(transport);
 	}
-	PX_RELEASE(m_Physics);
-	PX_RELEASE(m_Foundation);
-
+	m_Foundation.reset();
 	m_bInitialized = false;
 }
 
@@ -108,7 +108,7 @@ PhysicsPtr<IPhysicsScene> PhysicsEngine::CreateScene(const PhysicsSceneCreateOpt
 	if (!m_bInitialized)
 		return nullptr;
 
-	return make_physics_ptr(new PhysicsScene(options, m_CpuDispatcher));
+	return make_physics_ptr(new PhysicsScene(options, m_CpuDispatcher.get()));
 }
 
 PhysicsPtr<IColliderGeometry> PhysicsEngine::CreateColliderGeometry(const CollisionGeometryCreateOptions &options)

@@ -9,7 +9,6 @@ namespace physx
 	class PxFoundation;
 	class PxPhysics;
 	class PxCpuDispatcher;
-	class PxCooking;
 	class PxGeometry;
 	class PxMaterial;
 };
@@ -31,13 +30,12 @@ public:
 private:
 	friend class PhysicsEngineUtils;
 	PhysicsEngineOptions m_Options;
-	physx::PxAllocatorCallback* m_AllocatorCallback;
-	physx::PxErrorCallback* m_ErrorCallback;
-	physx::PxCooking* m_Cooking;
-	physx::PxPvd* m_Pvd;
-	physx::PxFoundation* m_Foundation;
-	physx::PxPhysics* m_Physics;
-	physx::PxCpuDispatcher* m_CpuDispatcher;
+	std::unique_ptr<physx::PxAllocatorCallback> m_AllocatorCallback;
+	std::unique_ptr<physx::PxErrorCallback>m_ErrorCallback;
+	PhysXPtr<physx::PxPvd> m_Pvd;
+	PhysXPtr<physx::PxFoundation> m_Foundation;
+	PhysXPtr<physx::PxPhysics> m_Physics;
+	std::unique_ptr<physx::PxCpuDispatcher> m_CpuDispatcher;
 	bool m_bInitialized;
 
 };

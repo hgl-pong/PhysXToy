@@ -15,19 +15,20 @@ class PhysicsEngine {
   + CreateScene(options : PhysicsSceneCreateOptions) : PhysicsPtr<IPhysicsScene>
   + CreateColliderGeometry(options : CollisionGeometryCreateOptions) : PhysicsPtr<IColliderGeometry>
   - m_Options : PhysicsEngineOptions
-  - m_AllocatorCallback : physx::PxAllocatorCallback*
-  - m_ErrorCallback : physx::PxErrorCallback*
-  - m_Cooking : physx::PxCooking*
-  - m_Pvd : physx::PxPvd*
-  - m_Foundation : physx::PxFoundation*
-  - m_Physics : physx::PxPhysics*
-  - m_CpuDispatcher : physx::PxCpuDispatcher*
+  - m_AllocatorCallback : std::unique_ptr<physx::PxAllocatorCallback>
+  - m_ErrorCallback : std::unique_ptr<physx::PxErrorCallback>
+  - m_Pvd : PhysXPtr<physx::PxPvd>
+  - m_Foundation : PhysXPtr<physx::PxFoundation>
+  - m_Physics : PhysXPtr<physx::PxPhysics>
+  - m_CpuDispatcher : std::unique_ptr<physx::PxCpuDispatcher>
   - m_bInitialized : bool
+  - friend class PhysicsEngineUtils
 }
 
 IPhysicsEngine <|-- PhysicsEngine
 
 @enduml
+
 @startuml PhysicsSceneDiagram
 
 interface IPhysicsScene {

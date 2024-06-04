@@ -63,6 +63,9 @@ namespace Magnum {
 			explicit TestingApplication(const Arguments& arguments);
 		public:
 			void Release() override {
+				m_Scene.reset();
+				m_Material.reset();
+				PhysicsEngineUtils::DestroyPhysicsEngine();
 				delete this;
 			}
 			int Run() override {
