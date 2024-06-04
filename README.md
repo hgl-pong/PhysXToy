@@ -79,6 +79,8 @@ vcpkg install Magnum
 
 ![OCLAcceleration](./img/OCLAccelerationDiagram.png)
 
+</details>
+
 <details>
       <summary>ConvexMeshDecomposer</summary>
   <br>
