@@ -44,7 +44,12 @@ void initPhysics(bool interactive)
 	//TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\teapot.obj", 0.2);
 	//TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\banana.obj", 1);
 	//TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\armadillo.obj",0.4);
-	TestRigidBody::TestRigidBodyCreate();
+	auto physicsObjects= TestRigidBody::TestRigidBodyCreate();
+	if (gScene)
+	for (auto& physicsObject : physicsObjects)
+	{
+		gScene->AddPhysicsObject(physicsObject);
+	}
 
 	if (!interactive)
 	{
@@ -58,7 +63,9 @@ void initPhysics(bool interactive)
 		MathLib::HVector3 translation(0, 40, 100);
 		MathLib::HTransform3 transform = MathLib::HTransform3::Identity();
 		transform.translate(translation);
-		TestRigidBody::CreateDynamic(transform, geometry, MathLib::HVector3(0, -50, -100));
+		auto dynamic = TestRigidBody::CreateDynamic(transform, geometry, MathLib::HVector3(0, -50, -100));
+		if (gScene)
+			gScene->AddPhysicsObject(dynamic);
 	}
 }
 
@@ -89,8 +96,9 @@ void keyPress(unsigned char key, const MathLib::HTransform3 &camera)
 		options.m_SphereParams.m_Radius = 2.0f;
 
 		PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
-
-		TestRigidBody::CreateDynamic(camera, geometry, camera.rotation() * MathLib::HVector3(0, 0, -1) * 100);
+		auto dynamic = TestRigidBody::CreateDynamic(camera, geometry, camera.rotation() * MathLib::HVector3(0, 0, -1) * 100);
+		if(gScene)
+		  gScene->AddPhysicsObject(dynamic);
 		break;
 	}
 }

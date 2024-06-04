@@ -35,7 +35,7 @@ namespace TestRigidBody
 		PhysicsEngineUtils::ConvexDecomposition(TriangleMeshData, decomposeOptions, ConvexDecomposedMeshData);
 	}
 
-	static IPhysicsObject* CreateDynamic(const MathLib::HTransform3& t, PhysicsPtr < IColliderGeometry>& geometry, const MathLib::HVector3& velocity = MathLib::HVector3(0, 0, 0))
+	static PhysicsPtr<IPhysicsObject> CreateDynamic(const MathLib::HTransform3& t, PhysicsPtr < IColliderGeometry>& geometry, const MathLib::HVector3& velocity = MathLib::HVector3(0, 0, 0))
 	{
 		PhysicsObjectCreateOptions createOptions{};
 		createOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
@@ -45,9 +45,7 @@ namespace TestRigidBody
 		physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
 		rigidDynamic->SetAngularDamping(0.5);
 		rigidDynamic->SetLinearVelocity(velocity);
-		if (gScene)
-			gScene->AddPhysicsObject(physicsObject);
-		return physicsObject.get();
+		return physicsObject;
 	}
 
 	static void RandomRigidBodyType(PhysicsObjectType& objectType)
@@ -62,9 +60,9 @@ namespace TestRigidBody
 		}
 	}
 
-	static void CreateDeComposeConvexStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
+	static std::vector<PhysicsPtr<IPhysicsObject>> CreateDeComposeConvexStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
 	{
-
+		std::vector<PhysicsPtr<IPhysicsObject>> objects;
 		std::vector<PhysicsPtr<IColliderGeometry>> geos(ConvexDecomposedMeshData.size());
 		for (size_t i = 0; i < ConvexDecomposedMeshData.size(); i++)
 		{
@@ -93,13 +91,15 @@ namespace TestRigidBody
 						physicsObject->AddColliderGeometry(geos[0], MathLib::HTransform3::Identity());
 					}
 				}
-				gScene->AddPhysicsObject(physicsObject);
+				objects.push_back(physicsObject);
 			}
 		}
+		return objects;
 	}
 
-	static void CreateBoxStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
+	static std::vector<PhysicsPtr<IPhysicsObject>> CreateBoxStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
 	{
+		std::vector<PhysicsPtr<IPhysicsObject>> objects;
 		CollisionGeometryCreateOptions options;
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX;
 		options.m_BoxParams.m_HalfExtents = MathLib::HVector3(halfExtent, halfExtent, halfExtent);
@@ -126,13 +126,15 @@ namespace TestRigidBody
 				}
 				PhysicsPtr<IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
 				physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
-				gScene->AddPhysicsObject(physicsObject);
+				objects.push_back(physicsObject);
 			}
 		}
+		return objects;
 	}
 
-	static void CreateSphereStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
+	static std::vector<PhysicsPtr<IPhysicsObject>> CreateSphereStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
 	{
+		std::vector<PhysicsPtr<IPhysicsObject>> objects;
 		CollisionGeometryCreateOptions options;
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
 		options.m_SphereParams.m_Radius = halfExtent;
@@ -151,13 +153,15 @@ namespace TestRigidBody
 				RandomRigidBodyType(objectOptions.m_ObjectType);
 				PhysicsPtr < IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
 				physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
-				gScene->AddPhysicsObject(physicsObject);
+				objects.push_back(physicsObject);
 			}
 		}
+		return objects;
 	}
 
-	static void CreateCapsuleStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
+	static std::vector<PhysicsPtr<IPhysicsObject>> CreateCapsuleStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
 	{
+		std::vector<PhysicsPtr<IPhysicsObject>> objects;
 		CollisionGeometryCreateOptions options;
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CAPSULE;
 		options.m_CapsuleParams.m_HalfHeight = halfExtent / 2;
@@ -177,14 +181,15 @@ namespace TestRigidBody
 				RandomRigidBodyType(objectOptions.m_ObjectType);
 				PhysicsPtr < IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
 				physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
-				gScene->AddPhysicsObject(physicsObject);
+				objects.push_back(physicsObject);
 			}
 		}
+		return objects;
 	}
 
-	static void CreateTriangleMeshStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
+	static std::vector<PhysicsPtr<IPhysicsObject>> CreateTriangleMeshStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
 	{
-
+		std::vector<PhysicsPtr<IPhysicsObject>> objects;
 		CollisionGeometryCreateOptions options;
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH;
 		options.m_TriangleMeshParams.m_Vertices = TriangleMeshData.m_Vertices;
@@ -210,13 +215,15 @@ namespace TestRigidBody
 				PhysicsPtr < IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
 				if (!physicsObject->AddColliderGeometry(geometry0, MathLib::HTransform3::Identity()))
 					physicsObject->AddColliderGeometry(geometry1, MathLib::HTransform3::Identity());
-				gScene->AddPhysicsObject(physicsObject);
+				objects.push_back(physicsObject);
 			}
 		}
+		return objects;
 	}
 
-	static void CreateSimpleConvexMeshStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
+	static std::vector<PhysicsPtr<IPhysicsObject>> CreateSimpleConvexMeshStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
 	{
+		std::vector<PhysicsPtr<IPhysicsObject>> objects;
 		CollisionGeometryCreateOptions options;
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH;
 		options.m_ConvexMeshParams.m_Vertices = ConvexMeshData.m_Vertices;
@@ -236,19 +243,27 @@ namespace TestRigidBody
 				RandomRigidBodyType(objectOptions.m_ObjectType);
 				PhysicsPtr < IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
 				physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
-				gScene->AddPhysicsObject(physicsObject);
+				objects.push_back(physicsObject);
 			}
 		}
+		return objects;
 	}
 
-	static void TestRigidBodyCreate()
+	static std::vector<PhysicsPtr<IPhysicsObject>> TestRigidBodyCreate()
 	{
-		CreateDeComposeConvexStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
-		CreateBoxStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
-		CreateSphereStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
-		CreateCapsuleStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
-		CreateTriangleMeshStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
-		CreateSimpleConvexMeshStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
-		printf("Number of Actor:%d\n",gScene->GetPhysicsObjectCount());
+		std::vector<PhysicsPtr<IPhysicsObject>> objects;
+		auto decomposeConvexStack= CreateDeComposeConvexStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
+		auto boxStack=CreateBoxStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
+		auto sphereStack= CreateSphereStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
+		auto capsuleStack=CreateCapsuleStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
+		auto triangleMeshStack=CreateTriangleMeshStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
+		auto simpleConvexMeshStack=CreateSimpleConvexMeshStack(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0, 0, stackZ -= 10.0f))), 10, 2.0f);
+		objects.insert(objects.end(), decomposeConvexStack.begin(), decomposeConvexStack.end());
+		objects.insert(objects.end(), boxStack.begin(), boxStack.end());
+		objects.insert(objects.end(), sphereStack.begin(), sphereStack.end());
+		objects.insert(objects.end(), capsuleStack.begin(), capsuleStack.end());
+		objects.insert(objects.end(), triangleMeshStack.begin(), triangleMeshStack.end());
+		objects.insert(objects.end(), simpleConvexMeshStack.begin(), simpleConvexMeshStack.end());
+		return objects;
 	}
 };

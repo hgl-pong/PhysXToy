@@ -57,7 +57,7 @@ public:
 			const std::vector<uint32_t>& indices = triangleMesh->GetIndices();
 			PxTriangleMesh *mesh = PhysXConstructTools::CreatePxTriangleMesh<true>(vertices.size(), vertices.data(), indices.size()/3, indices.data());
 			const MathLib::HVector3& scale = triangleMesh->GetScale();
-			PxTriangleMeshGeometry geometry(mesh ,PxMeshScale(ConvertUtils::ToPxVec3(scale)));
+			PxTriangleMeshGeometry geometry(mesh ,PxMeshScale(ConvertUtils::ToPx(scale)));
 			shape = physics->createShape(geometry, *pxMaterial->get());
 			PX_RELEASE(mesh);
 			break;
@@ -68,7 +68,7 @@ public:
 			const std::vector<MathLib::HVector3>& vertices = convexMesh->GetVertices();
 			PxConvexMesh *mesh = PhysXConstructTools::CreatePxConvexMesh<true, 256>(vertices.size(), vertices.data());
 			const MathLib::HVector3& scale = convexMesh->GetScale();
-			PxConvexMeshGeometry geometry(mesh, PxMeshScale(ConvertUtils::ToPxVec3(scale)));
+			PxConvexMeshGeometry geometry(mesh, PxMeshScale(ConvertUtils::ToPx(scale)));
 			shape = physics->createShape(geometry, *pxMaterial->get());
 			PX_RELEASE(mesh);
 			break;
@@ -102,6 +102,11 @@ void PhysicsRigidDynamic::Update()
 {
 	if (m_RigidDynamic == nullptr)
 		return;
+
+	m_AngularDamping = m_RigidDynamic->getAngularDamping();
+	m_LinearVelocity = ConvertUtils::FromPx(m_RigidDynamic->getLinearVelocity());
+	m_AngularVelocity = ConvertUtils::FromPx(m_RigidDynamic->getAngularVelocity());
+	m_Transform = ConvertUtils::FromPx(m_RigidDynamic->getGlobalPose());
 }
 
 void PhysicsRigidDynamic::SetKinematic(bool bKinematic)
@@ -119,7 +124,7 @@ bool PhysicsRigidDynamic::AddColliderGeometry(PhysicsPtr < IColliderGeometry >&c
 	physx::PxShape *shape = ShapeFactory::CreateShape(colliderGeometry.get(), m_Material.get());
 	if (shape == nullptr)
 		return false;
-	shape->setLocalPose(ConvertUtils::ToPxTransform(localTrans));
+	shape->setLocalPose(ConvertUtils::ToPx(localTrans));
 	m_RigidDynamic->attachShape(*shape);
 	PxRigidBodyExt::updateMassAndInertia(*m_RigidDynamic, m_Material->GetDensity());
 	PX_RELEASE(shape);
@@ -137,7 +142,7 @@ void PhysicsRigidDynamic::SetTransform(const MathLib::HTransform3 &transform)
 {
 	if (m_RigidDynamic == nullptr)
 		return;
-	m_RigidDynamic->setGlobalPose(ConvertUtils::ToPxTransform(transform));
+	m_RigidDynamic->setGlobalPose(ConvertUtils::ToPx(transform));
 	m_Transform = transform;
 }
 
@@ -153,7 +158,7 @@ void PhysicsRigidDynamic::SetLinearVelocity(const MathLib::HVector3 &velocity)
 {
 	if (m_RigidDynamic == nullptr)
 		return;
-	m_RigidDynamic->setLinearVelocity(ConvertUtils::ToPxVec3(velocity));
+	m_RigidDynamic->setLinearVelocity(ConvertUtils::ToPx(velocity));
 	m_LinearVelocity = velocity;
 }
 
@@ -161,7 +166,7 @@ void PhysicsRigidDynamic::SetAngularVelocity(const MathLib::HVector3& velocity)
 {
 	if (m_RigidDynamic == nullptr)
 		return;
-	m_RigidDynamic->setAngularVelocity(ConvertUtils::ToPxVec3(velocity));
+	m_RigidDynamic->setAngularVelocity(ConvertUtils::ToPx(velocity));
 	m_AngularVelocity = velocity;
 }
 
@@ -194,10 +199,10 @@ bool PhysicsRigidStatic::AddColliderGeometry(PhysicsPtr < IColliderGeometry >&co
 		const MathLib::HVector3 &normal = plane->GetNormal();
 		const MathLib::HReal &distance = plane->GetDistance();
 		auto trans = PxTransformFromPlaneEquation(PxPlane(normal[0], normal[1], normal[2], distance));
-		shape->setLocalPose(ConvertUtils::ToPxTransform(localTrans).transform(trans));
+		shape->setLocalPose(ConvertUtils::ToPx(localTrans).transform(trans));
 	}
 	else
-	shape->setLocalPose(ConvertUtils::ToPxTransform(localTrans));
+	shape->setLocalPose(ConvertUtils::ToPx(localTrans));
 	m_RigidStatic->attachShape(*shape);
 	PX_RELEASE(shape);
 	m_ColliderGeometries.push_back(colliderGeometry);
@@ -213,6 +218,6 @@ void PhysicsRigidStatic::SetTransform(const MathLib::HTransform3 &transform)
 {
 	if (m_RigidStatic == nullptr)
 		return;
-	m_RigidStatic->setGlobalPose(ConvertUtils::ToPxTransform(transform));
+	m_RigidStatic->setGlobalPose(ConvertUtils::ToPx(transform));
 m_Transform = transform;
 }

@@ -1,6 +1,4 @@
 #include "Camera.h"
-using namespace Eigen;
-
 namespace MathLib
 {
     HMatrix4 LookAt(const HVector3& eye, const HVector3& target, const HVector3& up) {
@@ -16,7 +14,7 @@ namespace MathLib
     }
 
     HMatrix4 Perspective(MathLib::HReal fovy, MathLib::HReal& aspectRatio, MathLib::HReal zNear, MathLib::HReal zFar) {
-        HVector2 scaleXY = - 2 * zNear * tan(fovy / 2) * 0.5 * HVector2(1, 1 / aspectRatio);
+        HVector2 scaleXY = - 2 * zNear * std::tan(fovy / 2) * 0.5 * HVector2(1, 1 / aspectRatio);
 		HMatrix4 matrix;
 		matrix << scaleXY[0] , 0, 0, 0,
 			0, scaleXY[1], 0, 0,
@@ -77,9 +75,9 @@ namespace MathLib
 
         const MathLib::HReal Sensitivity = H_PI * 0.5f / 180.0f;
 
-        const AngleAxisf qx(Sensitivity * dx, HVector3(0, 1, 0));
+        const MathLib::HAngleAxis qx(Sensitivity * dx, HVector3(0, 1, 0));
         mDir = qx * mDir;
-        const AngleAxisf qy(Sensitivity * dy, viewY);
+        const MathLib::HAngleAxis qy(Sensitivity * dy, viewY);
         mDir = qy * mDir;
 
         mDir.normalize();
@@ -95,10 +93,10 @@ namespace MathLib
         HVector3 viewY = mDir.cross(HVector3(0, 1, 0));
 
         if (viewY.norm() < 1e-6f)
-            return HTransform3(Translation3f(mEye));
+            return HTransform3(MathLib::HTranslation3(mEye));
 
         const HMatrix3 m = (HMatrix3() << mDir.cross(viewY), viewY, -mDir).finished();
-        return HTransform3(Translation3f(mEye) * HQuaternion(m));
+        return HTransform3(MathLib::HTranslation3(mEye) * HQuaternion(m));
     }
 
     HMatrix4 Camera::getViewMatrix()

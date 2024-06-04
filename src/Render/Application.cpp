@@ -32,41 +32,62 @@
 #include "Physics/PhysicsCommon.h"
 #include "PxPhysicsAPI.h"
 
-
+#include "TestRigidBodyCreate.h"
+#include "MagnumConvertUtils.h"
 #include "Camera.h"
 using namespace physx;
+static MathLib::HVector3 mLightPosition(7.0f, 5.0f, 2.5f);
 namespace Magnum {
-		inline Magnum::Matrix4 ToMagnum(const MathLib::HMatrix4& mat) {
-			Magnum::Matrix4 matrix;
-			for (int i = 0; i < 4; ++i) {
-				for (int j = 0; j < 4; ++j) {
-					matrix[i][j] = mat(i, j);
-				}
+		Trade::MeshData CreateMesh(const std::vector<MathLib::HVector3>& vertices, const std::vector<uint32_t>& indices)
+		{
+			std::vector<MathLib::HVector3> normals0(vertices.size(), MathLib::HVector3(0, 0, 0));
+			for (size_t i = 0; i < indices.size(); i += 3)
+			{
+				const MathLib::HVector3& v0 = vertices[indices[i]];
+				const MathLib::HVector3& v1 = vertices[indices[i + 1]];
+				const MathLib::HVector3& v2 = vertices[indices[i + 2]];
+				MathLib::HVector3 normal = (v1 - v0).cross(v2 - v0);
+				normals0[indices[i]] += normal;
+				normals0[indices[i + 1]] += normal;
+				normals0[indices[i + 2]] += normal;
 			}
-			return matrix;
-		}
-		inline MathLib::HMatrix4 FromMagnum(const Magnum::Matrix4& mat) {
-			MathLib::HMatrix4 matrix;
-			for (int i = 0; i < 4; ++i) {
-				for (int j = 0; j < 4; ++j) {
-					matrix(i, j) = mat[i][j];
-				}
+			for (auto& normal : normals0)
+				normal.normalize();
+
+			size_t vertexCount = vertices.size();
+			Containers::Array<char> vertexData{ Containers::NoInit, vertexCount * (sizeof(Vector3) + sizeof(Vector3)) };
+			auto positions = Containers::arrayCast<Vector3>(vertexData.prefix(vertexCount * sizeof(Vector3)));
+			auto normals = Containers::arrayCast<Vector3>(vertexData.suffix(vertexCount * sizeof(Vector3)));
+
+			for (size_t i = 0; i < vertexCount; ++i)
+			{
+				new (&positions[i]) Vector3(ToMagnum(vertices[i]));
+				new (&normals[i]) Vector3(ToMagnum(normals0[i]));
 			}
-			return matrix;
+
+			Containers::Array<char> indexData{ Containers::NoInit, indices.size() * sizeof(uint32_t) };
+			auto indicesArray = Containers::arrayCast<uint32_t>(indexData);
+			
+			for (size_t i = 0; i < indices.size(); ++i)
+				new (&indicesArray[i]) uint32_t(indices[i]);
+
+			return Trade::MeshData{
+				MeshPrimitive::Triangles,
+				std::move(indexData),
+				Trade::MeshIndexData{indicesArray},
+				std::move(vertexData),
+				{Trade::MeshAttributeData{Trade::MeshAttribute::Position, positions},
+					Trade::MeshAttributeData{Trade::MeshAttribute::Normal, normals}} };
 		}
-		inline Magnum::Vector3 ToMagnum(const MathLib::HVector3& vec) {
-			return Magnum::Vector3(vec[0], vec[1], vec[2]);
-		}
-		inline MathLib::HVector3 FromMagnum(const Magnum::Vector3& vec) {
-			return MathLib::HVector3(vec[0], vec[1], vec[2]);
-		}
+
 		using Object3D = SceneGraph::Object<SceneGraph::MatrixTransformation3D>;
 		using Scene3D = SceneGraph::Scene<SceneGraph::MatrixTransformation3D>;
 
 		using namespace Math::Literals;
 		class FlatDrawable : public SceneGraph::Drawable3D {
 		public:
-			explicit FlatDrawable(Object3D& object, Shaders::Flat3D& shader, GL::Mesh& mesh, SceneGraph::DrawableGroup3D& drawables) : SceneGraph::Drawable3D{ object, &drawables }, _shader(shader), _mesh(mesh) {}
+			explicit FlatDrawable(Object3D& object, Shaders::Flat3D& shader, const Trade::MeshData& meshData, SceneGraph::DrawableGroup3D& drawables) :
+				SceneGraph::Drawable3D{ object, &drawables }, _shader(shader), _mesh(MeshTools::compile(meshData)) {}
 
 			void draw(const Matrix4& transformation, SceneGraph::Camera3D& camera) {
 				_shader
@@ -77,7 +98,7 @@ namespace Magnum {
 
 		private:
 			Shaders::Flat3D& _shader;
-			GL::Mesh& _mesh;
+			GL::Mesh _mesh;
 		};
 
 		class RenderableObject : public SceneGraph::Drawable3D {
@@ -88,11 +109,21 @@ namespace Magnum {
 			void UpdateTransform() {
 				if ((m_PhysicsObject == nullptr&& m_PhysicsObject->GetType()==PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC) || m_Object == nullptr)
 					return;
-				m_Object->setTransformation(ToMagnum(m_PhysicsObject->GetTransform().matrix()));
+				const MathLib::HMatrix4& matrix = m_PhysicsObject->GetTransform().matrix();
+				MathLib::HMatrix4 transposeMatrix = matrix.transpose();
+				MathLib::HMatrix3 R = matrix.block<3, 3>(0, 0);
+				MathLib::HVector3 t = matrix.block<3, 1>(0, 3);
+				MathLib::HQuaternion q(R);
+				const auto transformMatrix= m_Object->transformation();
+				const Vector3 scaling = transformMatrix.scaling();
+				m_Object->resetTransformation();
+				m_Object->scale(scaling);
+				m_Object->rotate(ToMagnum(q));
+				m_Object->translate(ToMagnum(t));
 			}
 
 			void draw(const Matrix4& transformationMatrix, SceneGraph::Camera3D& camera) override {
-				_shader.setLightPosition({ 7.0f, 5.0f, 2.5f })
+				_shader.setLightPosition(ToMagnum(mLightPosition))
 					.setTransformationMatrix(transformationMatrix)
 					.setNormalMatrix(transformationMatrix.normalMatrix())
 					.setProjectionMatrix(camera.projectionMatrix());
@@ -128,10 +159,8 @@ namespace Magnum {
 			void _AddPhysicsDebugRenderableObject(const PhysicsPtr<IPhysicsObject>& object);
 			PhysicsPtr<IPhysicsObject> _CreateDynamic(const MathLib::HTransform3& t, PhysicsPtr < IColliderGeometry>& geometry, const MathLib::HVector3& velocity = MathLib::HVector3(0, 0, 0));
 			private:
-			Shaders::VertexColor3D _vertexColorShader{ NoCreate };
 			Shaders::Flat3D _flatShader{ NoCreate };
 			Shaders::Phong _phongShader{ NoCreate };
-			GL::Mesh _mesh{ NoCreate }, _grid{ NoCreate };
 
 			Scene3D _scene;
 			SceneGraph::DrawableGroup3D _drawables;
@@ -161,22 +190,19 @@ namespace Magnum {
 			}
 			m_Camera = std::make_unique<MathLib::Camera>(MathLib::HVector3(50.0f, 50.0f, 50.0f), MathLib::HVector3(-0.6f, -0.6f, -0.6f), MathLib::HReal(Vector2{ framebufferSize()}.aspectRatio()));
 			/* Shaders, renderer setup */
-			_vertexColorShader = Shaders::VertexColor3D{};
 			_flatShader = Shaders::Flat3D{};
 			_phongShader = Shaders::Phong{};
 			GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
 
 			/* Grid */
-			_grid = MeshTools::compile(Primitives::grid3DWireframe({ 45, 45 }));
 			auto grid = new Object3D{ &_scene };
 			(*grid)
 				.rotateX(90.0_degf)
 				.scale(Vector3{ 32.0f });
-			new FlatDrawable{ *grid, _flatShader, _grid, _drawables };
+			new FlatDrawable{ *grid, _flatShader, Primitives::grid3DWireframe({ 45, 45 }), _drawables };
 
 			/* Set up the camera */
 			_cameraObject = new Object3D{ &_scene };
-			//_cameraObject->setTransformation(ToMagnumMatrix4(m_Camera->getTransform().matrix()));
 			_cameraObject->setTransformation(ToMagnum(m_Camera->getViewMatrix()));
 
 			_camera = new SceneGraph::Camera3D{ *_cameraObject };
@@ -210,8 +236,8 @@ namespace Magnum {
 				cameraKey = 'E';
 				break;
 			}
-			m_Camera->handleKey(cameraKey,0,0);
-			_cameraObject->setTransformation(ToMagnum(m_Camera->getViewMatrix()));
+			if(m_Camera->handleKey(cameraKey,0,0))
+				_cameraObject->setTransformation(ToMagnum(m_Camera->getViewMatrix()));
 		}
 
 		void TestingApplication::keyReleaseEvent(KeyEvent& event)
@@ -239,8 +265,7 @@ namespace Magnum {
 
 				PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
 
-				PhysicsPtr<IPhysicsObject> physicsObject = _CreateDynamic(m_Camera->getTransform(), geometry, m_Camera->getTransform().rotation() * MathLib::HVector3(0, 0, -1) * 100);
-				_AddPhysicsDebugRenderableObject(physicsObject);
+				_CreateDynamic(m_Camera->getTransform(), geometry, m_Camera->getTransform().rotation() * MathLib::HVector3(0, 0, -1) * 100);
 				break;
 			}
 			default:
@@ -280,9 +305,9 @@ namespace Magnum {
 		void TestingApplication::drawEvent() {
 			GL::defaultFramebuffer.clear(GL::FramebufferClear::Color | GL::FramebufferClear::Depth);
 			m_Scene->Tick(1.f/10.f);
-			_camera->draw(_drawables);
 			for (auto& renderable : m_DynamicRenderableObjects)
 				renderable->UpdateTransform();
+			_camera->draw(_drawables);
 			swapBuffers();
 			redraw();
 		}
@@ -319,13 +344,21 @@ namespace Magnum {
 			groundPlaneObject->AddColliderGeometry(groundPlane, MathLib::HTransform3::Identity());
 			if (m_Scene)
 				m_Scene->AddPhysicsObject(groundPlaneObject);
-			_AddPhysicsDebugRenderableObject(groundPlaneObject);
+			//_AddPhysicsDebugRenderableObject(groundPlaneObject);
 
-			//TestRigidBody::CreateTestingMeshData();//Bunny
+			TestRigidBody::CreateTestingMeshData();//Bunny
 			//TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\teapot.obj", 0.2);
 			//TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\banana.obj", 1);
 			//TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\armadillo.obj",0.4);
-			//TestRigidBody::TestRigidBodyCreate();
+			auto physicsObject= TestRigidBody::TestRigidBodyCreate();
+			if (m_Scene)
+			{
+				for (auto& physicsObject : physicsObject)
+				{
+					m_Scene->AddPhysicsObject(physicsObject);
+					_AddPhysicsDebugRenderableObject(physicsObject);
+				}
+			}
 
 			if (!interactive)
 			{
@@ -352,7 +385,7 @@ namespace Magnum {
 				CollisionGeometryCreateOptions options;
 				geometry->GetParams(options);
 				// 根据几何类型创建相应的网格
-				Trade::MeshData meshData = Primitives::cubeSolid(); // 默认值
+				Trade::MeshData meshData = Primitives::cubeSolid();
 				auto* object = new Object3D{ &_scene };
 				switch (options.m_GeometryType)
 				{
@@ -369,30 +402,34 @@ namespace Magnum {
 					break;
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE:
 					meshData = Primitives::planeSolid();
-					//object->rotateXLocal(90.0_degf);
+					object->rotateXLocal(90.0_degf);
+					object->scale(ToMagnum(options.m_Scale));
+					break;
+				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH:
+					meshData =  CreateMesh(options.m_TriangleMeshParams.m_Vertices, options.m_TriangleMeshParams.m_Indices);
 					object->scale(ToMagnum(options.m_Scale));
 					break;
 				default:
 					continue; // 其他类型暂不处理
 				}
 
-				object->setTransformation(ToMagnum(physicsObject->GetTransform().matrix()));
-				m_DynamicRenderableObjects.push_back(new RenderableObject{ *object, _phongShader, meshData, _drawables , physicsObject});
+				const MathLib::HMatrix4& matrix = physicsObject->GetTransform().matrix();
+				MathLib::HMatrix4 transposeMatrix = matrix.transpose();
+				MathLib::HMatrix3 R = matrix.block<3, 3>(0, 0);
+				MathLib::HVector3 t = matrix.block<3, 1>(0, 3);
+				MathLib::HQuaternion q(R);
+				object->rotate(ToMagnum(q));
+				object->translate(ToMagnum(t));
+				m_DynamicRenderableObjects.push_back(new RenderableObject{ *object, _phongShader, meshData, _drawables , physicsObject });	
 			}
 		}
 		PhysicsPtr<IPhysicsObject> TestingApplication::_CreateDynamic(const MathLib::HTransform3& t, PhysicsPtr < IColliderGeometry>& geometry, const MathLib::HVector3& velocity )
 		{
-			PhysicsObjectCreateOptions createOptions{};
-			createOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
-			createOptions.m_Transform = t;
-			PhysicsPtr< IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(createOptions);
-			IDynamicObject* rigidDynamic = dynamic_cast<IDynamicObject*>(physicsObject.get());
-			physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
-			rigidDynamic->SetAngularDamping(0.5);
-			rigidDynamic->SetLinearVelocity(velocity);
+			auto dynamic = TestRigidBody::CreateDynamic(t, geometry, velocity);
 			if (m_Scene)
-				m_Scene->AddPhysicsObject(physicsObject);
-			return physicsObject;
+				m_Scene->AddPhysicsObject(dynamic);
+			_AddPhysicsDebugRenderableObject(dynamic);
+			return dynamic;
 		}
 }
 

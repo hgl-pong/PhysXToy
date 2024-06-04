@@ -12,11 +12,9 @@ class PhysicsRigidDynamic : public IPhysicsObject,virtual public IDynamicObject
 {
 public:
 	PhysicsRigidDynamic(PhysicsPtr < IPhysicsMaterial >&material);
-
-	void Update();
-
 public:	
 	void Release()override;
+	void Update() override;
 	bool IsValid() const override { return m_RigidDynamic != nullptr; };
 	bool AddColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry, const MathLib::HTransform3 &localTrans) override;
 	void GetColliderGeometries(std::vector<PhysicsPtr<IColliderGeometry>>& geomeries) override { geomeries = m_ColliderGeometries; };
@@ -52,8 +50,9 @@ class PhysicsRigidStatic : public IPhysicsObject
 {
 public:
 	PhysicsRigidStatic(PhysicsPtr < IPhysicsMaterial>& material);
-	void Release()override;
 public:	
+	void Release()override;
+	void Update() override {}
 	bool IsValid() const override { return m_RigidStatic != nullptr; };
 	void SetTransform(const MathLib::HTransform3 &trans);
 	const MathLib::HTransform3 &GetTransform() const override { return m_Transform; };

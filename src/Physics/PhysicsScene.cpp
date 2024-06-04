@@ -36,6 +36,11 @@ void PhysicsScene::Tick(MathLib::HReal deltaTime)
 {
     m_Scene->simulate(deltaTime);
     m_Scene->fetchResults(true);
+
+    for (auto& dynamicObject : m_RigidDynamic)
+    {
+		dynamicObject->Update();
+	}
 }
 
 bool PhysicsScene::AddPhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject)
