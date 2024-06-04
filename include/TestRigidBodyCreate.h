@@ -69,6 +69,7 @@ namespace TestRigidBody
 			CollisionGeometryCreateOptions options;
 			options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH;
 			options.m_ConvexMeshParams.m_Vertices = ConvexDecomposedMeshData[i].m_Vertices;
+			options.m_ConvexMeshParams.m_Indices = ConvexDecomposedMeshData[i].m_Indices;
 			options.m_Scale = MathLib::HVector3(3.0f, 3.0f, 3.0f);
 			geos[i] = PhysicsEngineUtils::CreateColliderGeometry(options);
 		}
@@ -199,6 +200,7 @@ namespace TestRigidBody
 		PhysicsPtr<IColliderGeometry> geometry0 = PhysicsEngineUtils::CreateColliderGeometry(options);
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH;
 		options.m_ConvexMeshParams.m_Vertices = ConvexMeshData.m_Vertices;
+		options.m_ConvexMeshParams.m_Indices= ConvexMeshData.m_Indices;
 		options.m_Scale = MathLib::HVector3(3.0f, 3.0f, 3.0f);
 		PhysicsPtr<IColliderGeometry> geometry1 = PhysicsEngineUtils::CreateColliderGeometry(options);
 
@@ -227,6 +229,7 @@ namespace TestRigidBody
 		CollisionGeometryCreateOptions options;
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH;
 		options.m_ConvexMeshParams.m_Vertices = ConvexMeshData.m_Vertices;
+		options.m_ConvexMeshParams.m_Indices = ConvexMeshData.m_Indices;
 		options.m_Scale = MathLib::HVector3(3.0f, 3.0f, 3.0f);
 
 		PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);

@@ -47,7 +47,7 @@ public:
 	virtual void Release() = 0;
 	virtual void Update() = 0;
 	virtual bool AddColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry, const MathLib::HTransform3 &localTrans) = 0;
-	virtual void GetColliderGeometries(std::vector<PhysicsPtr<IColliderGeometry>>& geomeries) = 0;
+	virtual void GetColliderGeometries(std::vector<PhysicsPtr<IColliderGeometry>>& geomeries ,std::vector<MathLib::HTransform3>* geoLocalPos) = 0;
 	virtual PhysicsObjectType GetType() const = 0;
 	virtual size_t GetOffset() const = 0;
 	virtual void SetTransform(const MathLib::HTransform3 &trans) = 0;
@@ -67,6 +67,7 @@ public:
 	virtual MathLib::HVector3 GetLinearVelocity() const = 0;
 	virtual MathLib::HReal GetAngularDamping() const = 0;
 	virtual MathLib::HVector3 GetAngularVelocity() const = 0;
+	virtual bool IsSleeping()const = 0;
 };
 
 class IPhysicsMaterial

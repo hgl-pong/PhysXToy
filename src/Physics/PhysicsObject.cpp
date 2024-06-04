@@ -130,6 +130,7 @@ bool PhysicsRigidDynamic::AddColliderGeometry(PhysicsPtr < IColliderGeometry >&c
 	PX_RELEASE(shape);
 	m_Mass= m_RigidDynamic->getMass();
 	m_ColliderGeometries.push_back(colliderGeometry);
+	m_ColliderLocalPos.push_back(localTrans);
 	return true;
 }
 
@@ -170,7 +171,13 @@ void PhysicsRigidDynamic::SetAngularVelocity(const MathLib::HVector3& velocity)
 	m_AngularVelocity = velocity;
 }
 
+bool PhysicsRigidDynamic::IsSleeping()const
+{
+	if (m_RigidDynamic == nullptr)
+		return false;
+	return m_RigidDynamic->isSleeping();
 
+}
 
 /////////////////RigidStatic////////////////////////
 PhysicsRigidStatic::PhysicsRigidStatic(PhysicsPtr < IPhysicsMaterial >&material)
@@ -206,6 +213,7 @@ bool PhysicsRigidStatic::AddColliderGeometry(PhysicsPtr < IColliderGeometry >&co
 	m_RigidStatic->attachShape(*shape);
 	PX_RELEASE(shape);
 	m_ColliderGeometries.push_back(colliderGeometry);
+	m_ColliderLocalPos.push_back(localTrans);
 	return true;
 }
 

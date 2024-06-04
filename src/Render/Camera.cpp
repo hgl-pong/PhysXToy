@@ -14,7 +14,7 @@ namespace MathLib
     }
 
     HMatrix4 Perspective(MathLib::HReal fovy, MathLib::HReal& aspectRatio, MathLib::HReal zNear, MathLib::HReal zFar) {
-        HVector2 scaleXY = - 2 * zNear * std::tan(fovy / 2) * 0.5 * HVector2(1, 1 / aspectRatio);
+        HVector2 scaleXY = - 2 * zNear * std::tan(fovy / 2) * 0.5 * HVector2(0.5f, 1 / aspectRatio);
 		HMatrix4 matrix;
 		matrix << scaleXY[0] , 0, 0, 0,
 			0, scaleXY[1], 0, 0,

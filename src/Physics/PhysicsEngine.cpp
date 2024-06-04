@@ -146,7 +146,7 @@ PhysicsPtr<IColliderGeometry> PhysicsEngine::CreateColliderGeometry(const Collis
 	}
 	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH:
 	{
-		geometry = new ConvexMeshColliderGeometry(options.m_ConvexMeshParams.m_Vertices);
+		geometry = new ConvexMeshColliderGeometry(options.m_ConvexMeshParams.m_Vertices,options.m_ConvexMeshParams.m_Indices);
 		break;
 	}
 	default:

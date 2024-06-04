@@ -134,6 +134,7 @@ struct CollisionGeometryCreateOptions
 	struct ConvexMeshParams
 	{
 		std::vector<MathLib::HVector3> m_Vertices;
+		std::vector<uint32_t> m_Indices;
 	} m_ConvexMeshParams;
 	MathLib::HVector3 m_Scale = {1, 1, 1};
 };

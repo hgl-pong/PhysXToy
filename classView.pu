@@ -1,0 +1,300 @@
+@startuml PhysicsEngineDiagram
+
+interface IPhysicsEngine {
+  + CreateObject(options : PhysicsObjectCreateOptions) : PhysicsPtr<IPhysicsObject>
+  + CreateMaterial(options : PhysicsMaterialCreateOptions) : PhysicsPtr<IPhysicsMaterial>
+  + CreateScene(options : PhysicsSceneCreateOptions) : PhysicsPtr<IPhysicsScene>
+  + CreateColliderGeometry(options : CollisionGeometryCreateOptions) : PhysicsPtr<IColliderGeometry>
+}
+
+class PhysicsEngine {
+  - PhysicsEngine(options : PhysicsEngineOptions)
+  - ~PhysicsEngine()
+  + CreateObject(options : PhysicsObjectCreateOptions) : PhysicsPtr<IPhysicsObject>
+  + CreateMaterial(options : PhysicsMaterialCreateOptions) : PhysicsPtr<IPhysicsMaterial>
+  + CreateScene(options : PhysicsSceneCreateOptions) : PhysicsPtr<IPhysicsScene>
+  + CreateColliderGeometry(options : CollisionGeometryCreateOptions) : PhysicsPtr<IColliderGeometry>
+  - m_Options : PhysicsEngineOptions
+  - m_AllocatorCallback : physx::PxAllocatorCallback*
+  - m_ErrorCallback : physx::PxErrorCallback*
+  - m_Cooking : physx::PxCooking*
+  - m_Pvd : physx::PxPvd*
+  - m_Foundation : physx::PxFoundation*
+  - m_Physics : physx::PxPhysics*
+  - m_CpuDispatcher : physx::PxCpuDispatcher*
+  - m_bInitialized : bool
+}
+
+IPhysicsEngine <|-- PhysicsEngine
+
+@enduml
+@startuml PhysicsSceneDiagram
+
+interface IPhysicsScene {
+  + Release() : void
+  + Tick(deltaTime : MathLib::HReal) : void
+  + AddPhysicsObject(physicsObject : PhysicsPtr<IPhysicsObject>) : bool
+  + RemovePhysicsObject(physicsObject : PhysicsPtr<IPhysicsObject>) : void
+  + GetPhysicsObjectCount() : uint32_t
+  + GetPhysicsRigidDynamicCount() : uint32_t
+  + GetPhysicsRigidStaticCount() : uint32_t
+  + GetOffset() : size_t
+}
+
+class PhysicsScene {
+  + PhysicsScene(options : PhysicsSceneCreateOptions, dispatcher : physx::PxCpuDispatcher*)
+  + Release() : void
+  + Tick(deltaTime : MathLib::HReal) : void
+  + AddPhysicsObject(physicsObject : PhysicsPtr<IPhysicsObject>) : bool
+  + RemovePhysicsObject(physicsObject : PhysicsPtr<IPhysicsObject>) : void
+  + GetPhysicsObjectCount() : uint32_t
+  + GetPhysicsRigidDynamicCount() : uint32_t
+  + GetPhysicsRigidStaticCount() : uint32_t
+  + GetOffset() : size_t
+  - m_Scene : PhysXPtr<physx::PxScene>
+  - m_RigidStatic : std::unordered_set<PhysicsPtr<IPhysicsObject>>
+  - m_RigidDynamic : std::unordered_set<PhysicsPtr<IPhysicsObject>>
+}
+
+IPhysicsScene <|-- PhysicsScene
+
+@enduml
+@startuml PhysicsMaterialDiagram
+
+class PhysicsMaterial {
+  + PhysicsMaterial(options : PhysicsMaterialCreateOptions)
+  + Release() : void
+  + GetStaticFriction() : MathLib::HReal
+  + GetDynamicFriction() : MathLib::HReal
+  + GetRestitution() : MathLib::HReal
+  + SetStaticFriction(value : MathLib::HReal) : MathLib::HReal
+  + SetDynamicFriction(value : MathLib::HReal) : MathLib::HReal
+  + SetRestitution(value : MathLib::HReal) : MathLib::HReal
+  + GetDensity() : MathLib::HReal
+  + SetDensity(value : MathLib::HReal) : MathLib::HReal
+  + GetOffset() : size_t
+  - m_Material : PhysXPtr<physx::PxMaterial>
+  - m_Density : MathLib::HReal
+}
+
+@enduml
+@startuml PhysicsObjectDiagram
+
+interface IPhysicsObject {
+  + Release() : void
+  + Update() : void
+  + AddColliderGeometry(colliderGeometry : PhysicsPtr<IColliderGeometry>, localTrans : MathLib::HTransform3) : bool
+  + GetColliderGeometries(geomeries : std::vector<PhysicsPtr<IColliderGeometry>>, geoLocalPos : std::vector<MathLib::HTransform3>*) : void
+  + GetType() : PhysicsObjectType
+  + GetOffset() : size_t
+  + SetTransform(trans : MathLib::HTransform3) : void
+  + GetTransform() : const MathLib::HTransform3&
+  + IsValid() : bool
+}
+
+interface IDynamicObject {
+  + SetAngularDamping(damping : MathLib::HReal) : void
+  + SetLinearVelocity(velocity : MathLib::HVector3) : void
+  + SetAngularVelocity(velocity : MathLib::HVector3) : void
+  + SetKinematic(bKinematic : bool) : void
+  + IsKinematic() : bool
+  + GetMass() : MathLib::HReal
+  + GetLinearVelocity() : MathLib::HVector3
+  + GetAngularDamping() : MathLib::HReal
+  + GetAngularVelocity() : MathLib::HVector3
+  + IsSleeping() : bool
+}
+
+class PhysicsRigidDynamic {
+  + PhysicsRigidDynamic(material : PhysicsPtr<IPhysicsMaterial>)
+  + Release() : void
+  + Update() : void
+  + IsValid() : bool
+  + AddColliderGeometry(colliderGeometry : PhysicsPtr<IColliderGeometry>, localTrans : MathLib::HTransform3) : bool
+  + GetColliderGeometries(geomeries : std::vector<PhysicsPtr<IColliderGeometry>>, geoLocalPos : std::vector<MathLib::HTransform3>*) : void
+  + GetType() : PhysicsObjectType
+  + GetOffset() : size_t
+  + SetTransform(trans : MathLib::HTransform3) : void
+  + GetTransform() : const MathLib::HTransform3&
+  + SetAngularDamping(damping : MathLib::HReal) : void
+  + SetLinearVelocity(velocity : MathLib::HVector3) : void
+  + SetAngularVelocity(velocity : MathLib::HVector3) : void
+  + SetKinematic(bKinematic : bool) : void
+  + IsKinematic() : bool
+  + GetMass() : MathLib::HReal
+  + GetLinearVelocity() : MathLib::HVector3
+  + GetAngularDamping() : MathLib::HReal
+  + GetAngularVelocity() : MathLib::HVector3
+  + IsSleeping() : bool
+  - m_Type : PhysicsObjectType
+  - m_RigidDynamic : PhysXPtr<physx::PxRigidDynamic>
+  - m_Material : PhysicsPtr<IPhysicsMaterial>
+  - m_ColliderGeometries : std::vector<PhysicsPtr<IColliderGeometry>>
+  - m_ColliderLocalPos : std::vector<MathLib::HTransform3>
+  - m_bIsKinematic : bool
+  - m_Mass : MathLib::HReal
+  - m_LinearVelocity : MathLib::HVector3
+  - m_AngularDamping : MathLib::HReal
+  - m_AngularVelocity : MathLib::HVector3
+  - m_Transform : MathLib::HTransform3
+}
+
+IPhysicsObject <|-- PhysicsRigidDynamic
+IDynamicObject <|.. PhysicsRigidDynamic
+
+class PhysicsRigidStatic {
+  + PhysicsRigidStatic(material : PhysicsPtr<IPhysicsMaterial>)
+  + Release() : void
+  + Update() : void
+  + IsValid() : bool
+  + SetTransform(trans : MathLib::HTransform3) : void
+  + GetTransform() : const MathLib::HTransform3&
+  + AddColliderGeometry(colliderGeometry : PhysicsPtr<IColliderGeometry>, localTrans : MathLib::HTransform3) : bool
+  + GetColliderGeometries(geomeries : std::vector<PhysicsPtr<IColliderGeometry>>, geoLocalPos : std::vector<MathLib::HTransform3>*) : void
+  + GetType() : PhysicsObjectType
+  + GetOffset() : size_t
+  - m_Type : PhysicsObjectType
+  - m_RigidStatic : PhysXPtr<physx::PxRigidStatic>
+  - m_Material : PhysicsPtr<IPhysicsMaterial>
+  - m_ColliderGeometries : std::vector<PhysicsPtr<IColliderGeometry>>
+  - m_ColliderLocalPos : std::vector<MathLib::HTransform3>
+  - m_Transform : MathLib::HTransform3
+}
+
+IPhysicsObject <|-- PhysicsRigidStatic
+
+@enduml
+
+@startuml OCLAccelerationDiagram
+
+class OCLAcceleration {
+  + OCLAcceleration()
+  + ~OCLAcceleration()
+  + InitPlatform(platformIndex : unsigned int = 0) : bool
+  + InitDevice(deviceIndex : unsigned int) : bool
+  + GetPlatformsInfo(info : std::vector<std::string>, indentation : std::string) : bool
+  + GetDevicesInfo(info : std::vector<std::string>, indentation : std::string) : bool
+  + GetPlatform() : cl_platform_id*
+  + GetPlatform() const : const cl_platform_id*
+  + GetDevice() : cl_device_id*
+  + GetDevice() const : const cl_device_id*
+  - m_platform : cl_platform_id
+  - m_device : cl_device_id
+  - m_lastError : cl_int
+}
+
+@enduml
+
+@startuml ConvexMeshDecomposerDiagram
+
+class ConvexMeshDecomposer {
+  + ConvexMeshDecomposer(useOCLAcceleration : bool = true)
+  + ~ConvexMeshDecomposer()
+  + EnableOCLAcceleration(bEnable : bool) : void
+  + IsOCLAccelerationEnabled() : bool
+  + Decompose(meshData : PhysicsMeshData, params : ConvexDecomposeOptions, convexMeshesData : std::vector<PhysicsMeshData>) : bool
+  - _InitOCLAcceleration() : void
+  - m_bUseOCLAcceleration : bool
+  - m_VHACD : VHACD::IVHACD*
+  - m_OCLAcceleration : std::unique_ptr<OCLAcceleration>
+}
+
+@enduml
+
+@startuml ColliderGeometryDiagram
+
+interface IColliderGeometry {
+  + Release() : void
+  + GetType() : CollierGeometryType
+  + SetScale(scale : MathLib::HVector3) : void
+  + GetParams(options : CollisionGeometryCreateOptions) : void
+}
+
+class BoxColliderGeometry {
+  + BoxColliderGeometry(halfExtents : MathLib::HVector3)
+  + Release() : void
+  + GetType() : CollierGeometryType
+  + SetScale(scale : MathLib::HVector3) : void
+  + GetHalfSize() : MathLib::HVector3
+  + GetScale() : MathLib::HVector3
+  + GetParams(options : CollisionGeometryCreateOptions) : void
+  - m_HalfExtents : MathLib::HVector3
+  - m_Scale : MathLib::HVector3
+}
+
+class SphereColliderGeometry {
+  + SphereColliderGeometry(radius : MathLib::HReal)
+  + Release() : void
+  + GetType() : CollierGeometryType
+  + SetScale(scale : MathLib::HVector3) : void
+  + GetRadius() : MathLib::HReal
+  + GetScale() : MathLib::HVector3
+  + GetParams(options : CollisionGeometryCreateOptions) : void
+  - m_Radius : MathLib::HReal
+  - m_Scale : MathLib::HVector3
+}
+
+class PlaneColliderGeometry {
+  + PlaneColliderGeometry(normal : MathLib::HVector3, distance : MathLib::HReal)
+  + Release() : void
+  + GetType() : CollierGeometryType
+  + SetScale(scale : MathLib::HVector3) : void
+  + GetNormal() : MathLib::HVector3
+  + GetDistance() : MathLib::HReal
+  + GetScale() : MathLib::HVector3
+  + GetParams(options : CollisionGeometryCreateOptions) : void
+  - m_Normal : MathLib::HVector3
+  - m_Distance : MathLib::HReal
+  - m_Scale : MathLib::HVector3
+}
+
+class CapsuleColliderGeometry {
+  + CapsuleColliderGeometry(radius : MathLib::HReal, halfHeight : MathLib::HReal)
+  + Release() : void
+  + GetType() : CollierGeometryType
+  + SetScale(scale : MathLib::HVector3) : void
+  + GetRadius() : MathLib::HReal
+  + GetHalfHeight() : MathLib::HReal
+  + GetScale() : MathLib::HVector3
+  + GetParams(options : CollisionGeometryCreateOptions) : void
+  - m_Radius : MathLib::HReal
+  - m_HalfHeight : MathLib::HReal
+  - m_Scale : MathLib::HVector3
+}
+
+class TriangleMeshColliderGeometry {
+  + TriangleMeshColliderGeometry(vertices : std::vector<MathLib::HVector3>, indices : std::vector<uint32_t>)
+  + Release() : void
+  + GetType() : CollierGeometryType
+  + SetScale(scale : MathLib::HVector3) : void
+  + GetVertices() : const std::vector<MathLib::HVector3>&
+  + GetIndices() : const std::vector<uint32_t>&
+  + GetScale() : MathLib::HVector3
+  + GetParams(options : CollisionGeometryCreateOptions) : void
+  - m_Vertices : std::vector<MathLib::HVector3>
+  - m_Indices : std::vector<uint32_t>
+  - m_Scale : MathLib::HVector3
+}
+
+class ConvexMeshColliderGeometry {
+  + ConvexMeshColliderGeometry(vertices : std::vector<MathLib::HVector3>, indices : std::vector<uint32_t>)
+  + Release() : void
+  + GetType() : CollierGeometryType
+  + SetScale(scale : MathLib::HVector3) : void
+  + GetVertices() : const std::vector<MathLib::HVector3>&
+  + GetIndices() : const std::vector<uint32_t>&
+  + GetScale() : MathLib::HVector3
+  + GetParams(options : CollisionGeometryCreateOptions) : void
+  - m_Vertices : std::vector<MathLib::HVector3>
+  - m_Indices : std::vector<uint32_t>
+  - m_Scale : MathLib::HVector3
+}
+
+IColliderGeometry <|-- BoxColliderGeometry
+IColliderGeometry <|-- SphereColliderGeometry
+IColliderGeometry <|-- PlaneColliderGeometry
+IColliderGeometry <|-- CapsuleColliderGeometry
+IColliderGeometry <|-- TriangleMeshColliderGeometry
+IColliderGeometry <|-- ConvexMeshColliderGeometry
+
+@enduml

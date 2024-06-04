@@ -32,20 +32,44 @@ inline Magnum::Quaternion ToMagnum(const MathLib::HQuaternion& quat) {
 	return Magnum::Quaternion({ quat.x(), quat.y(), quat.z() }, quat.w());
 }
 
-//inline Trade::MeshData ToMagnum(const std::vector<MathLib::HVector3>& vertices, const std::vector<uint32_t>& indices) 
-//{
-//	Trade::MeshData meshData;
-//	meshData.vertexCount = vertices.size();
-//	meshData.indexCount = indices.size();
-//	meshData.vertexData = new float[meshData.vertexCount * 3];
-//	meshData.indexData = new uint32_t[meshData.indexCount];
-//	for (size_t i = 0; i < vertices.size(); i++) {
-//		meshData.vertexData[i * 3] = vertices[i][0];
-//		meshData.vertexData[i * 3 + 1] = vertices[i][1];
-//		meshData.vertexData[i * 3 + 2] = vertices[i][2];
-//	}
-//	for (size_t i = 0; i < indices.size(); i++) {
-//		meshData.indexData[i] = indices[i];
-//	}
-//	return meshData;
-//}
+inline Magnum::Trade::MeshData CreateMesh(const std::vector<MathLib::HVector3>& vertices, const std::vector<uint32_t>& indices)
+{
+	std::vector<MathLib::HVector3> normals0(vertices.size(), MathLib::HVector3(0, 0, 0));
+	for (size_t i = 0; i < indices.size(); i += 3)
+	{
+		const MathLib::HVector3& v0 = vertices[indices[i]];
+		const MathLib::HVector3& v1 = vertices[indices[i + 1]];
+		const MathLib::HVector3& v2 = vertices[indices[i + 2]];
+		MathLib::HVector3 normal = (v1 - v0).cross(v2 - v0);
+		normals0[indices[i]] += normal;
+		normals0[indices[i + 1]] += normal;
+		normals0[indices[i + 2]] += normal;
+	}
+	for (auto& normal : normals0)
+		normal.normalize();
+
+	size_t vertexCount = vertices.size();
+	Corrade::Containers::Array<char> vertexData{ Corrade::Containers::NoInit, vertexCount * (sizeof(Magnum::Vector3) + sizeof(Magnum::Vector3)) };
+	auto positions = Corrade::Containers::arrayCast<Magnum::Vector3>(vertexData.prefix(vertexCount * sizeof(Magnum::Vector3)));
+	auto normals = Corrade::Containers::arrayCast<Magnum::Vector3>(vertexData.suffix(vertexCount * sizeof(Magnum::Vector3)));
+
+	for (size_t i = 0; i < vertexCount; ++i)
+	{
+		new (&positions[i]) Magnum::Vector3(ToMagnum(vertices[i]));
+		new (&normals[i]) Magnum::Vector3(ToMagnum(normals0[i]));
+	}
+
+	Corrade::Containers::Array<char> indexData{ Corrade::Containers::NoInit, indices.size() * sizeof(uint32_t) };
+	auto indicesArray = Corrade::Containers::arrayCast<uint32_t>(indexData);
+
+	for (size_t i = 0; i < indices.size(); ++i)
+		new (&indicesArray[i]) uint32_t(indices[i]);
+
+	return Magnum::Trade::MeshData{
+		Magnum::MeshPrimitive::Lines,
+		std::move(indexData),
+		Magnum::Trade::MeshIndexData{indicesArray},
+		std::move(vertexData),
+		{Magnum::Trade::MeshAttributeData{Magnum::Trade::MeshAttribute::Position, positions},
+			Magnum::Trade::MeshAttributeData{Magnum::Trade::MeshAttribute::Normal, normals}} };
+}

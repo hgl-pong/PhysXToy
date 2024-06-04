@@ -7,3 +7,4 @@ build/
 *.manifest
 *.ilk
 executable
+out/

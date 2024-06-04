@@ -38,7 +38,8 @@ find_package(Magnum REQUIRED
     Shaders
     Trade
     Text
-    Sdl2Application)
+    Sdl2Application
+)
 
 target_include_directories(${PHYSX_TOY} PUBLIC ./include
     PRIVATE)
@@ -58,7 +59,8 @@ target_link_libraries(${PHYSX_TOY} PRIVATE
     Magnum::Trade
     Magnum::Text
     Magnum::SceneGraph
-    Magnum::Sdl2Application)
+    Magnum::Sdl2Application
+)
 
 add_custom_command(TARGET ${PHYSX_TOY} POST_BUILD
                         COMMAND ${CMAKE_COMMAND} -E copy_if_different

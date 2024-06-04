@@ -350,4 +350,5 @@ int main(int argc, char** argv)
 	PhysicsPtr<PhysicsEngineTestingApplication> app = make_physics_ptr(CreatePhysicsEngineTestingApplication(argc, argv));
 	return app->Run();
 }
+
 #endif // GLUT_RENDER

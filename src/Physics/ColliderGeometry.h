@@ -117,19 +117,22 @@ private:
 class ConvexMeshColliderGeometry : public IColliderGeometry
 {
 public:
-	ConvexMeshColliderGeometry(const std::vector<MathLib::HVector3> &vertices) : m_Vertices(vertices) {}
+	ConvexMeshColliderGeometry(const std::vector<MathLib::HVector3> &vertices,const std::vector<uint32_t>& indices) : m_Vertices(vertices),m_Indices(indices) {}
 	void Release()override {}
 	CollierGeometryType GetType() const override { return CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH; }
 	void SetScale(const MathLib::HVector3 &scale) override { m_Scale = scale; }
 	const std::vector<MathLib::HVector3> &GetVertices() const { return m_Vertices; }
+	const std::vector<uint32_t> &GetIndices() const { return m_Indices; }
 	MathLib::HVector3 GetScale() const { return m_Scale; }
 	void GetParams(CollisionGeometryCreateOptions& options)
 	{
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH;
 		options.m_ConvexMeshParams.m_Vertices = m_Vertices;
+		options.m_ConvexMeshParams.m_Indices = m_Indices;
 		options.m_Scale = m_Scale;
 	}
 private:
 	std::vector<MathLib::HVector3> m_Vertices;
+	std::vector<uint32_t> m_Indices;
 	MathLib::HVector3 m_Scale;
 };
