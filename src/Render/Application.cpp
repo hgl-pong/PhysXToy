@@ -37,6 +37,7 @@
 #include "Camera.h"
 using namespace physx;
 static MathLib::HVector3 mLightPosition(7.0f, 5.0f, 2.5f);
+static Magnum::Color4 mLightColor(0.5f, 0.5f, 0.5f, 1.0f);
 namespace Magnum {
 		Trade::MeshData CreateMesh(const std::vector<MathLib::HVector3>& vertices, const std::vector<uint32_t>& indices)
 		{
@@ -124,13 +125,25 @@ namespace Magnum {
 
 			void draw(const Matrix4& transformationMatrix, SceneGraph::Camera3D& camera) override {
 				_shader.setLightPosition(ToMagnum(mLightPosition))
+					.setAmbientColor(m_AmbientColor)
+					.setDiffuseColor(m_DiffuseColor)
+					.setLightColor(mLightColor)
 					.setTransformationMatrix(transformationMatrix)
 					.setNormalMatrix(transformationMatrix.normalMatrix())
 					.setProjectionMatrix(camera.projectionMatrix());
 				_mesh.draw(_shader);
 			}
 
+			void SetAmbientColor(const Color4& color) {
+				m_AmbientColor = color;
+			}
+			void SetDiffuseColor(const Color4& color) {
+				m_DiffuseColor = color;
+			}
 		private:
+			Color4 m_AmbientColor = { 1.f,1.f,1.f,1.f };
+			Color4 m_DiffuseColor = { 1.f,1.f,1.f,1.f };
+
 			Shaders::Phong& _shader;
 			GL::Mesh _mesh;
 			Object3D* m_Object;
@@ -420,7 +433,10 @@ namespace Magnum {
 				MathLib::HQuaternion q(R);
 				object->rotate(ToMagnum(q));
 				object->translate(ToMagnum(t));
-				m_DynamicRenderableObjects.push_back(new RenderableObject{ *object, _phongShader, meshData, _drawables , physicsObject });	
+				RenderableObject* newObject = new RenderableObject{ *object, _phongShader, meshData, _drawables , physicsObject };
+				newObject->SetAmbientColor(0x00110000_rgbaf);
+				newObject->SetDiffuseColor(0x00000000_rgbaf);
+				m_DynamicRenderableObjects.push_back(newObject);	
 			}
 		}
 		PhysicsPtr<IPhysicsObject> TestingApplication::_CreateDynamic(const MathLib::HTransform3& t, PhysicsPtr < IColliderGeometry>& geometry, const MathLib::HVector3& velocity )
