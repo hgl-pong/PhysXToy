@@ -14,13 +14,12 @@ public:
 	};
 	float GetFrameTime()
 	{
-		std::chrono::duration<float> duration = m_end - m_start;
-		return duration.count();
+		return std::chrono::duration_cast<std::chrono::milliseconds>(m_end - m_start).count();
 	};
 
 	float GetFrameRate()
 	{
-		return 1.0f / GetFrameTime();
+		return 1000.0f / GetFrameTime();
 	};
 
 private:
