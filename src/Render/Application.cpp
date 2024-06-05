@@ -45,7 +45,7 @@ namespace Magnum {
 		public:
 			explicit FlatDrawable(Object3D& object, Shaders::Flat3D& shader, const Trade::MeshData& meshData, SceneGraph::DrawableGroup3D& drawables) :
 				SceneGraph::Drawable3D{ object, &drawables }, m_FlatShader(shader), m_Mesh(MeshTools::compile(meshData)) {}
-
+			
 			void draw(const Matrix4& transformation, SceneGraph::Camera3D& camera) {
 				m_FlatShader
 					.setColor(0x747474_rgbf)
@@ -91,6 +91,7 @@ namespace Magnum {
 			SceneGraph::DrawableGroup3D m_RenderDrawable;
 			Object3D* m_RenderCameraObject;
 			SceneGraph::Camera3D* m_RenderCamera;
+			Object3D* m_GridObject = nullptr;
 
 			std::vector<std::shared_ptr<PhysicsRenderObject>> m_DynamicRenderableObjects;
 
@@ -121,11 +122,11 @@ namespace Magnum {
 			GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
 
 			/* Grid */
-			auto grid = new Object3D{ &m_RenderScene };
-			(*grid)
+			m_GridObject = new Object3D{ &m_RenderScene };
+			(*m_GridObject)
 				.rotateX(90.0_degf)
-				.scale(Vector3{ 32.0f });
-			new FlatDrawable{ *grid, m_FlatShader, Primitives::grid3DWireframe({ 45, 45 }), m_RenderDrawable };
+				.scale(Vector3{ 800.0f });
+			new FlatDrawable{ *m_GridObject, m_FlatShader, Primitives::grid3DWireframe({ 1500, 1500 }), m_RenderDrawable };
 
 			/* Set up the camera */
 			m_RenderCameraObject = new Object3D{ &m_RenderScene };
@@ -243,8 +244,18 @@ namespace Magnum {
 
 		void TestingApplication::drawEvent() {
 			m_FrameProfiler.Start();
+
 			GL::defaultFramebuffer.clear(GL::FramebufferClear::Color | GL::FramebufferClear::Depth);
 			m_Scene->Tick(1.f/10.f);
+			//{
+			//	const Matrix4 transformation = m_RenderCameraObject->transformationMatrix();
+			//	const Vector3 translation = transformation.translation();
+			//	Matrix4 gridMatrix = m_GridObject->transformation();
+			//	auto rotate =gridMatrix.rotation();
+			//	auto scaling = gridMatrix.scaling();
+			//	gridMatrix =Matrix4::scaling(scaling)*Matrix4::from(rotate, { translation.x(), gridMatrix.translation().y(), translation.z() }) ;
+			//	m_GridObject->setTransformation(gridMatrix);	
+			//}
 			for (auto& renderable : m_DynamicRenderableObjects)
 				renderable->UpdateTransform();
 			m_RenderCamera->draw(m_RenderDrawable);	

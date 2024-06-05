@@ -30,6 +30,7 @@
 #include <Magnum/Trade/MeshData.h>
 #include <Magnum/SceneGraph/Drawable.h>
 #include "Physics/PhysicsCommon.h"
+#include "MeshDataLoader.h"
 namespace Magnum
 {
 	static MathLib::HVector3 mLightPosition(7.0f, 5.0f, 2.5f);
@@ -109,7 +110,7 @@ namespace Magnum
 				switch (options.m_GeometryType)
 				{
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE:
-					meshData = Primitives::uvSphereSolid(16, 32); // 需要提供分段数
+					meshData = Primitives::uvSphereSolid(6, 12); // 需要提供分段数
 					scalingMatrix = Matrix4::scaling(ToMagnum(options.m_Scale) * options.m_SphereParams.m_Radius);
 					break;
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX:
@@ -117,8 +118,12 @@ namespace Magnum
 					scalingMatrix = Matrix4::scaling({ options.m_BoxParams.m_HalfExtents[0] * options.m_Scale[0],options.m_BoxParams.m_HalfExtents[1] * options.m_Scale[1],options.m_BoxParams.m_HalfExtents[2] * options.m_Scale[2] });
 					break;
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CAPSULE:
-					meshData = Primitives::cylinderSolid(16, 32, 1.0f); // 需要提供分段数和高度
+				{
+					PhysicsMeshData newMeshData = GenerateCapsuleMeshData(options.m_CapsuleParams.m_Radius, options.m_CapsuleParams.m_HalfHeight, 8, 8);
+					meshData = CreateMesh(newMeshData.m_Vertices, newMeshData.m_Indices);
+					scalingMatrix = Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
+				}
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE:
 					meshData = Primitives::planeSolid();
 					object->rotateXLocal(90.0_degf);
