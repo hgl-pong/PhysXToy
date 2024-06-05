@@ -320,6 +320,7 @@ namespace Magnum {
 			std::shared_ptr<PhysicsRenderObject> renderable = std::make_shared<PhysicsRenderObject>(m_PhongShader,m_FlatShader, m_RenderDrawable, m_RenderScene, physicsObject);
 			m_DynamicRenderableObjects.push_back(renderable);
 		}
+
 		PhysicsPtr<IPhysicsObject> TestingApplication::_CreateDynamic(const MathLib::HTransform3& t, PhysicsPtr < IColliderGeometry>& geometry, const MathLib::HVector3& velocity )
 		{
 			auto dynamic = TestRigidBody::CreateDynamic(t, geometry, velocity);

@@ -63,6 +63,7 @@ namespace Magnum
 		{
 			m_Mesh = MeshTools::compile(meshdata);
 		}
+
 	private:
 		bool m_bShow = true;
 		Shaders::Flat3D& m_FlatShader;
@@ -76,6 +77,8 @@ namespace Magnum
 			SceneGraph::Drawable3D{ *object, &group }, m_PhongShader(pshader),m_FlatShader(fShader),m_Mesh(MeshTools::compile(meshData)), m_Object(object ) , m_LocalPos(matrix){}
 
 		void draw(const Matrix4& transformationMatrix, SceneGraph::Camera3D& camera) override {
+			if (!m_bShow)
+				return;
 			m_Mesh.setPrimitive(MeshPrimitive::Triangles);
 			m_PhongShader.setLightPosition(ToMagnum(mLightPosition))
 				.setAmbientColor(IsSleeping? m_AmbientColor*0.5:m_AmbientColor)
@@ -114,7 +117,13 @@ namespace Magnum
 		{
 			m_Mesh = MeshTools::compile(meshdata);
 		}
+
+		void Show(bool show)
+		{
+			m_bShow = show;
+		}
 	private:
+		bool m_bShow = true;
 		bool IsSleeping = false;
 		bool m_bShowWireframe = true;
 		Color4 m_AmbientColor = { 1.f,1.f,1.f,1.f };
@@ -208,6 +217,7 @@ namespace Magnum
 				Trade::MeshData meshData = Primitives::cubeWireframe();
 				m_BoundingBoxObject = std::make_shared < Object3D>(&renderScene);
 				m_BoundingBoxObject->scale(Vector3(halfSize[0], halfSize[1], halfSize[2]));
+				m_ParentObject = m_BoundingBoxObject->parent();
 				m_BoundingBoxObject->setParent(m_Object.get());
 				m_BoundingBox = std::make_shared<FlatDrawable>(*m_BoundingBoxObject, fShader, meshData, group);				
 				m_BoundingBox->SetColor(0x999999_rgbf);
@@ -220,16 +230,17 @@ namespace Magnum
 			const MathLib::HMatrix4& matrix = m_PhysicsObject->GetTransform().matrix();
 			MathLib::HMatrix4 transposeMatrix = matrix.transpose();
 
-			Matrix4 physicsObjectTrans = ToMagnum(transposeMatrix);
-			m_Object->setTransformation(physicsObjectTrans);
-			//{
-			//	MathLib::HVector3 halfSize = m_PhysicsObject->GetWorldBoundingBox().sizes() / 2.f;
-			//	m_BoundingBoxObject->resetTransformation();
-			//	m_BoundingBoxObject->scale(Vector3(halfSize[0], halfSize[1], halfSize[2]));
-			//	auto meshData= Primitives::cubeWireframe();
-			//	m_BoundingBox->SetMeshData(meshData);
-			//	m_BoundingBoxObject->setTransformation(physicsObjectTrans);
-			//}
+			m_Object->setTransformation(ToMagnum(transposeMatrix));
+			if(m_UseWorldBoundingBox)
+			{
+				MathLib::HVector3 halfSize = m_PhysicsObject->GetWorldBoundingBox().sizes() / 2.f;
+				m_BoundingBoxObject->resetTransformation();
+				m_BoundingBoxObject->scale(Vector3(halfSize[0], halfSize[1], halfSize[2]));
+				auto meshData= Primitives::cubeWireframe();
+				MathLib::HVector3 center = m_PhysicsObject->GetWorldBoundingBox().center();
+				m_BoundingBox->SetMeshData(meshData);
+				m_BoundingBoxObject->translate(ToMagnum(center));
+			}
 			IDynamicObject* dynamicObject = dynamic_cast<IDynamicObject*>(m_PhysicsObject.get());
 			bool isSleeping = dynamicObject ? dynamicObject->IsSleeping() : false;
 			for (auto& renderObject : m_RenderObjects)
@@ -248,9 +259,39 @@ namespace Magnum
 		void ShowBoundingBox(bool show) {
 			if (m_BoundingBox == nullptr)
 				return;
+			m_bShowBoundingBox = show;
 			m_BoundingBox->Show(show);
 		}
+
+		void Show(bool show)
+		{
+			for (auto& renderObject : m_RenderObjects)
+				renderObject->Show(show);
+			m_BoundingBox->Show(show&&m_bShowBoundingBox);
+		}
+
+		void UseWorldBoundingBox(bool useWorldBoundingBox)
+		{
+			if (m_UseWorldBoundingBox == useWorldBoundingBox)
+				return;
+			m_UseWorldBoundingBox = useWorldBoundingBox;
+			if (m_UseWorldBoundingBox)
+			{				
+				m_BoundingBoxObject->setParent(m_ParentObject);
+			}
+			else
+			{
+				m_BoundingBoxObject->resetTransformation();
+				MathLib::HVector3 halfSize = m_PhysicsObject->GetLocalBoundingBox().sizes() / 2.f;
+				Trade::MeshData meshData = Primitives::cubeWireframe();
+				m_BoundingBoxObject->scale(Vector3(halfSize[0], halfSize[1], halfSize[2]));
+				m_BoundingBoxObject->setParent(m_Object.get());
+			}
+		}
 	private:
+		Object3D* m_ParentObject = nullptr;
+		bool m_bShowBoundingBox = true;
+		bool m_UseWorldBoundingBox = false;
 		std::shared_ptr<FlatDrawable> m_BoundingBox;
 		std::vector<std::shared_ptr<RenderableObject>> m_RenderObjects;
 		PhysicsPtr<IPhysicsObject> m_PhysicsObject;
