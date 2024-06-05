@@ -32,6 +32,26 @@ inline Magnum::Quaternion ToMagnum(const MathLib::HQuaternion& quat) {
 	return Magnum::Quaternion({ quat.x(), quat.y(), quat.z() }, quat.w());
 }
 
+inline Magnum::Matrix3 ToMagnum(const MathLib::HMatrix3& mat) {
+	Magnum::Matrix3 matrix;
+	for (int i = 0; i < 3; ++i) {
+		for (int j = 0; j < 3; ++j) {
+			matrix[i][j] = mat(i, j);
+		}
+	}
+	return matrix;
+}
+
+inline MathLib::HMatrix3 FromMagnum(const Magnum::Matrix3& mat) {
+	MathLib::HMatrix3 matrix;
+	for (int i = 0; i < 3; ++i) {
+		for (int j = 0; j < 3; ++j) {
+			matrix(i, j) = mat[i][j];
+		}
+	}
+	return matrix;
+}
+
 inline Magnum::Trade::MeshData CreateMesh(const std::vector<MathLib::HVector3>& vertices, const std::vector<uint32_t>& indices)
 {
 	std::vector<MathLib::HVector3> normals0(vertices.size(), MathLib::HVector3(0, 0, 0));

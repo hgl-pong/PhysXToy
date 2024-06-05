@@ -12,11 +12,11 @@ using namespace physx;
 extern void initPhysics(bool interactive);
 extern void stepPhysics(bool interactive);
 extern void cleanupPhysics(bool interactive);
-extern void keyPress(unsigned char key, MathLib::HTransform3& camera);
+extern void keyPress(unsigned char key, MathLib::HTransform3 &camera);
 
 namespace
 {
-	MathLib::Camera* sCamera;
+	MathLib::Camera *sCamera;
 
 	void renderCallback()
 	{
@@ -24,22 +24,22 @@ namespace
 
 		Snippets::startRender(sCamera);
 
-		PxScene* scene;
+		PxScene *scene;
 		PxGetPhysics().getScenes(&scene, 1);
-		PxU32 nbDynamicActors = scene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC );
+		PxU32 nbDynamicActors = scene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC);
 		if (nbDynamicActors)
 		{
-			std::vector<PxRigidActor*> dynamicActors(nbDynamicActors);
-			scene->getActors(PxActorTypeFlag::eRIGID_DYNAMIC, reinterpret_cast<PxActor**>(&dynamicActors[0]), nbDynamicActors);
+			std::vector<PxRigidActor *> dynamicActors(nbDynamicActors);
+			scene->getActors(PxActorTypeFlag::eRIGID_DYNAMIC, reinterpret_cast<PxActor **>(&dynamicActors[0]), nbDynamicActors);
 			Snippets::renderActors(&dynamicActors[0], static_cast<PxU32>(dynamicActors.size()), true);
 		}
 
 		PxU32 nbStaticActors = scene->getNbActors(PxActorTypeFlag::eRIGID_STATIC);
 		if (nbStaticActors)
 		{
-			std::vector<PxRigidActor*> staticActors(nbStaticActors);
-			scene->getActors(PxActorTypeFlag::eRIGID_STATIC, reinterpret_cast<PxActor**>(&staticActors[0]), nbStaticActors);
-			Snippets::renderActors(&staticActors[0], static_cast<PxU32>(staticActors.size()), true,PxVec3(0.7,0,0));
+			std::vector<PxRigidActor *> staticActors(nbStaticActors);
+			scene->getActors(PxActorTypeFlag::eRIGID_STATIC, reinterpret_cast<PxActor **>(&staticActors[0]), nbStaticActors);
+			Snippets::renderActors(&staticActors[0], static_cast<PxU32>(staticActors.size()), true, PxVec3(0.7, 0, 0));
 		}
 		Snippets::showFPS();
 		Snippets::finishRender();
@@ -52,10 +52,9 @@ namespace
 	}
 }
 
-
 void renderLoop()
 {
-	sCamera = new MathLib::Camera(MathLib::HVector3(50.0f, 50.0f, 50.0f), MathLib::HVector3(-0.6f, -0.2f, -0.7f), MathLib::HReal(INITIAL_SCREEN_WIDTH) /INITIAL_SCREEN_HEIGHT);
+	sCamera = new MathLib::Camera(MathLib::HVector3(50.0f, 50.0f, 50.0f), MathLib::HVector3(-0.6f, -0.2f, -0.7f), MathLib::HReal(INITIAL_SCREEN_WIDTH) / INITIAL_SCREEN_HEIGHT);
 
 	Snippets::setupDefault("Test Physics Engine", sCamera, keyPress, renderCallback, exitCallback);
 
@@ -79,16 +78,15 @@ using namespace physx;
 extern void initPhysics(bool interactive);
 extern void stepPhysics(bool interactive);
 extern void cleanupPhysics(bool interactive);
-extern void keyPress(unsigned char key, const PxTransform& camera);
-extern PxPBDParticleSystem* getParticleSystem();
-extern PxParticleAndDiffuseBuffer* getParticleBuffer();
+extern void keyPress(unsigned char key, const PxTransform &camera);
+extern PxPBDParticleSystem *getParticleSystem();
+extern PxParticleAndDiffuseBuffer *getParticleBuffer();
 
 extern int getNumDiffuseParticles();
 
-
 namespace
 {
-	MathLib::Camera* sCamera;
+	MathLib::Camera *sCamera;
 
 	Snippets::SharedGLBuffer sPosBuffer;
 	Snippets::SharedGLBuffer sDiffusePosLifeBuffer;
@@ -100,23 +98,23 @@ namespace
 	void renderParticles()
 	{
 
-		PxPBDParticleSystem* particleSystem = getParticleSystem();
+		PxPBDParticleSystem *particleSystem = getParticleSystem();
 		if (particleSystem)
 		{
-			PxParticleAndDiffuseBuffer* userBuffer = getParticleBuffer();
-			PxVec4* positions = userBuffer->getPositionInvMasses();
-			PxVec4* diffusePositions = userBuffer->getDiffusePositionLifeTime();
+			PxParticleAndDiffuseBuffer *userBuffer = getParticleBuffer();
+			PxVec4 *positions = userBuffer->getPositionInvMasses();
+			PxVec4 *diffusePositions = userBuffer->getDiffusePositionLifeTime();
 
 			const PxU32 numParticles = userBuffer->getNbActiveParticles();
 			const PxU32 numDiffuseParticles = userBuffer->getNbActiveDiffuseParticles();
 
-			PxScene* scene;
+			PxScene *scene;
 			PxGetPhysics().getScenes(&scene, 1);
-			PxCudaContextManager* cudaContextManager = scene->getCudaContextManager();
+			PxCudaContextManager *cudaContextManager = scene->getCudaContextManager();
 
 			cudaContextManager->acquireContext();
 
-			PxCudaContext* cudaContext = cudaContextManager->getCudaContext();
+			PxCudaContext *cudaContext = cudaContextManager->getCudaContext();
 			cudaContext->memcpyDtoH(sPosBuffer.map(), CUdeviceptr(positions), sizeof(PxVec4) * numParticles);
 			cudaContext->memcpyDtoH(sDiffusePosLifeBuffer.map(), CUdeviceptr(diffusePositions), sizeof(PxVec4) * numDiffuseParticles);
 
@@ -132,11 +130,11 @@ namespace
 		PxVec3 color(0.5f, 0.5f, 1);
 		Snippets::DrawPoints(sPosBuffer.vbo, sPosBuffer.size / sizeof(PxVec4), color, 2.f);
 
-		PxParticleAndDiffuseBuffer* userBuffer = getParticleBuffer();
+		PxParticleAndDiffuseBuffer *userBuffer = getParticleBuffer();
 
 		const PxU32 numActiveDiffuseParticles = userBuffer->getNbActiveDiffuseParticles();
 
-		//printf("NumActiveDiffuse = %i\n", numActiveDiffuseParticles);
+		// printf("NumActiveDiffuse = %i\n", numActiveDiffuseParticles);
 
 		if (numActiveDiffuseParticles > 0)
 		{
@@ -149,11 +147,11 @@ namespace
 
 	void allocParticleBuffers()
 	{
-		PxScene* scene;
+		PxScene *scene;
 		PxGetPhysics().getScenes(&scene, 1);
-		PxCudaContextManager* cudaContextManager = scene->getCudaContextManager();
+		PxCudaContextManager *cudaContextManager = scene->getCudaContextManager();
 
-		PxParticleAndDiffuseBuffer* userBuffer = getParticleBuffer();
+		PxParticleAndDiffuseBuffer *userBuffer = getParticleBuffer();
 
 		const PxU32 maxParticles = userBuffer->getMaxParticles();
 		const PxU32 maxDiffuseParticles = userBuffer->getMaxDiffuseParticles();
@@ -179,13 +177,13 @@ namespace
 
 		Snippets::startRender(sCamera);
 
-		PxScene* scene;
+		PxScene *scene;
 		PxGetPhysics().getScenes(&scene, 1);
 		PxU32 nbActors = scene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC);
 		if (nbActors)
 		{
-			std::vector<PxRigidActor*> actors(nbActors);
-			scene->getActors(PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC, reinterpret_cast<PxActor**>(&actors[0]), nbActors);
+			std::vector<PxRigidActor *> actors(nbActors);
+			scene->getActors(PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC, reinterpret_cast<PxActor **>(&actors[0]), nbActors);
 			Snippets::renderActors(&actors[0], static_cast<PxU32>(actors.size()), true);
 		}
 

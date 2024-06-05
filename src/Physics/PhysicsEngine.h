@@ -26,7 +26,7 @@ public:
 	PhysicsPtr < IPhysicsMaterial >CreateMaterial(const PhysicsMaterialCreateOptions &options) override;
 	PhysicsPtr < IPhysicsScene >CreateScene(const PhysicsSceneCreateOptions &options) override;
 	PhysicsPtr < IColliderGeometry >CreateColliderGeometry(const CollisionGeometryCreateOptions &options) override;
-
+	void SetSolverIterationCount(uint32_t count) override;
 private:
 	friend class PhysicsEngineUtils;
 	PhysicsEngineOptions m_Options;

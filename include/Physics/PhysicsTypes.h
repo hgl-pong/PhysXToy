@@ -72,6 +72,7 @@ struct PhysicsEngineOptions
 {
 	uint32_t m_iNumThreads = DEFAULT_CPU_DISPATCHER_NUM_THREADS;
 	bool m_bEnablePVD = true;
+	uint32_t m_SolverIterationCount = 6;
 };
 
 enum class PhysicsSceneFilterShaderType
@@ -144,13 +145,6 @@ enum class PhysicsObjectType
 	PHYSICS_OBJECT_TYPE_RIGID_STATIC,
 	PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC,
 	PHYSICS_OBJECT_TYPE_COUNT
-};
-
-enum class PhysicsObjectAttributeType
-{
-	eRigidStatic,
-	eRigidDynamic,
-	eRigidKinematic,
 };
 
 struct PhysicsObjectCreateOptions

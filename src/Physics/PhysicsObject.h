@@ -27,6 +27,9 @@ public:
 	size_t GetOffset() const override;
 	void SetTransform(const MathLib::HTransform3 &trans) override;
 	const MathLib::HTransform3 &GetTransform() const override { return m_Transform; };
+	MathLib::HAABBox3D GetLocalBoundingBox() const override { return m_BoundingBox; };
+	MathLib::HAABBox3D GetWorldBoundingBox() const override;
+
 public:
 	void SetAngularDamping(const MathLib::HReal &damping)override;
 	void SetLinearVelocity(const MathLib::HVector3& velocity)override;
@@ -51,6 +54,7 @@ private:
 	MathLib::HReal m_AngularDamping;
 	MathLib::HVector3 m_AngularVelocity;
 	MathLib::HTransform3 m_Transform;
+	MathLib::HAABBox3D m_BoundingBox;
 };
 
 class PhysicsRigidStatic : public IPhysicsObject
@@ -72,6 +76,8 @@ public:
 	};
 	PhysicsObjectType GetType() const override { return m_Type; };
 	size_t GetOffset() const override;
+	MathLib::HAABBox3D GetLocalBoundingBox() const override { return m_BoundingBox; };
+	MathLib::HAABBox3D GetWorldBoundingBox() const override;
 
 private:
 	PhysicsObjectType m_Type;
@@ -80,4 +86,5 @@ private:
 	std::vector<PhysicsPtr<IColliderGeometry>> m_ColliderGeometries;
 	std::vector<MathLib::HTransform3> m_ColliderLocalPos;
 	MathLib::HTransform3 m_Transform;
+	MathLib::HAABBox3D m_BoundingBox;
 };

@@ -88,7 +88,9 @@ PhysicsRigidDynamic::PhysicsRigidDynamic(PhysicsPtr < IPhysicsMaterial >&materia
 	m_Mass = 0.0f;
 	m_LinearVelocity.setZero();
 	m_AngularVelocity.setZero();
+	m_AngularDamping = 0.0f;
 	m_Transform.setIdentity();
+	m_BoundingBox.setEmpty();
 	m_Type = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
 }
 
@@ -131,6 +133,7 @@ bool PhysicsRigidDynamic::AddColliderGeometry(PhysicsPtr < IColliderGeometry >&c
 	m_Mass= m_RigidDynamic->getMass();
 	m_ColliderGeometries.push_back(colliderGeometry);
 	m_ColliderLocalPos.push_back(localTrans);
+	m_BoundingBox = ConvertUtils::FromPx(CalculateBoundingBox(m_RigidDynamic.get()));
 	return true;
 }
 
@@ -179,12 +182,20 @@ bool PhysicsRigidDynamic::IsSleeping()const
 
 }
 
+MathLib::HAABBox3D PhysicsRigidDynamic::GetWorldBoundingBox() const
+{
+	if (m_RigidDynamic == nullptr)
+		return MathLib::HAABBox3D();
+	return ConvertUtils::FromPx(m_RigidDynamic->getWorldBounds());
+}
+
 /////////////////RigidStatic////////////////////////
 PhysicsRigidStatic::PhysicsRigidStatic(PhysicsPtr < IPhysicsMaterial >&material)
 {
 	m_RigidStatic = make_physx_ptr<PxRigidStatic>(PxGetPhysics().createRigidStatic(PxTransform(PxIdentity)));
 	m_Material = material;
 	m_Transform.setIdentity();
+	m_BoundingBox.setEmpty();
 	m_Type = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
 }
 
@@ -200,20 +211,21 @@ bool PhysicsRigidStatic::AddColliderGeometry(PhysicsPtr < IColliderGeometry >&co
 	physx::PxShape *shape = ShapeFactory::CreateShape(colliderGeometry.get(), m_Material.get());
 	if (shape == nullptr)
 		return false;
-	if(colliderGeometry->GetType()==CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE)
+	if (colliderGeometry->GetType() == CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE)
 	{
-		const PlaneColliderGeometry *plane = static_cast<const PlaneColliderGeometry *>(colliderGeometry.get());
-		const MathLib::HVector3 &normal = plane->GetNormal();
-		const MathLib::HReal &distance = plane->GetDistance();
+		const PlaneColliderGeometry* plane = static_cast<const PlaneColliderGeometry*>(colliderGeometry.get());
+		const MathLib::HVector3& normal = plane->GetNormal();
+		const MathLib::HReal& distance = plane->GetDistance();
 		auto trans = PxTransformFromPlaneEquation(PxPlane(normal[0], normal[1], normal[2], distance));
 		shape->setLocalPose(ConvertUtils::ToPx(localTrans).transform(trans));
 	}
 	else
-	shape->setLocalPose(ConvertUtils::ToPx(localTrans));
+		shape->setLocalPose(ConvertUtils::ToPx(localTrans));
 	m_RigidStatic->attachShape(*shape);
 	PX_RELEASE(shape);
 	m_ColliderGeometries.push_back(colliderGeometry);
 	m_ColliderLocalPos.push_back(localTrans);
+	m_BoundingBox = ConvertUtils::FromPx(CalculateBoundingBox(m_RigidStatic.get()));
 	return true;
 }
 
@@ -227,5 +239,12 @@ void PhysicsRigidStatic::SetTransform(const MathLib::HTransform3 &transform)
 	if (m_RigidStatic == nullptr)
 		return;
 	m_RigidStatic->setGlobalPose(ConvertUtils::ToPx(transform));
-m_Transform = transform;
+	m_Transform = transform;
+}
+
+MathLib::HAABBox3D PhysicsRigidStatic::GetWorldBoundingBox() const
+{
+	if (m_RigidStatic == nullptr)
+		return MathLib::HAABBox3D();
+	return ConvertUtils::FromPx(m_RigidStatic->getWorldBounds());
 }

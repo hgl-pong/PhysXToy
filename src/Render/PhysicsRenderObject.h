@@ -38,6 +38,38 @@ namespace Magnum
 	using Object3D = SceneGraph::Object<SceneGraph::MatrixTransformation3D>;
 	using Scene3D = SceneGraph::Scene<SceneGraph::MatrixTransformation3D>;
 	using namespace Math::Literals;
+
+	class FlatDrawable : public SceneGraph::Drawable3D {
+	public:
+		explicit FlatDrawable(Object3D& object, Shaders::Flat3D& shader, const Trade::MeshData& meshData, SceneGraph::DrawableGroup3D& drawables) :
+			SceneGraph::Drawable3D{ object, &drawables }, m_FlatShader(shader), m_Mesh(MeshTools::compile(meshData)) {}
+
+		void draw(const Matrix4& transformation, SceneGraph::Camera3D& camera) {
+			m_FlatShader
+				.setColor(m_Color)
+				.setTransformationProjectionMatrix(camera.projectionMatrix() * transformation)
+				.draw(m_Mesh);
+		}
+
+		void Show(bool show) {
+			m_bShow = show;
+		}
+
+		void SetColor(const Color4& color) {
+			m_Color = color;
+		}
+
+		void SetMeshData(Trade::MeshData& meshdata)
+		{
+			m_Mesh = MeshTools::compile(meshdata);
+		}
+	private:
+		bool m_bShow = true;
+		Shaders::Flat3D& m_FlatShader;
+		GL::Mesh m_Mesh;
+		Color4 m_Color = 0x747474_rgbf;
+	};
+
 	class RenderableObject : public SceneGraph::Drawable3D {
 	public:
 		explicit RenderableObject(Object3D* object,Shaders::Phong& pshader, Shaders::Flat3D&fShader, const Trade::MeshData& meshData, SceneGraph::DrawableGroup3D& group, const Matrix4& matrix) :
@@ -53,10 +85,13 @@ namespace Magnum
 				.setNormalMatrix(transformationMatrix.normalMatrix())
 				.setProjectionMatrix(camera.projectionMatrix());
 			m_Mesh.draw(m_PhongShader);	
-			m_Mesh.setPrimitive(MeshPrimitive::LineStrip);
-			m_FlatShader.setColor(0x000000_rgbf)
-				.setTransformationProjectionMatrix(camera.projectionMatrix() * transformationMatrix)
-				.draw(m_Mesh);
+			if (m_bShowWireframe)
+			{
+				m_Mesh.setPrimitive(MeshPrimitive::Lines);
+				m_FlatShader.setColor(0x000000_rgbf)
+					.setTransformationProjectionMatrix(camera.projectionMatrix() * transformationMatrix)
+					.draw(m_Mesh);
+			}
 		}
 
 		void SetAmbientColor(const Color4& color) {
@@ -70,8 +105,18 @@ namespace Magnum
 		{
 			IsSleeping = isSleeping;
 		}
+
+		void ShowWireframe(bool show) {
+			m_bShowWireframe = show;
+		}
+
+		void SetMeshData(Trade::MeshData& meshdata)
+		{
+			m_Mesh = MeshTools::compile(meshdata);
+		}
 	private:
 		bool IsSleeping = false;
+		bool m_bShowWireframe = true;
 		Color4 m_AmbientColor = { 1.f,1.f,1.f,1.f };
 		Color4 m_DiffuseColor = { 1.f,1.f,1.f,1.f };
 
@@ -87,7 +132,7 @@ namespace Magnum
 		explicit PhysicsRenderObject(Shaders::Phong& shader, Shaders::Flat3D& fShader, SceneGraph::DrawableGroup3D& group, Scene3D& renderScene, const PhysicsPtr<IPhysicsObject>& physicsObject)
 			: m_PhysicsObject(physicsObject)
 		{
-			m_Object =new Object3D{ &renderScene };
+			m_Object = std::make_shared < Object3D>(&renderScene);
 			std::vector<PhysicsPtr<IColliderGeometry>> geometries;
 			std::vector<MathLib::HTransform3> transforms;
 			bool isDynamic = physicsObject->GetType() == PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
@@ -97,7 +142,7 @@ namespace Magnum
 				const auto& geometry = geometries[i];
 				CollisionGeometryCreateOptions options;
 				geometry->GetParams(options);
-				// 根据几何类型创建相应的网格
+
 				Trade::MeshData meshData = Primitives::cubeSolid();
 				auto* object = new Object3D{ &renderScene };
 				Matrix4 matrix;
@@ -110,7 +155,7 @@ namespace Magnum
 				switch (options.m_GeometryType)
 				{
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE:
-					meshData = Primitives::uvSphereSolid(6, 12); // 需要提供分段数
+					meshData = Primitives::uvSphereSolid(6, 12); 
 					scalingMatrix = Matrix4::scaling(ToMagnum(options.m_Scale) * options.m_SphereParams.m_Radius);
 					break;
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX:
@@ -138,11 +183,11 @@ namespace Magnum
 					scalingMatrix = Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				default:
-					continue; // 其他类型暂不处理
+					continue;
 				}
 				matrix = matrix * scalingMatrix;
 				object->setTransformation(matrix);
-				object->setParent(m_Object);
+				object->setParent(m_Object.get());
 				std::shared_ptr<RenderableObject> newObject = std::make_shared<RenderableObject>(object, shader,fShader, meshData, group , matrix);
 				if(!isDynamic)
 					newObject->SetAmbientColor(0x66000000_rgbaf);
@@ -157,6 +202,16 @@ namespace Magnum
 				newObject->SetDiffuseColor(0x55555555_rgbaf);
 				m_RenderObjects.push_back(newObject);
 			}
+
+			{
+				MathLib::HVector3 halfSize = physicsObject->GetLocalBoundingBox().sizes() / 2.f;
+				Trade::MeshData meshData = Primitives::cubeWireframe();
+				m_BoundingBoxObject = std::make_shared < Object3D>(&renderScene);
+				m_BoundingBoxObject->scale(Vector3(halfSize[0], halfSize[1], halfSize[2]));
+				m_BoundingBoxObject->setParent(m_Object.get());
+				m_BoundingBox = std::make_shared<FlatDrawable>(*m_BoundingBoxObject, fShader, meshData, group);				
+				m_BoundingBox->SetColor(0x999999_rgbf);
+			}
 		}
 
 		void UpdateTransform() {
@@ -164,11 +219,17 @@ namespace Magnum
 				return;
 			const MathLib::HMatrix4& matrix = m_PhysicsObject->GetTransform().matrix();
 			MathLib::HMatrix4 transposeMatrix = matrix.transpose();
-			MathLib::HMatrix3 R = matrix.block<3, 3>(0, 0);
-			MathLib::HVector3 t = matrix.block<3, 1>(0, 3);
-			MathLib::HQuaternion q(R);
+
 			Matrix4 physicsObjectTrans = ToMagnum(transposeMatrix);
 			m_Object->setTransformation(physicsObjectTrans);
+			//{
+			//	MathLib::HVector3 halfSize = m_PhysicsObject->GetWorldBoundingBox().sizes() / 2.f;
+			//	m_BoundingBoxObject->resetTransformation();
+			//	m_BoundingBoxObject->scale(Vector3(halfSize[0], halfSize[1], halfSize[2]));
+			//	auto meshData= Primitives::cubeWireframe();
+			//	m_BoundingBox->SetMeshData(meshData);
+			//	m_BoundingBoxObject->setTransformation(physicsObjectTrans);
+			//}
 			IDynamicObject* dynamicObject = dynamic_cast<IDynamicObject*>(m_PhysicsObject.get());
 			bool isSleeping = dynamicObject ? dynamicObject->IsSleeping() : false;
 			for (auto& renderObject : m_RenderObjects)
@@ -177,9 +238,23 @@ namespace Magnum
 			}
 		}
 
+		void ShowWireframe(bool show) {
+			for (auto& renderObject : m_RenderObjects)
+			{
+				renderObject->ShowWireframe(show);
+			}
+		}
+
+		void ShowBoundingBox(bool show) {
+			if (m_BoundingBox == nullptr)
+				return;
+			m_BoundingBox->Show(show);
+		}
 	private:
+		std::shared_ptr<FlatDrawable> m_BoundingBox;
 		std::vector<std::shared_ptr<RenderableObject>> m_RenderObjects;
 		PhysicsPtr<IPhysicsObject> m_PhysicsObject;
-		Object3D* m_Object = nullptr;
+		std::shared_ptr < Object3D> m_BoundingBoxObject ;
+		std::shared_ptr < Object3D> m_Object ;
 	};
 }

@@ -6,14 +6,14 @@
                 "${workspaceFolder}/*",
                 "${vcpkgRoot}/x64-windows/include",
                 "${vcpkgRoot}/x86-windows/include",
-                "${workspaceFolder}/include/*",
-                "D:/vcpkg/installed/x64-windows/include/physx"
+                "${workspaceFolder}/include/*"
             ],
             "defines": [
                 "_DEBUG",
                 "UNICODE",
                 "_UNICODE"
-            ]
+            ],
+            "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],
     "version": 4

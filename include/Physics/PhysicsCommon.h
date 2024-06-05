@@ -17,6 +17,7 @@ public:
 	virtual PhysicsPtr<IPhysicsMaterial> CreateMaterial(const PhysicsMaterialCreateOptions &options) = 0;
 	virtual PhysicsPtr<IPhysicsScene> CreateScene(const PhysicsSceneCreateOptions &options) = 0;
 	virtual PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions &options) = 0;
+	virtual void SetSolverIterationCount(uint32_t count) = 0;
 };
 
 class IPhysicsScene
@@ -53,6 +54,8 @@ public:
 	virtual void SetTransform(const MathLib::HTransform3 &trans) = 0;
 	virtual const MathLib::HTransform3 &GetTransform() const = 0;
 	virtual bool IsValid() const = 0;
+	virtual MathLib::HAABBox3D GetLocalBoundingBox() const = 0;
+	virtual MathLib::HAABBox3D GetWorldBoundingBox() const = 0;
 };
 
 class IDynamicObject

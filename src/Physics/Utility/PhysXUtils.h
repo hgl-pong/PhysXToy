@@ -56,6 +56,16 @@ namespace ConvertUtils
 
 		return eigenTransform;
 	}
+
+	inline MathLib::HAABBox3D FromPx(const physx::PxBounds3& bounds)
+	{
+		return MathLib::HAABBox3D(FromPx(bounds.minimum), FromPx(bounds.maximum));
+	}
+
+	inline physx::PxBounds3 ToPx(const MathLib::HAABBox3D& bounds)
+	{
+		return physx::PxBounds3(ToPx(bounds.min()), ToPx(bounds.max()));
+	}
 };
 
 namespace PhysXConstructTools
@@ -150,4 +160,28 @@ namespace PhysXConstructTools
 
 		return triMesh;
 	}
+}
+
+inline physx::PxBounds3 CalculateBoundingBox(physx::PxRigidActor* actor) {
+	physx::PxU32 numShapes = actor->getNbShapes();
+	std::vector<physx::PxShape*>shapes(numShapes);
+	actor->getShapes(shapes.data(), numShapes);
+
+	physx::PxBounds3 bounds = physx::PxBounds3::empty();
+
+	for (physx::PxU32 i = 0; i < numShapes; i++) {
+		physx::PxShape* shape = shapes[i];
+
+		physx::PxTransform localPose = shape->getLocalPose();
+		physx::PxBounds3 localBounds;
+		physx::PxGeometryQuery::computeGeomBounds(localBounds, shape->getGeometry(), localPose);
+
+		physx::PxTransform globalPose = actor->getGlobalPose() * localPose;
+		physx::PxBounds3 worldBounds;
+		physx::PxGeometryQuery::computeGeomBounds(worldBounds, shape->getGeometry(), globalPose);
+
+		bounds.include(worldBounds);
+	}
+
+	return bounds;
 }

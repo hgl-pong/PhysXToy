@@ -155,3 +155,10 @@ PhysicsPtr<IColliderGeometry> PhysicsEngine::CreateColliderGeometry(const Collis
 	geometry->SetScale(options.m_Scale);
 	return make_physics_ptr(geometry);
 }
+
+void PhysicsEngine::SetSolverIterationCount(uint32_t count)
+{
+	if (!m_bInitialized)
+		return;
+
+}

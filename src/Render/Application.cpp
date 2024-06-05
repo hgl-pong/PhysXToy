@@ -41,22 +41,6 @@ using namespace physx;
 namespace Magnum {
 
 		using namespace Math::Literals;
-		class FlatDrawable : public SceneGraph::Drawable3D {
-		public:
-			explicit FlatDrawable(Object3D& object, Shaders::Flat3D& shader, const Trade::MeshData& meshData, SceneGraph::DrawableGroup3D& drawables) :
-				SceneGraph::Drawable3D{ object, &drawables }, m_FlatShader(shader), m_Mesh(MeshTools::compile(meshData)) {}
-			
-			void draw(const Matrix4& transformation, SceneGraph::Camera3D& camera) {
-				m_FlatShader
-					.setColor(0x747474_rgbf)
-					.setTransformationProjectionMatrix(camera.projectionMatrix() * transformation)
-					.draw(m_Mesh);
-			}
-
-		private:
-			Shaders::Flat3D& m_FlatShader;
-			GL::Mesh m_Mesh;
-		};
 
 		class TestingApplication : public Platform::Application ,virtual public PhysicsEngineTestingApplication  {
 		public:
@@ -136,7 +120,7 @@ namespace Magnum {
 
 			m_RenderCamera->setProjectionMatrix(ToMagnum(m_Camera->getProjectMatrix()));
 
-			_InitPhysics(true);
+			_InitPhysics(false);
 		}
 
 		void TestingApplication::keyPressEvent(KeyEvent& event) {
@@ -192,7 +176,7 @@ namespace Magnum {
 
 				PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
 
-				_CreateDynamic(m_Camera->getTransform(), geometry, m_Camera->getTransform().rotation() * MathLib::HVector3(0, 0, -1) * 75);
+				_CreateDynamic(m_Camera->getTransform(), geometry, m_Camera->getDir() * 75);
 				break;
 			}
 			case KeyEvent::Key::B:

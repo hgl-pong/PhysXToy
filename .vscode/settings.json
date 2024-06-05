@@ -1,7 +1,8 @@
 {
   "cmake.configureSettings": {
-    "CMAKE_TOOLCHAIN_FILE": "${env.VCPKG_PATH}\\scripts\\buildsystems\\vcpkg.cmake"
+    "CMAKE_TOOLCHAIN_FILE": "${env.VCPKG_PATH}\\scripts\\buildsystems\\vcpkg.cmake",
   },
+  "cmake.generator": "Ninja",  
   "files.associations": {
     "*.ush": "hlsl",
     "*.fx5": "hlsl",
@@ -98,6 +99,8 @@
     "stack": "cpp",
     "*.ipp": "cpp",
     "typeindex": "cpp",
-    "variant": "cpp"
-  }
+    "variant": "cpp",
+    "core": "cpp",
+    "dense": "cpp"
+  },
 }
