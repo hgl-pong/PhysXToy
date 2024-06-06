@@ -45,10 +45,13 @@ namespace Magnum
 			SceneGraph::Drawable3D{ object, &drawables }, m_FlatShader(shader), m_Mesh(MeshTools::compile(meshData)) {}
 
 		void draw(const Matrix4& transformation, SceneGraph::Camera3D& camera) {
-			m_FlatShader
-				.setColor(m_Color)
-				.setTransformationProjectionMatrix(camera.projectionMatrix() * transformation)
-				.draw(m_Mesh);
+			if (m_bShow)
+			{
+				m_FlatShader
+					.setColor(m_Color)
+					.setTransformationProjectionMatrix(camera.projectionMatrix() * transformation)
+					.draw(m_Mesh);
+			}
 		}
 
 		void Show(bool show) {
@@ -287,6 +290,13 @@ namespace Magnum
 				m_BoundingBoxObject->scale(Vector3(halfSize[0], halfSize[1], halfSize[2]));
 				m_BoundingBoxObject->setParent(m_Object.get());
 			}
+		}
+
+		MathLib::HAABBox3D GetWorldBoundingBox() const
+		{
+			if(m_PhysicsObject == nullptr)
+				return MathLib::HAABBox3D();
+			return m_PhysicsObject->GetWorldBoundingBox();
 		}
 	private:
 		Object3D* m_ParentObject = nullptr;
