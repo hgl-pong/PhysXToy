@@ -84,7 +84,7 @@ namespace Magnum {
 			PhysicsPtr < IPhysicsScene>m_Scene;
 			std::unique_ptr<MathLib::Camera> m_Camera;
 			FrameProfiler m_FrameProfiler;
-			FrustumCullingManager m_FrustumCullingManager;
+			std::unique_ptr<FrustumCullingManager> m_FrustumCullingManager;
 		};
 
 		TestingApplication::TestingApplication(const Arguments& arguments) : Platform::Application{ arguments, NoCreate } {
@@ -102,6 +102,7 @@ namespace Magnum {
 
 			}
 			m_Camera = std::make_unique<MathLib::Camera>(MathLib::HVector3(80.0f, 80.0f, 80.0f), MathLib::HVector3(-0.6f, -0.6f, -0.6f), MathLib::HReal(Vector2{ framebufferSize()}.aspectRatio()));
+			m_FrustumCullingManager = std::make_unique<FrustumCullingManager>(*m_Camera);
 			/* Shaders, renderer setup */
 			m_FlatShader = Shaders::Flat3D{};
 			m_PhongShader = Shaders::Phong{};
@@ -121,7 +122,7 @@ namespace Magnum {
 			m_RenderCamera = new SceneGraph::Camera3D{ *m_RenderCameraObject };
 
 			m_RenderCamera->setProjectionMatrix(ToMagnum(m_Camera->getProjectMatrix()));
-			m_FrustumCullingManager.UpdateFrustum(m_Camera->getViewProjectMatrix());
+			m_FrustumCullingManager->UpdateFrustum();
 			_InitPhysics(false);
 		}
 
@@ -152,7 +153,7 @@ namespace Magnum {
 			if (m_Camera->handleKey(cameraKey, 0, 0))
 			{
 				m_RenderCameraObject->setTransformation(ToMagnum(m_Camera->getViewMatrix()));
-				m_FrustumCullingManager.UpdateFrustum(m_Camera->getViewProjectMatrix());
+				m_FrustumCullingManager->UpdateFrustum();
 			}
 		}
 
@@ -203,7 +204,7 @@ namespace Magnum {
 			m_Camera->handleAnalogMove(0, 0);
 			//m_RenderCameraObject->setTransformation(ToMagnumMatrix4(m_Camera->getTransform().matrix()));
 			m_RenderCameraObject->setTransformation(ToMagnum(m_Camera->getViewMatrix()));
-			m_FrustumCullingManager.UpdateFrustum(m_Camera->getViewProjectMatrix());
+			m_FrustumCullingManager->UpdateFrustum();
 
 		}
 
@@ -224,7 +225,7 @@ namespace Magnum {
 
 			//m_RenderCameraObject->setTransformation(ToMagnumMatrix4(m_Camera->getTransform().matrix()));
 			m_RenderCameraObject->setTransformation(ToMagnum(m_Camera->getViewMatrix()));
-			m_FrustumCullingManager.UpdateFrustum(m_Camera->getViewProjectMatrix());
+			m_FrustumCullingManager->UpdateFrustum();
 
 			//printf("Dir:%f,%f,%f\n", m_Camera->getDir().x(), m_Camera->getDir().y(), m_Camera->getDir().z());
 
@@ -249,7 +250,8 @@ namespace Magnum {
 			//	m_GridObject->setTransformation(gridMatrix);	
 			//}
 			std::vector<std::shared_ptr<PhysicsRenderObject>> renderableObjects;
-			m_FrustumCullingManager.CullObjects(renderableObjects);
+			m_FrustumCullingManager->CullObjects(renderableObjects);
+			printf("RenderableObjects:%d\n", renderableObjects.size());
 			for (auto& renderable : m_DynamicRenderableObjects)
 				renderable->Show(false);
 			for (auto& renderable : renderableObjects)
@@ -334,7 +336,7 @@ namespace Magnum {
 		{
 			std::shared_ptr<PhysicsRenderObject> renderable = std::make_shared<PhysicsRenderObject>(m_PhongShader,m_FlatShader, m_RenderDrawable, m_RenderScene, physicsObject);
 			m_DynamicRenderableObjects.push_back(renderable);
-			m_FrustumCullingManager.AddObject(renderable);
+			m_FrustumCullingManager->AddObject(renderable);
 		}
 
 		PhysicsPtr<IPhysicsObject> TestingApplication::_CreateDynamic(const MathLib::HTransform3& t, PhysicsPtr < IColliderGeometry>& geometry, const MathLib::HVector3& velocity )
