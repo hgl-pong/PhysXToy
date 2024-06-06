@@ -14,7 +14,7 @@ namespace MathLib
     }
 
     HMatrix4 Perspective(float fov, float aspect, float near, float far) {
-        float S = 1.0f / std::tanf(fov/2);
+        float S = 1.0f / std::tanf(fov/2 * MathLib::H_PI / 180.f);
 
         HMatrix4 m = HMatrix4::Zero();
         m(0, 0) = S / aspect;

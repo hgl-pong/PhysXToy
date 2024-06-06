@@ -36,7 +36,7 @@ namespace MathLib
 		MathLib::HReal mAspectRatio;
 		MathLib::HReal mNearClip = 1.0f;
 		MathLib::HReal mFarClip = 10000.0f;
-		MathLib::HReal mFOV = 120.0f;
+		MathLib::HReal mFOV = 60.0f;
 		int mMouseX;
 		int mMouseY;
 		MathLib::HReal mSpeed;

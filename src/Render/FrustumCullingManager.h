@@ -13,16 +13,10 @@ namespace Magnum
         {
         }
 
-        void Set(const MathLib::HVector3 &normal, MathLib::HReal distance)
-        {
-            m_Normal = normal.normalized();
-            m_Distance = distance;
-        }
-
         void Set(const MathLib::HVector3& position, const MathLib::HVector3& normal)
         {
             m_Normal = normal.normalized();
-			m_Distance = -position.dot(normal);
+			m_Distance = m_Normal.dot(position);
 		}
 
         const MathLib::HVector3 &GetNormal() const
@@ -32,12 +26,12 @@ namespace Magnum
 
         MathLib::HReal Distance(const MathLib::HVector3& point) const
         {
-            return m_Normal.dot(point) + m_Distance;
+            return m_Normal.dot(point) - m_Distance;
         }
 
     private:
         MathLib::HVector3 m_Normal;
-        MathLib::HReal m_Distance;
+        MathLib::HReal m_Distance =0.f;
     };
 
     class FrustumObject
@@ -57,16 +51,16 @@ namespace Magnum
             const MathLib::HReal farClip = m_Camera.getFarClip();
             const MathLib::HReal fov = m_Camera.getFOV();
 
-            const MathLib::HReal halfHSide = std::tan(fov / 2) * farClip;
+            const MathLib::HReal halfHSide = std::tan(fov / 2 * 4/3 * MathLib::H_PI / 180.f) * farClip;
             const MathLib::HReal halfVSide = halfHSide / aspectRatio;
             const MathLib::HVector3 frontMultFar = dir * farClip;
 
             m_Planes[FRUSTUM_PLANE_NEAR].Set(eye + dir * nearClip, dir);
             m_Planes[FRUSTUM_PLANE_FAR].Set(eye + frontMultFar, -dir);
-            m_Planes[FRUSTUM_PLANE_RIGHT].Set(eye, (frontMultFar + right * halfHSide).cross(up));
-            m_Planes[FRUSTUM_PLANE_LEFT].Set(eye, up.cross(frontMultFar-right* halfHSide));
-            m_Planes[FRUSTUM_PLANE_TOP].Set(eye, right.cross(frontMultFar+up* halfVSide));
-            m_Planes[FRUSTUM_PLANE_BOTTOM].Set(eye, (frontMultFar - up * halfVSide).cross(right));
+            m_Planes[FRUSTUM_PLANE_RIGHT].Set(eye, -(frontMultFar + right * halfHSide).cross(up));
+            m_Planes[FRUSTUM_PLANE_LEFT].Set(eye, -up.cross(frontMultFar-right* halfHSide));
+            m_Planes[FRUSTUM_PLANE_TOP].Set(eye, -right.cross(frontMultFar+up* halfVSide));
+            m_Planes[FRUSTUM_PLANE_BOTTOM].Set(eye, -(frontMultFar - up * halfVSide).cross(right));
         }
 
         bool IsPointInFrustum(const MathLib::HVector3 &point) const
@@ -93,30 +87,25 @@ namespace Magnum
             return true;
         }
 
-        bool IsAABBInFrustum(const MathLib::HAABBox3D &aabb) const
+        bool IsAABBInFrustum(const MathLib::HAABBox3D& aabb) const
         {
-            for (int i = 0; i < FRUSTUM_PLANE_COUNT; i++)
-            {
-      //         const MathLib::HVector3 & normal = m_Planes[i].GetNormal();
-      //         const MathLib::HVector3& extents = aabb.sizes() / 2;
-      //         const MathLib::HReal r = extents[0] * std::abs(normal[0]) + extents[1] * std::abs(normal[1]) + extents[2] * std::abs(normal[2]);
-      //         if (m_Planes[i].Distance(aabb.center()) < -r)
-      //         {
-				  // return false;
-			   //}
-               MathLib::HVector3 positiveVertex = aabb.corner(MathLib::HAABBox3D::CornerType::BottomLeft);
-               if (m_Planes[i].GetNormal().x() >= 0)
-                   positiveVertex.x() = aabb.corner(MathLib::HAABBox3D::CornerType::TopRight).x();
-               if (m_Planes[i].GetNormal().y() >= 0)
-                   positiveVertex.y() = aabb.corner(MathLib::HAABBox3D::CornerType::TopRight).y();
-               if (m_Planes[i].GetNormal().z() >= 0)
-                   positiveVertex.z() = aabb.corner(MathLib::HAABBox3D::CornerType::TopRight).z();
+            Eigen::Vector3f center = aabb.center();
+            Eigen::Vector3f extents = aabb.sizes() / 2.0f;
 
-               if (m_Planes[i].Distance(positiveVertex) < 0)
-               {
-                   return false;
-               }
+            for (int i = 0; i < FRUSTUM_PLANE_COUNT; ++i)
+            {
+                const Eigen::Vector3f& normal = m_Planes[i].GetNormal();
+                float distance = m_Planes[i].Distance(center);
+                float r = extents.x() * std::abs(normal.x()) +
+                    extents.y() * std::abs(normal.y()) +
+                    extents.z() * std::abs(normal.z());
+
+                if (distance < -r)
+                {
+                    return false;
+                }
             }
+
             return true;
         }
 

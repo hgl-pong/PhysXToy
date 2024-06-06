@@ -83,6 +83,8 @@ namespace Magnum {
 			PhysicsPtr < IPhysicsMaterial>m_Material;
 			PhysicsPtr < IPhysicsScene>m_Scene;
 			std::unique_ptr<MathLib::Camera> m_Camera;
+			std::unique_ptr<MathLib::Camera> m_Camera2;
+			MathLib::Camera* m_MainCamera = nullptr;
 			FrameProfiler m_FrameProfiler;
 			std::unique_ptr<FrustumCullingManager> m_FrustumCullingManager;
 		};
@@ -101,8 +103,11 @@ namespace Magnum {
 					create(conf, glConf.setSampleCount(0));			
 
 			}
-			m_Camera = std::make_unique<MathLib::Camera>(MathLib::HVector3(80.0f, 80.0f, 80.0f), MathLib::HVector3(-0.6f, -0.6f, -0.6f), MathLib::HReal(Vector2{ framebufferSize()}.aspectRatio()));
+			m_Camera = std::make_unique<MathLib::Camera>(MathLib::HVector3(0.0f, 80.0f, 0.0f), MathLib::HVector3(0.1f, -1.f, 0.1f), MathLib::HReal(Vector2{ framebufferSize()}.aspectRatio()));
 			m_FrustumCullingManager = std::make_unique<FrustumCullingManager>(*m_Camera);
+
+			m_Camera2 = std::make_unique<MathLib::Camera>(MathLib::HVector3(80.0f, 80.0f, 80.0f), MathLib::HVector3(-0.6f, -0.6f, -0.6f), MathLib::HReal(Vector2{ framebufferSize() }.aspectRatio()));
+			m_MainCamera= m_Camera.get();
 			/* Shaders, renderer setup */
 			m_FlatShader = Shaders::Flat3D{};
 			m_PhongShader = Shaders::Phong{};
@@ -117,13 +122,13 @@ namespace Magnum {
 
 			/* Set up the camera */
 			m_RenderCameraObject = new Object3D{ &m_RenderScene };
-			m_RenderCameraObject->setTransformation(ToMagnum(m_Camera->getViewMatrix()));
+			m_RenderCameraObject->setTransformation(ToMagnum(m_MainCamera->getViewMatrix()));
 
 			m_RenderCamera = new SceneGraph::Camera3D{ *m_RenderCameraObject };
 
-			m_RenderCamera->setProjectionMatrix(ToMagnum(m_Camera->getProjectMatrix()));
+			m_RenderCamera->setProjectionMatrix(ToMagnum(m_MainCamera->getProjectMatrix()));
 			m_FrustumCullingManager->UpdateFrustum();
-			_InitPhysics(false);
+			_InitPhysics(true);
 		}
 
 		void TestingApplication::keyPressEvent(KeyEvent& event) {
@@ -150,9 +155,9 @@ namespace Magnum {
 				cameraKey = 'E';
 				break;
 			}
-			if (m_Camera->handleKey(cameraKey, 0, 0))
+			if (m_MainCamera->handleKey(cameraKey, 0, 0))
 			{
-				m_RenderCameraObject->setTransformation(ToMagnum(m_Camera->getViewMatrix()));
+				m_RenderCameraObject->setTransformation(ToMagnum(m_MainCamera->getViewMatrix()));
 				m_FrustumCullingManager->UpdateFrustum();
 			}
 		}
@@ -182,7 +187,7 @@ namespace Magnum {
 
 				PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
 
-				_CreateDynamic(m_Camera->getTransform(), geometry, m_Camera->getDir() * 75);
+				_CreateDynamic(m_MainCamera->getTransform(), geometry, m_MainCamera->getDir() * 75);
 				break;
 			}
 			case KeyEvent::Key::B:
@@ -198,12 +203,20 @@ namespace Magnum {
 				}
 				break;
 			}
+			case KeyEvent::Key::P:
+			{
+				if(m_MainCamera==m_Camera.get())
+					m_MainCamera = m_Camera2.get();
+				else
+					m_MainCamera = m_Camera.get();
+				break;
+			}
 			default:
 				break;
 			}
-			m_Camera->handleAnalogMove(0, 0);
-			//m_RenderCameraObject->setTransformation(ToMagnumMatrix4(m_Camera->getTransform().matrix()));
-			m_RenderCameraObject->setTransformation(ToMagnum(m_Camera->getViewMatrix()));
+			m_MainCamera->handleAnalogMove(0, 0);
+			//m_RenderCameraObject->setTransformation(ToMagnumMatrix4(m_MainCamera->getTransform().matrix()));
+			m_RenderCameraObject->setTransformation(ToMagnum(m_MainCamera->getViewMatrix()));
 			m_FrustumCullingManager->UpdateFrustum();
 
 		}
@@ -212,22 +225,22 @@ namespace Magnum {
 			if (event.button() != MouseEvent::Button::Left &&
 				event.button() != MouseEvent::Button::Middle)
 				return;
-			if (m_Camera.get())
-				m_Camera->handleMouse(0,0,event.position().x(),event.position().y());
+			if (m_MainCamera)
+				m_MainCamera->handleMouse(0,0,event.position().x(),event.position().y());
 		}
 
 		void TestingApplication::mouseMoveEvent(MouseMoveEvent& event) {
 
 			if (!event.buttons()) return;
 
-			if (m_Camera.get())
-				m_Camera->handleMotion(event.position().x(), event.position().y());
+			if (m_MainCamera)
+				m_MainCamera->handleMotion(event.position().x(), event.position().y());
 
-			//m_RenderCameraObject->setTransformation(ToMagnumMatrix4(m_Camera->getTransform().matrix()));
-			m_RenderCameraObject->setTransformation(ToMagnum(m_Camera->getViewMatrix()));
+			//m_RenderCameraObject->setTransformation(ToMagnumMatrix4(m_MainCamera->getTransform().matrix()));
+			m_RenderCameraObject->setTransformation(ToMagnum(m_MainCamera->getViewMatrix()));
 			m_FrustumCullingManager->UpdateFrustum();
 
-			//printf("Dir:%f,%f,%f\n", m_Camera->getDir().x(), m_Camera->getDir().y(), m_Camera->getDir().z());
+			//printf("Dir:%f,%f,%f\n", m_MainCamera->getDir().x(), m_MainCamera->getDir().y(), m_MainCamera->getDir().z());
 
 		}
 
@@ -253,7 +266,9 @@ namespace Magnum {
 			m_FrustumCullingManager->CullObjects(renderableObjects);
 			printf("RenderableObjects:%d\n", renderableObjects.size());
 			for (auto& renderable : m_DynamicRenderableObjects)
+			{
 				renderable->Show(false);
+			}
 			for (auto& renderable : renderableObjects)
 			{
 				renderable->UpdateTransform();
