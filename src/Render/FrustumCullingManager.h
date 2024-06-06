@@ -2,6 +2,11 @@
 #include "Physics/PhysicsCommon.h"
 #include "PhysicsRenderObject.h"
 #include "Camera.h"
+#define PARALLEL_COMPUTE
+#ifdef PARALLEL_COMPUTE
+#include <mutex>
+#include <omp.h>
+#endif
 namespace Magnum
 {
     class Plane
@@ -109,6 +114,11 @@ namespace Magnum
             return true;
         }
 
+        const MathLib::HVector3 GetPosition()const
+        {
+            return m_Camera.getEye();
+        }
+
     private:
         enum FrustumPlane
         {
@@ -152,16 +162,33 @@ namespace Magnum
         void CullObjects(std::vector<std::shared_ptr<PhysicsRenderObject>> &outObjects)
         {
             outObjects.clear();
+            const auto& frustumPos = m_Frustum.GetPosition(); 
+#ifdef  PARALLEL_COMPUTE
+            std::mutex vectorMutex;
+            #pragma omp parallel for
+#endif //  PARALLEL_COMPUTE
             for (auto &object : m_Objects)
             {
-                if (m_Frustum.IsAABBInFrustum(object->GetWorldBoundingBox()))
+                const MathLib::HAABBox3D& aabb = object->GetWorldBoundingBox();
+                if ((frustumPos - aabb.center()).norm()>m_MaxDistance)
+                    continue;
+                if (m_Frustum.IsAABBInFrustum(aabb))
                 {
+#ifdef  PARALLEL_COMPUTE
+                    std::lock_guard<std::mutex> lock(vectorMutex);
+#endif //  PARALLEL_COMPUTE
                     outObjects.push_back(object);
                 }
             }
         }
 
+        void SetCullingDistance(MathLib::HReal distance)
+        {
+			m_MaxDistance = distance;
+		}
+
     private:
+        MathLib::HReal m_MaxDistance = std::numeric_limits<MathLib::HReal>::max();
         FrustumObject m_Frustum;
         std::vector<std::shared_ptr<PhysicsRenderObject>> m_Objects;
     };

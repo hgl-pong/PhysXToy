@@ -105,6 +105,7 @@ namespace Magnum {
 			}
 			m_Camera = std::make_unique<MathLib::Camera>(MathLib::HVector3(0.0f, 80.0f, 0.0f), MathLib::HVector3(0.1f, -1.f, 0.1f), MathLib::HReal(Vector2{ framebufferSize()}.aspectRatio()));
 			m_FrustumCullingManager = std::make_unique<FrustumCullingManager>(*m_Camera);
+			m_FrustumCullingManager->SetCullingDistance(200);
 
 			m_Camera2 = std::make_unique<MathLib::Camera>(MathLib::HVector3(80.0f, 80.0f, 80.0f), MathLib::HVector3(-0.6f, -0.6f, -0.6f), MathLib::HReal(Vector2{ framebufferSize() }.aspectRatio()));
 			m_MainCamera= m_Camera.get();
