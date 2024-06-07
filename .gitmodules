@@ -1,3 +1,3 @@
-[submodule "ThirdParty/PhysX"]
-	path = ThirdParty/PhysX
-	url = git@github.com:NVIDIA-Omniverse/PhysX.git
+[submodule "ThirdParty/HMath"]
+	path = ThirdParty/HMath
+	url = https://github.com/hgl-pong/HMath.git
