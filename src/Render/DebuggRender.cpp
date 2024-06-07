@@ -45,7 +45,7 @@
 #endif
 
 #include <omp.h>
-#include "Camera.h"
+#include <Math/GraphicUtils/Camara.h>
 #include "foundation/PxArray.h"
 #include "foundation/PxMathUtils.h"
 #include <vector>
@@ -54,6 +54,7 @@
 
 using namespace physx;
 using namespace MathLib;
+using namespace MathLib::GraphicUtils;
 
 static float gCylinderData[] = {
 	1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
@@ -421,7 +422,7 @@ static void renderGeometry(const PxGeometry &geom)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-static MathLib::Camera *gCamera = NULL;
+static MathLib::GraphicUtils::Camera *gCamera = NULL;
 static KeyboardCallback gKbCb = NULL;
 
 static PxU32 gScreenWidth = 0;
@@ -444,7 +445,7 @@ static bool gMoveCamera = false;
 static void defaultMotionCallback(int x, int y)
 {
 	if (gCamera && gMoveCamera)
-		gCamera->handleMotion(x, y);
+		gCamera->HandleMotion(x, y);
 }
 
 static void defaultMouseCallback(int button, int state, int x, int y)
@@ -453,7 +454,7 @@ static void defaultMouseCallback(int button, int state, int x, int y)
 		gMoveCamera = state == 0;
 
 	if (gCamera)
-		gCamera->handleMouse(button, state, x, y);
+		gCamera->HandleMouse(button, state, x, y);
 }
 
 static void defaultKeyboardCallback(unsigned char key, int x, int y)
@@ -464,9 +465,9 @@ static void defaultKeyboardCallback(unsigned char key, int x, int y)
 	if (key == 110) // n
 		gWireFrame = !gWireFrame;
 
-	const bool status = gCamera ? gCamera->handleKey(key, x, y) : false;
+	const bool status = gCamera ? gCamera->HandleKey(key, x, y) : false;
 	if (!status && gKbCb)
-		gKbCb(key, gCamera ? gCamera->getTransform() : HTransform3::Identity());
+		gKbCb(key, gCamera ? gCamera->GetTransform() : HTransform3::Identity());
 }
 
 static void defaultSpecialCallback(int key, int x, int y)
@@ -487,9 +488,9 @@ static void defaultSpecialCallback(int key, int x, int y)
 		break;
 	}
 
-	const bool status = gCamera ? gCamera->handleKey((unsigned char)key, x, y) : false;
+	const bool status = gCamera ? gCamera->HandleKey((unsigned char)key, x, y) : false;
 	if (!status && gKbCb)
-		gKbCb((unsigned char)key, gCamera ? gCamera->getTransform() : HTransform3::Identity());
+		gKbCb((unsigned char)key, gCamera ? gCamera->GetTransform() : HTransform3::Identity());
 }
 
 static ExitCallback gUserExitCB = NULL;
@@ -720,8 +721,8 @@ namespace Snippets
 
 	void startRender(const Camera *camera, float clipNear, float clipFar, float fov, bool setupLighting)
 	{
-		const HVector3 cameraEye0 = camera->getEye();
-		const HVector3 cameraDir0 = camera->getDir();
+		const HVector3 cameraEye0 = camera->GetEye();
+		const HVector3 cameraDir0 = camera->GetDir();
 
 		const PxVec3 cameraEye(cameraEye0[0], cameraEye0[1], cameraEye0[2]);
 		const PxVec3 cameraDir(cameraDir0[0], cameraDir0[1], cameraDir0[2]);

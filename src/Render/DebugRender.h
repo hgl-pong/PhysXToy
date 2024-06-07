@@ -32,6 +32,7 @@
 #include "PxPhysicsAPI.h"
 #include "foundation/PxPreprocessor.h"
 #include "Physics/PhysicsTypes.h"
+#include <Math/GraphicUtils/Camara.h>
 
 #define INITIAL_SCREEN_WIDTH 768
 #define INITIAL_SCREEN_HEIGHT 768
@@ -61,15 +62,11 @@
 typedef	void	(*KeyboardCallback)	(unsigned char key, const MathLib::HTransform3& camera);
 typedef	void	(*RenderCallback)	();
 typedef	void	(*ExitCallback)		();
-namespace MathLib
-{
-	class Camera;
-}
 
 namespace Snippets
 {
-	void setupDefault(const char* name, MathLib::Camera* camera, KeyboardCallback kbcb, RenderCallback rdcb, ExitCallback excb);
-	MathLib::Camera* getCamera();
+	void setupDefault(const char* name, MathLib::GraphicUtils::Camera* camera, KeyboardCallback kbcb, RenderCallback rdcb, ExitCallback excb);
+	MathLib::GraphicUtils::Camera* getCamera();
 	physx::PxVec3 computeWorldRayF(float xs, float ys, const physx::PxVec3& camDir);
 	PX_FORCE_INLINE physx::PxVec3 computeWorldRay(int xs, int ys, const physx::PxVec3& camDir)
 	{
@@ -81,7 +78,7 @@ namespace Snippets
 
 	void	enableVSync(bool vsync);
 
-	void	startRender(const MathLib::Camera* camera, float nearClip = 1.0f, float farClip = 10000.0f, float fov=60.0f, bool setupLighting=true);
+	void	startRender(const MathLib::GraphicUtils::Camera* camera, float nearClip = 1.0f, float farClip = 10000.0f, float fov=60.0f, bool setupLighting=true);
 	void	finishRender();
 	void	print(const char* text);
 

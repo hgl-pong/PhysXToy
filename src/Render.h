@@ -5,7 +5,7 @@
 #include "PxPhysicsAPI.h"
 
 #include "Render/DebugRender.h"
-#include "Render/Camera.h"
+#include <Math/GraphicUtils/Camara.h>
 
 using namespace physx;
 
@@ -16,7 +16,7 @@ extern void keyPress(unsigned char key, MathLib::HTransform3 &camera);
 
 namespace
 {
-	MathLib::Camera *sCamera;
+	MathLib::GraphicUtils::Camera *sCamera;
 
 	void renderCallback()
 	{
@@ -54,7 +54,7 @@ namespace
 
 void renderLoop()
 {
-	sCamera = new MathLib::Camera(MathLib::HVector3(50.0f, 50.0f, 50.0f), MathLib::HVector3(-0.6f, -0.2f, -0.7f), MathLib::HReal(INITIAL_SCREEN_WIDTH) / INITIAL_SCREEN_HEIGHT);
+	sCamera = new MathLib::GraphicUtils::Camera(MathLib::HVector3(50.0f, 50.0f, 50.0f), MathLib::HVector3(-0.6f, -0.2f, -0.7f), MathLib::HReal(INITIAL_SCREEN_WIDTH) / INITIAL_SCREEN_HEIGHT);
 
 	Snippets::setupDefault("Test Physics Engine", sCamera, keyPress, renderCallback, exitCallback);
 

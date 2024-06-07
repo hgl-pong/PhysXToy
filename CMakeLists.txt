@@ -42,7 +42,9 @@ find_package(Magnum REQUIRED
 )
 
 target_include_directories(${PHYSX_TOY} PUBLIC ./include
-    PRIVATE)
+    PRIVATE
+    ThirdParty/HMath/include
+)
 
 target_link_libraries(${PHYSX_TOY} PRIVATE 
     unofficial::omniverse-physx-sdk::sdk 

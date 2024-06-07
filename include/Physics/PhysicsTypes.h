@@ -1,27 +1,5 @@
 #pragma once
-#include <Eigen/Core>
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
-namespace MathLib
-{
-	typedef float HReal;
-	static HReal H_PI = 3.14159265358979323846f;
-	typedef Eigen::Matrix<HReal, 2, 1> HVector2;
-	typedef Eigen::Matrix<HReal, 3, 1> HVector3;
-	typedef Eigen::Matrix<HReal, 4, 1> HVector4;
-
-	typedef Eigen::Matrix<HReal, 3, 3> HMatrix3;
-	typedef Eigen::Matrix<HReal, 4, 4> HMatrix4;
-
-	typedef Eigen::Quaternion<HReal> HQuaternion;
-	typedef Eigen::AngleAxis<HReal> HAngleAxis;
-
-	typedef Eigen::AlignedBox<HReal, 3> HAABBox3D;
-
-	typedef Eigen::Transform<HReal, 3, Eigen::Affine> HTransform3;
-
-	typedef Eigen::Translation<HReal, 3> HTranslation3;
-}
+#include <Math/Math.h>
 #define DEFAULT_CPU_DISPATCHER_NUM_THREADS 2
 
 template <typename T>
