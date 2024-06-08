@@ -18,6 +18,7 @@ public:
 	virtual PhysicsPtr<IPhysicsScene> CreateScene(const PhysicsSceneCreateOptions &options) = 0;
 	virtual PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions &options) = 0;
 	virtual void SetSolverIterationCount(uint32_t count) = 0;
+	virtual uint32_t GetSolverIterationCount() const = 0;
 };
 
 class IPhysicsScene
@@ -25,8 +26,8 @@ class IPhysicsScene
 public:
 	virtual void Release() = 0;
 	virtual void Tick(MathLib::HReal deltaTime) = 0;
-	virtual bool AddPhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject) = 0;
-	virtual void RemovePhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject) = 0;
+	virtual bool AddPhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject) = 0;
+	virtual void RemovePhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject) = 0;
 	virtual uint32_t GetPhysicsObjectCount() const = 0;
 	virtual uint32_t GetPhysicsRigidDynamicCount() const = 0;
 	virtual uint32_t GetPhysicsRigidStaticCount() const = 0;
@@ -39,7 +40,7 @@ public:
 	virtual void Release() = 0;
 	virtual CollierGeometryType GetType() const = 0;
 	virtual void SetScale(const MathLib::HVector3 &scale) = 0;
-	virtual void GetParams(CollisionGeometryCreateOptions& options) = 0;
+	virtual void GetParams(CollisionGeometryCreateOptions &options) = 0;
 };
 
 class IPhysicsObject
@@ -47,8 +48,8 @@ class IPhysicsObject
 public:
 	virtual void Release() = 0;
 	virtual void Update() = 0;
-	virtual bool AddColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry, const MathLib::HTransform3 &localTrans) = 0;
-	virtual void GetColliderGeometries(std::vector<PhysicsPtr<IColliderGeometry>>& geomeries ,std::vector<MathLib::HTransform3>* geoLocalPos) = 0;
+	virtual bool AddColliderGeometry(PhysicsPtr<IColliderGeometry> &colliderGeometry, const MathLib::HTransform3 &localTrans) = 0;
+	virtual void GetColliderGeometries(std::vector<PhysicsPtr<IColliderGeometry>> &geomeries, std::vector<MathLib::HTransform3> *geoLocalPos) = 0;
 	virtual PhysicsObjectType GetType() const = 0;
 	virtual size_t GetOffset() const = 0;
 	virtual void SetTransform(const MathLib::HTransform3 &trans) = 0;
@@ -70,7 +71,7 @@ public:
 	virtual MathLib::HVector3 GetLinearVelocity() const = 0;
 	virtual MathLib::HReal GetAngularDamping() const = 0;
 	virtual MathLib::HVector3 GetAngularVelocity() const = 0;
-	virtual bool IsSleeping()const = 0;
+	virtual bool IsSleeping() const = 0;
 };
 
 class IPhysicsMaterial

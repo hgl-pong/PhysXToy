@@ -7,14 +7,14 @@
 #endif
 using namespace physx;
 
-PhysicsScene::PhysicsScene(const PhysicsSceneCreateOptions& options, physx::PxCpuDispatcher*cpuDispatch)
+PhysicsScene::PhysicsScene(const PhysicsSceneCreateOptions &options, physx::PxCpuDispatcher *cpuDispatch)
 {
-    auto& physics = PxGetPhysics();
+    auto &physics = PxGetPhysics();
     PxSceneDesc sceneDesc(physics.getTolerancesScale());
-	sceneDesc.gravity = PxVec3(options.m_Gravity[0], options.m_Gravity[1], options.m_Gravity[2]);
-	sceneDesc.cpuDispatcher = cpuDispatch;
-	sceneDesc.filterShader = GetFilterShader(options.m_FilterShaderType);
-	m_Scene = make_physx_ptr<PxScene>(physics.createScene(sceneDesc));
+    sceneDesc.gravity = PxVec3(options.m_Gravity[0], options.m_Gravity[1], options.m_Gravity[2]);
+    sceneDesc.cpuDispatcher = cpuDispatch;
+    sceneDesc.filterShader = GetFilterShader(options.m_FilterShaderType);
+    m_Scene = make_physx_ptr<PxScene>(physics.createScene(sceneDesc));
 #ifdef ENABLE_PVD
     _ASSERT(m_Scene.get());
     PxPvdSceneClient *pvdClient = m_Scene->getScenePvdClient();
@@ -29,7 +29,7 @@ PhysicsScene::PhysicsScene(const PhysicsSceneCreateOptions& options, physx::PxCp
 
 void PhysicsScene::Release()
 {
-	m_Scene.reset();
+    m_Scene.reset();
 }
 
 void PhysicsScene::Tick(MathLib::HReal deltaTime)
@@ -37,35 +37,35 @@ void PhysicsScene::Tick(MathLib::HReal deltaTime)
     m_Scene->simulate(deltaTime);
     m_Scene->fetchResults(true);
 
-    for (auto& dynamicObject : m_RigidDynamic)
+    for (auto &dynamicObject : m_RigidDynamic)
     {
-		dynamicObject->Update();
-	}
+        dynamicObject->Update();
+    }
 }
 
-bool PhysicsScene::AddPhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject)
+bool PhysicsScene::AddPhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject)
 {
     const size_t offset = physicsObject->GetOffset();
     bool result = false;
-    switch(physicsObject->GetType())
+    switch (physicsObject->GetType())
     {
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC:
     {
-        PxRigidStatic* pRigidStatic = reinterpret_cast<PhysXPtr<PxRigidStatic>*>(reinterpret_cast<char*>(physicsObject.get()) + offset)->get();
-        if(pRigidStatic->getNbShapes() == 0)
+        PxRigidStatic *pRigidStatic = reinterpret_cast<PhysXPtr<PxRigidStatic> *>(reinterpret_cast<char *>(physicsObject.get()) + offset)->get();
+        if (pRigidStatic->getNbShapes() == 0)
             return false;
-        if(m_Scene->addActor(*pRigidStatic))
+        if (m_Scene->addActor(*pRigidStatic))
             result = m_RigidStatic.emplace(physicsObject).second;
-        if(!result)
+        if (!result)
             m_Scene->removeActor(*pRigidStatic);
         break;
     }
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC:
     {
-        PxRigidDynamic* pRigidDynamic = reinterpret_cast<PhysXPtr<PxRigidDynamic>*>(reinterpret_cast<char*>(physicsObject.get()) + offset)->get();
-        if(pRigidDynamic->getNbShapes() == 0)
-			return false;
-        if(m_Scene->addActor(*pRigidDynamic))
+        PxRigidDynamic *pRigidDynamic = reinterpret_cast<PhysXPtr<PxRigidDynamic> *>(reinterpret_cast<char *>(physicsObject.get()) + offset)->get();
+        if (pRigidDynamic->getNbShapes() == 0)
+            return false;
+        if (m_Scene->addActor(*pRigidDynamic))
             result = m_RigidDynamic.emplace(physicsObject).second;
         if (!result)
             m_Scene->removeActor(*pRigidDynamic);
@@ -77,7 +77,7 @@ bool PhysicsScene::AddPhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject)
     return result;
 }
 
-void PhysicsScene::RemovePhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject)
+void PhysicsScene::RemovePhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject)
 {
     // m_Scene->removeActor(physicsObject->GetPhysicsObject());
     switch (physicsObject->GetType())
@@ -95,17 +95,17 @@ void PhysicsScene::RemovePhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObje
 
 uint32_t PhysicsScene::GetPhysicsObjectCount() const
 {
-    return m_RigidDynamic.size()+m_RigidStatic.size();
+    return m_RigidDynamic.size() + m_RigidStatic.size();
 }
 
 uint32_t PhysicsScene::GetPhysicsRigidDynamicCount() const
 {
-	return m_RigidDynamic.size();
+    return m_RigidDynamic.size();
 }
 
 uint32_t PhysicsScene::GetPhysicsRigidStaticCount() const
 {
-	return m_RigidStatic.size();
+    return m_RigidStatic.size();
 }
 
 size_t PhysicsScene::GetOffset() const

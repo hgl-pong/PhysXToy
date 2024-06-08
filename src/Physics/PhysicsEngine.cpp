@@ -24,8 +24,8 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
 	m_Pvd = nullptr;
 	m_CpuDispatcher = nullptr;
 	m_bInitialized = false;
-	memset(&m_Options, sizeof(PhysicsEngineOptions), 0);
 
+	m_Options = options;
 #ifdef ENABLE_PVD
 	m_Options.m_bEnablePVD = true;
 #else
@@ -35,7 +35,7 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
 	// Init Physx
 	{
 		m_AllocatorCallback = std::make_unique<PxDefaultAllocator>();
-		m_ErrorCallback = std::make_unique <PxDefaultErrorCallback>();
+		m_ErrorCallback = std::make_unique<PxDefaultErrorCallback>();
 
 		m_Foundation = make_physx_ptr(PxCreateFoundation(PX_PHYSICS_VERSION, *m_AllocatorCallback, *m_ErrorCallback));
 
@@ -49,7 +49,7 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
 		PxCookingParams cookingParams(toleranceScale);
 
 		m_Physics = make_physx_ptr(PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, toleranceScale, true, m_Pvd.get()));
-		m_CpuDispatcher = std::unique_ptr <PxCpuDispatcher>(PxDefaultCpuDispatcherCreate(options.m_iNumThreads == 0 ? DEFAULT_CPU_DISPATCHER_NUM_THREADS : options.m_iNumThreads));
+		m_CpuDispatcher = std::unique_ptr<PxCpuDispatcher>(PxDefaultCpuDispatcherCreate(options.m_NumThreads == 0 ? DEFAULT_CPU_DISPATCHER_NUM_THREADS : options.m_NumThreads));
 	}
 
 	m_bInitialized = true;
@@ -61,7 +61,7 @@ PhysicsEngine::~PhysicsEngine()
 	m_Physics.reset();
 	if (m_Pvd)
 	{
-		PxPvdTransport *transport = m_Pvd->getTransport();		
+		PxPvdTransport *transport = m_Pvd->getTransport();
 		m_Pvd->disconnect();
 		m_Pvd.reset();
 		PX_RELEASE(transport);
@@ -74,7 +74,7 @@ PhysicsPtr<IPhysicsObject> PhysicsEngine::CreateObject(const PhysicsObjectCreate
 {
 	if (!m_bInitialized)
 		return nullptr;
-	PhysicsPtr<IPhysicsMaterial>material = CreateMaterial(options.m_MaterialOptions);
+	PhysicsPtr<IPhysicsMaterial> material = CreateMaterial(options.m_MaterialOptions);
 	IPhysicsObject *object = nullptr;
 	switch (options.m_ObjectType)
 	{
@@ -107,8 +107,9 @@ PhysicsPtr<IPhysicsScene> PhysicsEngine::CreateScene(const PhysicsSceneCreateOpt
 {
 	if (!m_bInitialized)
 		return nullptr;
-
-	return make_physics_ptr(new PhysicsScene(options, m_CpuDispatcher.get()));
+	PhysicsPtr<IPhysicsScene> scene = make_physics_ptr(new PhysicsScene(options, m_CpuDispatcher.get()));
+	m_Scenes.push_back(scene);
+	return scene;
 }
 
 PhysicsPtr<IColliderGeometry> PhysicsEngine::CreateColliderGeometry(const CollisionGeometryCreateOptions &options)
@@ -146,7 +147,7 @@ PhysicsPtr<IColliderGeometry> PhysicsEngine::CreateColliderGeometry(const Collis
 	}
 	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH:
 	{
-		geometry = new ConvexMeshColliderGeometry(options.m_ConvexMeshParams.m_Vertices,options.m_ConvexMeshParams.m_Indices);
+		geometry = new ConvexMeshColliderGeometry(options.m_ConvexMeshParams.m_Vertices, options.m_ConvexMeshParams.m_Indices);
 		break;
 	}
 	default:
@@ -160,5 +161,12 @@ void PhysicsEngine::SetSolverIterationCount(uint32_t count)
 {
 	if (!m_bInitialized)
 		return;
+	m_Options.m_SolverIterationCount = count;
+}
 
+uint32_t PhysicsEngine::GetSolverIterationCount() const
+{
+	if (!m_bInitialized)
+		return 0;
+	return m_Options.m_SolverIterationCount;
 }

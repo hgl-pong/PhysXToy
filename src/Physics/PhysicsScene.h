@@ -13,11 +13,13 @@ class PhysicsRigidStatic;
 class PhysicsScene : public IPhysicsScene
 {
 public:
-	PhysicsScene(const PhysicsSceneCreateOptions& options,physx::PxCpuDispatcher* );
+	PhysicsScene(const PhysicsSceneCreateOptions &options, physx::PxCpuDispatcher *);
+
+public:
 	void Release() override;
 	void Tick(MathLib::HReal deltaTime) override;
-	bool AddPhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject) override;
-	void RemovePhysicsObject(PhysicsPtr < IPhysicsObject >&physicsObject) override;
+	bool AddPhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject) override;
+	void RemovePhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject) override;
 	uint32_t GetPhysicsObjectCount() const override;
 	uint32_t GetPhysicsRigidDynamicCount() const override;
 	uint32_t GetPhysicsRigidStaticCount() const override;
@@ -25,6 +27,6 @@ public:
 
 private:
 	PhysXPtr<physx::PxScene> m_Scene;
-	std::unordered_set< PhysicsPtr<IPhysicsObject >> m_RigidStatic;
-	std::unordered_set< PhysicsPtr<IPhysicsObject >> m_RigidDynamic;
+	std::unordered_set<PhysicsPtr<IPhysicsObject>> m_RigidStatic;
+	std::unordered_set<PhysicsPtr<IPhysicsObject>> m_RigidDynamic;
 };

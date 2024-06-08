@@ -1,6 +1,7 @@
 #pragma once
 #include <Math/Math.h>
 #define DEFAULT_CPU_DISPATCHER_NUM_THREADS 2
+#define DEFAULT_SOLVER_ITERATION_COUNT 6
 
 template <typename T>
 struct PhysicsDeleter
@@ -48,9 +49,9 @@ PhysXPtr<T> make_physx_ptr(T *ptr)
 
 struct PhysicsEngineOptions
 {
-	uint32_t m_iNumThreads = DEFAULT_CPU_DISPATCHER_NUM_THREADS;
+	uint32_t m_NumThreads = DEFAULT_CPU_DISPATCHER_NUM_THREADS;
 	bool m_bEnablePVD = true;
-	uint32_t m_SolverIterationCount = 6;
+	uint32_t m_SolverIterationCount = DEFAULT_SOLVER_ITERATION_COUNT;
 };
 
 enum class PhysicsSceneFilterShaderType
