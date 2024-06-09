@@ -4,6 +4,7 @@
 #include "ColliderGeometry.h"
 #include "PhysicsMaterial.h"
 #include "Utility/PhysXUtils.h"
+#include "Utility/PhysicsUtils.h"
 using namespace physx;
 class ShapeFactory
 {
@@ -134,7 +135,7 @@ bool PhysicsRigidDynamic::AddColliderGeometry(PhysicsPtr<IColliderGeometry> &col
 	m_Mass = m_RigidDynamic->getMass();
 	m_ColliderGeometries.push_back(colliderGeometry);
 	m_ColliderLocalPos.push_back(localTrans);
-	m_BoundingBox = ConvertUtils::FromPx(CalculateBoundingBox(m_RigidDynamic.get()));
+	m_BoundingBox = ComputeBoundingBox(this);
 	return true;
 }
 
@@ -225,7 +226,7 @@ bool PhysicsRigidStatic::AddColliderGeometry(PhysicsPtr<IColliderGeometry> &coll
 	PX_RELEASE(shape);
 	m_ColliderGeometries.push_back(colliderGeometry);
 	m_ColliderLocalPos.push_back(localTrans);
-	m_BoundingBox = ConvertUtils::FromPx(CalculateBoundingBox(m_RigidStatic.get()));
+	m_BoundingBox = ComputeBoundingBox(this);
 	return true;
 }
 

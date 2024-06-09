@@ -108,7 +108,6 @@ PhysicsPtr<IPhysicsScene> PhysicsEngine::CreateScene(const PhysicsSceneCreateOpt
 	if (!m_bInitialized)
 		return nullptr;
 	PhysicsPtr<IPhysicsScene> scene = make_physics_ptr(new PhysicsScene(options, m_CpuDispatcher.get()));
-	m_Scenes.push_back(scene);
 	return scene;
 }
 

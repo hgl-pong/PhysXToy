@@ -1,5 +1,5 @@
 #pragma once
-#include <Math/Math.h>
+#include <Math/MathUtils.h>
 #define DEFAULT_CPU_DISPATCHER_NUM_THREADS 2
 #define DEFAULT_SOLVER_ITERATION_COUNT 6
 

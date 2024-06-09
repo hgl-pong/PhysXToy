@@ -42,6 +42,4 @@ private:
 
 	bool m_bInitialized;
 
-	// resource
-	std::vector<PhysicsPtr<IPhysicsScene>> m_Scenes;
 };

@@ -176,11 +176,11 @@ inline physx::PxBounds3 CalculateBoundingBox(physx::PxRigidActor* actor) {
 		physx::PxBounds3 localBounds;
 		physx::PxGeometryQuery::computeGeomBounds(localBounds, shape->getGeometry(), localPose);
 
-		physx::PxTransform globalPose = actor->getGlobalPose() * localPose;
-		physx::PxBounds3 worldBounds;
-		physx::PxGeometryQuery::computeGeomBounds(worldBounds, shape->getGeometry(), globalPose);
+		//physx::PxTransform globalPose = actor->getGlobalPose() * localPose;
+		//physx::PxBounds3 worldBounds;
+		//physx::PxGeometryQuery::computeGeomBounds(worldBounds, shape->getGeometry(), globalPose);
 
-		bounds.include(worldBounds);
+		bounds.include(localBounds);
 	}
 
 	return bounds;
