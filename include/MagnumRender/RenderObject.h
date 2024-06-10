@@ -30,6 +30,7 @@
 #include <Magnum/Trade/MeshData.h>
 #include <Magnum/SceneGraph/Drawable.h>
 #include "Physics/PhysicsCommon.h"
+#include <Math/GraphicUtils/Camara.h>
 #include "MeshDataLoader.h"
 namespace MagnumRender
 {
@@ -38,19 +39,54 @@ namespace MagnumRender
 	using Object3D = Magnum::SceneGraph::Object<Magnum::SceneGraph::MatrixTransformation3D>;
 	using Scene3D = Magnum::SceneGraph::Scene<Magnum::SceneGraph::MatrixTransformation3D>;
 	using namespace Magnum::Math::Literals;
-	class FlatDrawable : public Magnum::SceneGraph::Drawable3D {
-	public:
-		explicit FlatDrawable(Object3D& object, Magnum::Shaders::Flat3D& shader, const Magnum::Trade::MeshData& meshData, Magnum::SceneGraph::DrawableGroup3D& drawables) :
-			Magnum::SceneGraph::Drawable3D{ object, &drawables }, m_FlatShader(shader), m_Mesh(Magnum::MeshTools::compile(meshData)) {}
 
-		void draw(const Magnum::Matrix4& transformation, Magnum::SceneGraph::Camera3D& camera) {
-			if (m_bShow)
-			{
-				m_FlatShader
-					.setColor(m_Color)
-					.setTransformationProjectionMatrix(camera.projectionMatrix() * transformation)
-					.draw(m_Mesh);
-			}
+	class ShaderTable
+	{
+	public:
+		ShaderTable()
+		{
+		}
+		
+		void Init()
+		{
+			if (m_bIsInitialized)
+				return;
+			m_FlatShader = Magnum::Shaders::Flat3D{};
+			m_PhongShader = Magnum::Shaders::Phong{};
+		}
+
+		Magnum::Shaders::Flat3D& GetFlatShader()
+		{
+			Init();
+			return m_FlatShader;
+		}
+
+		Magnum::Shaders::Phong& GetPhongShader()
+		{
+			Init();
+			return m_PhongShader;
+		}
+	private:
+
+			bool m_bIsInitialized = false;
+			Magnum::Shaders::Flat3D m_FlatShader{ Magnum::NoCreate };
+			Magnum::Shaders::Phong m_PhongShader{ Magnum::NoCreate };
+	};
+
+	static ShaderTable m_ShaderTable;
+	class FlatDrawable {
+	public:
+		explicit FlatDrawable(const Magnum::Trade::MeshData& meshData) :
+			m_Mesh(Magnum::MeshTools::compile(meshData)) {
+		}
+
+		void Render(MathLib::GraphicUtils::Camera& camera)
+		{
+			const Magnum::Matrix4& transformation = m_Object.absoluteTransformationMatrix();
+			m_ShaderTable.GetFlatShader()
+				.setColor(m_Color)
+				.setTransformationProjectionMatrix(ToMagnum(camera.GetProjectMatrix()) * ToMagnum(camera.GetViewMatrix()) * transformation.transposed())
+				.draw(m_Mesh);
 		}
 
 		void Show(bool show) {
@@ -66,34 +102,53 @@ namespace MagnumRender
 			m_Mesh = Magnum::MeshTools::compile(meshdata);
 		}
 
+		void AddToScene(Scene3D& scene)
+		{
+			m_Object.setParent(&scene);
+		}
+
+		void RemoveFromScene()
+		{
+			m_Object.setParent(nullptr);
+		}
+
+		Object3D& GetObject()
+		{
+			return m_Object;
+		}
+
 	private:
+		Object3D m_Object;
 		bool m_bShow = true;
-		Magnum::Shaders::Flat3D& m_FlatShader;
 		Magnum::GL::Mesh m_Mesh;
 		Magnum::Color4 m_Color = 0x747474_rgbf;
 	};
 
-	class RenderableObject : public Magnum::SceneGraph::Drawable3D {
+	class RenderUnit {
 	public:
-		explicit RenderableObject(Object3D* object, Magnum::Shaders::Phong& pshader, Magnum::Shaders::Flat3D&fShader, const Magnum::Trade::MeshData& meshData, Magnum::SceneGraph::DrawableGroup3D& group, const Magnum::Matrix4& matrix) :
-			Magnum::SceneGraph::Drawable3D{ *object, &group }, m_PhongShader(pshader),m_FlatShader(fShader),m_Mesh(Magnum::MeshTools::compile(meshData)), m_Object(object ) , m_LocalPos(matrix){}
+		explicit RenderUnit(Object3D& object,const Magnum::Trade::MeshData& meshData, Magnum::SceneGraph::DrawableGroup3D& group, const Magnum::Matrix4& matrix) :
+			 m_Mesh(Magnum::MeshTools::compile(meshData)) , m_LocalPos(matrix)
+		{
 
-		void draw(const Magnum::Matrix4& transformationMatrix, Magnum::SceneGraph::Camera3D& camera) override {
+			m_Object.setParent(object.parent());
+		}
+
+		void draw(const Magnum::Matrix4& transformationMatrix, Magnum::SceneGraph::Camera3D& camera) {
 			if (!m_bShow)
 				return;
 			m_Mesh.setPrimitive(Magnum::MeshPrimitive::Triangles);
-			m_PhongShader.setLightPosition(ToMagnum(mLightPosition))
+			m_ShaderTable.GetPhongShader().setLightPosition(ToMagnum(mLightPosition))
 				.setAmbientColor(IsSleeping? m_AmbientColor*0.5:m_AmbientColor)
 				.setDiffuseColor(m_DiffuseColor)
 				.setLightColor(mLightColor)
 				.setTransformationMatrix(transformationMatrix)
 				.setNormalMatrix(transformationMatrix.normalMatrix())
 				.setProjectionMatrix(camera.projectionMatrix());
-			m_Mesh.draw(m_PhongShader);	
+			m_Mesh.draw(m_ShaderTable.GetPhongShader());
 			if (m_bShowWireframe)
 			{
 				m_Mesh.setPrimitive(Magnum::MeshPrimitive::Lines);
-				m_FlatShader.setColor(0x000000_rgbf)
+				m_ShaderTable.GetFlatShader().setColor(0x000000_rgbf)
 					.setTransformationProjectionMatrix(camera.projectionMatrix() * transformationMatrix)
 					.draw(m_Mesh);
 			}
@@ -130,17 +185,14 @@ namespace MagnumRender
 		bool m_bShowWireframe = true;
 		Magnum::Color4 m_AmbientColor = { 1.f,1.f,1.f,1.f };
 		Magnum::Color4 m_DiffuseColor = { 1.f,1.f,1.f,1.f };
-
-		Magnum::Shaders::Phong& m_PhongShader;
-		Magnum::Shaders::Flat3D& m_FlatShader;
 		Magnum::GL::Mesh m_Mesh;
-		Object3D* m_Object;
+		Object3D m_Object;
 		Magnum::Matrix4 m_LocalPos;
 	};
 
 	class RenderObject  {
 	public:
-		explicit RenderObject(Magnum::Shaders::Phong& shader, Magnum::Shaders::Flat3D& fShader, Magnum::SceneGraph::DrawableGroup3D& group, Scene3D& renderScene)
+		explicit RenderObject(Magnum::SceneGraph::DrawableGroup3D& group, Scene3D& renderScene)
 		{
 			m_Object = std::make_shared < Object3D>(&renderScene);
 
@@ -149,9 +201,9 @@ namespace MagnumRender
 				Magnum::Trade::MeshData meshData = Magnum::Primitives::cubeWireframe();
 				m_BoundingBoxObject = std::make_shared < Object3D>(&renderScene);
 				m_BoundingBoxObject->scale(Magnum::Vector3(halfSize[0], halfSize[1], halfSize[2]));
-				m_ParentObject = m_BoundingBoxObject->parent();
+				m_ParentObject = &renderScene;
 				m_BoundingBoxObject->setParent(m_Object.get());
-				m_BoundingBox = std::make_shared<FlatDrawable>(*m_BoundingBoxObject, fShader, meshData, group);				
+				m_BoundingBox = std::make_shared<FlatDrawable>( meshData);				
 				m_BoundingBox->SetColor(0x999999_rgbf);
 			}
 		}
@@ -205,7 +257,7 @@ namespace MagnumRender
 		bool m_bShowBoundingBox = true;
 		bool m_UseWorldBoundingBox = false;
 		std::shared_ptr<FlatDrawable> m_BoundingBox;
-		std::vector<std::shared_ptr<RenderableObject>> m_RenderObjects;
+		std::vector<std::shared_ptr<RenderUnit>> m_RenderObjects;
 		std::shared_ptr < Object3D> m_BoundingBoxObject ;
 		std::shared_ptr < Object3D> m_Object ;
 		MathLib::HAABBox3D m_WorldBoundingBox;

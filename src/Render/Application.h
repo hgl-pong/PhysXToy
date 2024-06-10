@@ -8,3 +8,4 @@ public:
 };
 
 extern PhysicsEngineTestingApplication* CreatePhysicsEngineTestingApplication(int argc, char** argv);
+extern PhysicsEngineTestingApplication* GetPhysicsEngineTestingApplication();

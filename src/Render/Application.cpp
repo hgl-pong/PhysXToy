@@ -38,9 +38,9 @@
 #include <Math/GraphicUtils/FrameProfiler.h>
 #include <Math/GraphicUtils/Frustum.h>
 #include <Math/GraphicUtils/CameraManager.h>
-using namespace physx;
+using namespace physx;	
+PhysicsEngineTestingApplication * pApp = nullptr;
 namespace Magnum {
-
 		using namespace Math::Literals;
 
 		class TestingApplication : public Platform::Application ,virtual public PhysicsEngineTestingApplication  {
@@ -69,16 +69,15 @@ namespace Magnum {
 			void _AddPhysicsDebugRenderableObject(const PhysicsPtr<IPhysicsObject>& object);
 			PhysicsPtr<IPhysicsObject> _CreateDynamic(const MathLib::HTransform3& t, PhysicsPtr < IColliderGeometry>& geometry, const MathLib::HVector3& velocity = MathLib::HVector3(0, 0, 0));
 			private:
-			Shaders::Flat3D m_FlatShader{ NoCreate };
-			Shaders::Phong m_PhongShader{ NoCreate };
 
-			Scene3D m_RenderScene;
+			MagnumRender::Scene3D m_RenderScene;
 			SceneGraph::DrawableGroup3D m_RenderDrawable;
-			Object3D* m_RenderCameraObject;
+			MagnumRender::Object3D* m_RenderCameraObject;
 			SceneGraph::Camera3D* m_RenderCamera;
-			Object3D* m_GridObject = nullptr;
+			MagnumRender::Object3D* m_GridObject = nullptr;
+			MagnumRender::FlatDrawable* m_GridMesh = nullptr;
 
-			std::vector<std::shared_ptr<PhysicsRenderObject>> m_DynamicRenderableObjects;
+			std::vector<std::shared_ptr<MagnumRender::PhysicsRenderObject>> m_DynamicRenderableObjects;
 
 			PhysicsPtr < IPhysicsMaterial>m_Material;
 			PhysicsPtr < IPhysicsScene>m_Scene;
@@ -108,19 +107,17 @@ namespace Magnum {
 			m_FrustumCullingManager->SetCullingDistance(200);
 
 			/* Shaders, renderer setup */
-			m_FlatShader = Shaders::Flat3D{};
-			m_PhongShader = Shaders::Phong{};
 			GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
 
-			/* Grid */
-			m_GridObject = new Object3D{ &m_RenderScene };
-			(*m_GridObject)
-				.rotateX(90.0_degf)
+			m_GridMesh= new MagnumRender::FlatDrawable{Primitives::grid3DWireframe({ 1500, 1500 }) };	
+			m_GridMesh->AddToScene(m_RenderScene);
+			m_GridMesh->GetObject().rotateX(90.0_degf)
 				.scale(Vector3{ 800.0f });
-			new FlatDrawable{ *m_GridObject, m_FlatShader, Primitives::grid3DWireframe({ 1500, 1500 }), m_RenderDrawable };
+
+
 
 			/* Set up the camera */
-			m_RenderCameraObject = new Object3D{ &m_RenderScene };
+			m_RenderCameraObject = new MagnumRender::Object3D{ &m_RenderScene };
 			m_RenderCameraObject->setTransformation(ToMagnum(m_CameraManager.GetActiveCamera()->GetViewMatrix()));
 
 			m_RenderCamera = new SceneGraph::Camera3D{ *m_RenderCameraObject };
@@ -250,17 +247,21 @@ namespace Magnum {
 			GL::defaultFramebuffer.clear(GL::FramebufferClear::Color | GL::FramebufferClear::Depth);
 			m_Scene->Tick(1.f/10.f);
 
-			std::vector<std::shared_ptr<PhysicsRenderObject>> renderableObjects;
+			std::vector<std::shared_ptr<MagnumRender::PhysicsRenderObject>> renderableObjects;
 			//uint32_t renderableNum = 0;
 			for (auto& renderable : m_DynamicRenderableObjects)
 			{
 				renderable->UpdateTransform();
 				bool show = !m_FrustumCullingManager->CullingObject(renderable->GetWorldBoundingBox());
-				renderable->Show(show);
+				if (show)
+					renderable->Render(m_RenderCamera);
+				//renderable->Show(show);
 				//if (show) renderableNum++;
 			}
-			//printf("Renderable Num:%d\n", renderableNum);
-			m_RenderCamera->draw(m_RenderDrawable);	
+			//printf("Renderable Num:%d\n", renderableNum);	
+			m_GridMesh->Render(*m_CameraManager.GetActiveCamera());
+			//m_RenderCamera->draw(m_RenderDrawable);	
+
 			m_FrameProfiler.End();
 			char title[256];
 			sprintf(title, "Testing PhysicsEngine %.1f FPS %.1f ms", m_FrameProfiler.GetFrameRate(), m_FrameProfiler.GetFrameTime());
@@ -335,7 +336,7 @@ namespace Magnum {
 
 		void TestingApplication::_AddPhysicsDebugRenderableObject(const PhysicsPtr<IPhysicsObject>& physicsObject)
 		{
-			std::shared_ptr<PhysicsRenderObject> renderable = std::make_shared<PhysicsRenderObject>(m_PhongShader,m_FlatShader, m_RenderDrawable, m_RenderScene, physicsObject);
+			std::shared_ptr<MagnumRender::PhysicsRenderObject> renderable = std::make_shared<MagnumRender::PhysicsRenderObject>(m_RenderScene, physicsObject);
 			m_DynamicRenderableObjects.push_back(renderable);
 			//renderable->UseWorldBoundingBox(true);
 		}
@@ -352,5 +353,13 @@ namespace Magnum {
 
 PhysicsEngineTestingApplication* CreatePhysicsEngineTestingApplication(int argc, char** argv)
 {
-	return new Magnum::TestingApplication({ argc, argv });
+	if(pApp!=nullptr)
+		return pApp;
+	pApp= new Magnum::TestingApplication({ argc, argv });
+	return pApp;
+}
+
+PhysicsEngineTestingApplication* GetPhysicsEngineTestingApplication()
+{
+	return pApp;
 }

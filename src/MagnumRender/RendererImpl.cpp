@@ -35,7 +35,7 @@ namespace MagnumRender
 		(*m_GridObject)
 			.rotateX(90.0_degf)
 			.scale(Vector3{ 800.0f });
-		new FlatDrawable{ *m_GridObject, m_FlatShader, Primitives::grid3DWireframe({ 1500, 1500 }), m_RenderDrawable };
+		new FlatDrawable{Primitives::grid3DWireframe({ 1500, 1500 }) };
 
 		/* Set up the camera */
 		m_RenderCameraObject = new Object3D{ &m_RenderScene };
@@ -97,6 +97,7 @@ namespace MagnumRender
 			m_RenderCameraObject->setTransformation(ToMagnum(m_CameraManager.GetActiveCamera()->GetViewMatrix()));
 			m_FrustumCullingManager->UpdateFrustum();
 		}
+		m_KeyBoardPressCallback(event);
 	}
 
 	void RendererImpl::keyReleaseEvent(KeyEvent& event)
@@ -128,7 +129,7 @@ namespace MagnumRender
 		//m_RenderCameraObject->setTransformation(ToMagnumMatrix4(m_MainCamera->getTransform().matrix()));
 		m_RenderCameraObject->setTransformation(ToMagnum(m_CameraManager.GetActiveCamera()->GetViewMatrix()));
 		m_FrustumCullingManager->UpdateFrustum();
-
+		m_KeyBoardReleaseCallback(event);
 	}
 
 	void RendererImpl::mousePressEvent(MouseEvent& event) {
@@ -137,6 +138,7 @@ namespace MagnumRender
 			return;
 		if (m_CameraManager.GetActiveCamera())
 			m_CameraManager.GetActiveCamera()->HandleMouse(0, 0, event.position().x(), event.position().y());
+		m_MousePressCallback(event);
 	}
 
 	void RendererImpl::mouseMoveEvent(MouseMoveEvent& event) {
@@ -151,7 +153,7 @@ namespace MagnumRender
 		m_FrustumCullingManager->UpdateFrustum();
 
 		//printf("Dir:%f,%f,%f\n", m_MainCamera->getDir().x(), m_MainCamera->getDir().y(), m_MainCamera->getDir().z());
-
+		m_MouseMotionCallback(event);
 	}
 
 	void RendererImpl::mouseScrollEvent(MouseScrollEvent& event) {
