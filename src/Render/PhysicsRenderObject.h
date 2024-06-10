@@ -164,19 +164,26 @@ namespace Magnum
 					matrix = ToMagnum(transposeMatrix);
 				}
 				Matrix4 scalingMatrix= Matrix4::scaling(Vector3(1.f));
+				PhysicsMeshData newMeshData;
 				switch (options.m_GeometryType)
 				{
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE:
-					meshData = Primitives::uvSphereSolid(6, 12); 
-					scalingMatrix = Matrix4::scaling(ToMagnum(options.m_Scale) * options.m_SphereParams.m_Radius);
+				{
+					newMeshData = MathLib::GraphicUtils::GenerateSphereMeshData(options.m_SphereParams.m_Radius, 8, 8);
+					meshData = CreateMesh(newMeshData.m_Vertices, newMeshData.m_Indices);
+					scalingMatrix = Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
+				}
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX:
-					meshData = Primitives::cubeSolid();
-					scalingMatrix = Matrix4::scaling({ options.m_BoxParams.m_HalfExtents[0] * options.m_Scale[0],options.m_BoxParams.m_HalfExtents[1] * options.m_Scale[1],options.m_BoxParams.m_HalfExtents[2] * options.m_Scale[2] });
+				{
+					newMeshData = MathLib::GraphicUtils::GenerateBoxMeshData(options.m_BoxParams.m_HalfExtents);
+					meshData = CreateMesh(newMeshData.m_Vertices, newMeshData.m_Indices);
+					scalingMatrix = Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
+				}
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CAPSULE:
 				{
-					PhysicsMeshData newMeshData = GenerateCapsuleMeshData(options.m_CapsuleParams.m_Radius, options.m_CapsuleParams.m_HalfHeight, 8, 8);
+					 newMeshData = MathLib::GraphicUtils::GenerateCapsuleMeshData(options.m_CapsuleParams.m_Radius, options.m_CapsuleParams.m_HalfHeight, 8, 8);
 					meshData = CreateMesh(newMeshData.m_Vertices, newMeshData.m_Indices);
 					scalingMatrix = Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;

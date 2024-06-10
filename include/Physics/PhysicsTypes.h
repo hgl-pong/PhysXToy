@@ -1,5 +1,6 @@
 #pragma once
 #include <Math/MathUtils.h>
+#include <Math/GraphicUtils/MeshData.h>
 #define DEFAULT_CPU_DISPATCHER_NUM_THREADS 2
 #define DEFAULT_SOLVER_ITERATION_COUNT 6
 
@@ -133,11 +134,7 @@ struct PhysicsObjectCreateOptions
 	PhysicsMaterialCreateOptions m_MaterialOptions;
 };
 
-struct PhysicsMeshData
-{
-	std::vector<MathLib::HVector3> m_Vertices;
-	std::vector<uint32_t> m_Indices;
-};
+typedef MathLib::GraphicUtils::MeshData PhysicsMeshData;
 
 struct ConvexDecomposeOptions
 {
