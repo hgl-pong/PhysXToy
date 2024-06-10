@@ -14,6 +14,8 @@ add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 set(PHYSX_TOY PhysXToy)
 
 file(GLOB SOURCE_FILES
+    include/MagnumRender/*
+    src/MagnumRender/*
     src/*
     src/Render/*
     src/Physics/*

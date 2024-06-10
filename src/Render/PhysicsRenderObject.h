@@ -93,7 +93,7 @@ namespace Magnum
 			m_Mesh.draw(m_PhongShader);	
 			if (m_bShowWireframe)
 			{
-				m_Mesh.setPrimitive(MeshPrimitive::Lines);
+				m_Mesh.setPrimitive(MeshPrimitive::LineStrip);
 				m_FlatShader.setColor(0x000000_rgbf)
 					.setTransformationProjectionMatrix(camera.projectionMatrix() * transformationMatrix)
 					.draw(m_Mesh);
@@ -224,9 +224,10 @@ namespace Magnum
 
 			{
 				MathLib::HVector3 halfSize = physicsObject->GetLocalBoundingBox().sizes() / 2.f;
-				Trade::MeshData meshData = Primitives::cubeWireframe();
+				//Trade::MeshData meshData = Primitives::cubeWireframe();
+				PhysicsMeshData newMeshData = MathLib::GraphicUtils::GenerateBoxWireFrameMeshData(halfSize);
+				Trade::MeshData meshData = CreateMesh(newMeshData.m_Vertices, newMeshData.m_Indices);
 				m_BoundingBoxObject = std::make_shared < Object3D>(&renderScene);
-				m_BoundingBoxObject->scale(Vector3(halfSize[0], halfSize[1], halfSize[2]));
 				m_ParentObject = m_BoundingBoxObject->parent();
 				m_BoundingBoxObject->setParent(m_Object.get());
 				m_BoundingBox = std::make_shared<FlatDrawable>(*m_BoundingBoxObject, fShader, meshData, group);				
@@ -293,8 +294,11 @@ namespace Magnum
 			{
 				m_BoundingBoxObject->resetTransformation();
 				MathLib::HVector3 halfSize = m_PhysicsObject->GetLocalBoundingBox().sizes() / 2.f;
-				Trade::MeshData meshData = Primitives::cubeWireframe();
-				m_BoundingBoxObject->scale(Vector3(halfSize[0], halfSize[1], halfSize[2]));
+				//Trade::MeshData meshData = Primitives::cubeWireframe();
+				//m_BoundingBoxObject->scale(Vector3(halfSize[0], halfSize[1], halfSize[2]));
+				PhysicsMeshData newMeshData = MathLib::GraphicUtils::GenerateBoxWireFrameMeshData(halfSize);
+				Trade::MeshData meshData = CreateMesh(newMeshData.m_Vertices, newMeshData.m_Indices);
+				m_BoundingBox->SetMeshData(meshData);
 				m_BoundingBoxObject->setParent(m_Object.get());
 			}
 		}

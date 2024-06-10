@@ -33,9 +33,9 @@
 #include "PxPhysicsAPI.h"
 
 #include "TestRigidBodyCreate.h"
-#include "MagnumConvertUtils.h"
+#include "MagnumRender/MagnumConvertUtils.h"
 #include "PhysicsRenderObject.h"
-#include "FrameProfiler.h"
+#include <Math/GraphicUtils/FrameProfiler.h>
 #include <Math/GraphicUtils/Frustum.h>
 #include <Math/GraphicUtils/CameraManager.h>
 using namespace physx;
@@ -82,7 +82,7 @@ namespace Magnum {
 
 			PhysicsPtr < IPhysicsMaterial>m_Material;
 			PhysicsPtr < IPhysicsScene>m_Scene;
-			FrameProfiler m_FrameProfiler;
+			MathLib::GraphicUtils::FrameProfiler m_FrameProfiler;
 			MathLib::GraphicUtils::CameraManager m_CameraManager;
 			std::unique_ptr<MathLib::GraphicUtils::CullingManager> m_FrustumCullingManager;
 		};
