@@ -36,26 +36,30 @@
 #include <unordered_set>
 namespace MagnumRender
 {
-	using Object3D = Magnum::SceneGraph::Object<Magnum::SceneGraph::MatrixTransformation3D>;
-	using Scene3D = Magnum::SceneGraph::Scene<Magnum::SceneGraph::MatrixTransformation3D>;
 	class RenderObject;
+	class GizmoRenderUnit;
+	class CoordinateAxis;
 	class RendererImpl : public Magnum::Platform::Application, virtual public Renderer {
 	public:
 		explicit RendererImpl(const Arguments& arguments);
 	public:
-		void SetUp(MousePresseCallback& mousePressCallback,
-			MouseReleaseCallback& mouseReleaseCallback,
-			MouseMotionCallback& mouseMotioCallback,
-			MouseScrollCallback& mouseScrollCallback,
-			KeyBoardPressCallback& keyboardPressCallback,
-			KeyBoardReleaseCallback& keyBoardCallback)override;
+		void SetUp(const MousePresseCallback& mousePressCallback,
+			const MouseReleaseCallback& mouseReleaseCallback,
+			const MouseMotionCallback& mouseMotioCallback,
+			const MouseScrollCallback& mouseScrollCallback,
+			const KeyBoardPressCallback& keyboardPressCallback,
+			const KeyBoardReleaseCallback& keyBoardCallback)override;
 		void Release() override {
 			delete this;
 		}
-		int Run() override {
-			return exec();
+		int Tick() override {
+			
+			return mainLoopIteration();
 		}
-		void  SetApplicationName(const char* name)override;
+		void  SetApplicationName(const char* name)override;	
+		void AddRenderObject(std::shared_ptr<RenderObject>& renderObject)override;
+		void RemoveRenderObject(std::shared_ptr<RenderObject>& renderobject)override;
+		MathLib::GraphicUtils::Camera* GetActiveCamera() override;
 	private:
 		void keyPressEvent(KeyEvent& event) override;
 		void keyReleaseEvent(KeyEvent& event)override;
@@ -64,20 +68,14 @@ namespace MagnumRender
 		void mouseScrollEvent(MouseScrollEvent& event) override;
 		void drawEvent() override;
 
-		void AddRenderObjecct(std::shared_ptr<RenderObject>& renderObject);
-		void RemoveRenderObject(std::shared_ptr<RenderObject>& renderobject);
+
 
 	private:
-		Magnum::Shaders::Flat3D m_FlatShader{ Magnum::NoCreate };
-		Magnum::Shaders::Phong m_PhongShader{ Magnum::NoCreate };
-
 		std::string m_ApplicationName = "Magnum Renderer";
 
 		Scene3D m_RenderScene;
-		Magnum::SceneGraph::DrawableGroup3D m_RenderDrawable;
-		Object3D* m_RenderCameraObject;
-		Magnum::SceneGraph::Camera3D* m_RenderCamera;
-		Object3D* m_GridObject = nullptr;
+		std::unique_ptr < GizmoRenderUnit> m_GridMesh;
+		std::unique_ptr < CoordinateAxis> m_CoordinateAxis;
 
 		std::unordered_set<std::shared_ptr<RenderObject>> m_RenderObjects;
 

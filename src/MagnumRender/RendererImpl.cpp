@@ -1,6 +1,7 @@
 #include "RendererImpl.h"
+#include "MagnumRender/MagnumRenderCommon.h"
 #include "MagnumRender/MagnumConvertUtils.h"
-#include "MagnumRender/RenderObject.h"
+#include "MagnumRender/RenderUnit.h"
 using namespace Magnum;
 using namespace Math::Literals;
 namespace MagnumRender
@@ -25,34 +26,27 @@ namespace MagnumRender
 		m_FrustumCullingManager = std::make_unique<MathLib::GraphicUtils::CullingManager>(*m_CameraManager.GetActiveCamera());
 		m_FrustumCullingManager->SetCullingDistance(200);
 
-		/* Shaders, renderer setup */
-		m_FlatShader = Shaders::Flat3D{};
-		m_PhongShader = Shaders::Phong{};
 		GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
+		GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
 
 		/* Grid */
-		m_GridObject = new Object3D{ &m_RenderScene };
-		(*m_GridObject)
-			.rotateX(90.0_degf)
+		m_GridMesh = std::make_unique<MagnumRender::GizmoRenderUnit>(Primitives::grid3DWireframe({ 1500, 1500 }));
+		m_GridMesh->GetObject().rotateX(90.0_degf)
 			.scale(Vector3{ 800.0f });
-		new FlatDrawable{Primitives::grid3DWireframe({ 1500, 1500 }) };
+		m_GridMesh->AddToScene(m_RenderScene);
 
-		/* Set up the camera */
-		m_RenderCameraObject = new Object3D{ &m_RenderScene };
-		m_RenderCameraObject->setTransformation(ToMagnum(m_CameraManager.GetActiveCamera()->GetViewMatrix()));
+		m_CoordinateAxis = std::make_unique<MagnumRender::CoordinateAxis>();
+		m_CoordinateAxis->AddToScene(m_RenderScene);
 
-		m_RenderCamera = new SceneGraph::Camera3D{ *m_RenderCameraObject };
-
-		m_RenderCamera->setProjectionMatrix(ToMagnum(m_CameraManager.GetActiveCamera()->GetProjectMatrix()));
 		m_FrustumCullingManager->UpdateFrustum();
 	}
 
-	void RendererImpl::SetUp(MousePresseCallback& mousePressCallback,
-		MouseReleaseCallback& mouseReleaseCallback,
-		MouseMotionCallback& mouseMotioCallback,
-		MouseScrollCallback& mouseScrollCallback,
-		KeyBoardPressCallback& keyboardPressCallback,
-		KeyBoardReleaseCallback& keyBoardCallback)
+	void RendererImpl::SetUp(const MousePresseCallback& mousePressCallback,
+		const MouseReleaseCallback& mouseReleaseCallback,
+		const MouseMotionCallback& mouseMotioCallback,
+		const MouseScrollCallback& mouseScrollCallback,
+		const KeyBoardPressCallback& keyboardPressCallback,
+		const KeyBoardReleaseCallback& keyBoardCallback)
 	{
 		m_MousePressCallback = mousePressCallback;
 		m_MouseReleaseCallback = mouseReleaseCallback;
@@ -94,7 +88,6 @@ namespace MagnumRender
 		}
 		if (m_CameraManager.GetActiveCamera()->HandleKey(cameraKey, 0, 0))
 		{
-			m_RenderCameraObject->setTransformation(ToMagnum(m_CameraManager.GetActiveCamera()->GetViewMatrix()));
 			m_FrustumCullingManager->UpdateFrustum();
 		}
 		m_KeyBoardPressCallback(event);
@@ -127,7 +120,6 @@ namespace MagnumRender
 		}
 		m_CameraManager.GetActiveCamera()->HandleAnalogMove(0, 0);
 		//m_RenderCameraObject->setTransformation(ToMagnumMatrix4(m_MainCamera->getTransform().matrix()));
-		m_RenderCameraObject->setTransformation(ToMagnum(m_CameraManager.GetActiveCamera()->GetViewMatrix()));
 		m_FrustumCullingManager->UpdateFrustum();
 		m_KeyBoardReleaseCallback(event);
 	}
@@ -149,7 +141,6 @@ namespace MagnumRender
 			m_CameraManager.GetActiveCamera()->HandleMotion(event.position().x(), event.position().y());
 
 		//m_RenderCameraObject->setTransformation(ToMagnumMatrix4(m_MainCamera->getTransform().matrix()));
-		m_RenderCameraObject->setTransformation(ToMagnum(m_CameraManager.GetActiveCamera()->GetViewMatrix()));
 		m_FrustumCullingManager->UpdateFrustum();
 
 		//printf("Dir:%f,%f,%f\n", m_MainCamera->getDir().x(), m_MainCamera->getDir().y(), m_MainCamera->getDir().z());
@@ -161,17 +152,21 @@ namespace MagnumRender
 	}
 
 	void RendererImpl::drawEvent() {
+		MathLib::GraphicUtils::Camera* camera = m_CameraManager.GetActiveCamera();
+		if (camera == nullptr)
+			return;
 		m_FrameProfiler.Start();
 		GL::defaultFramebuffer.clear(GL::FramebufferClear::Color | GL::FramebufferClear::Depth);
-		for (auto& renderObject : m_RenderObjects)
+		for (auto& renderable : m_RenderObjects)
 		{
-			renderObject->UpdateTransform();
-			bool show = m_FrustumCullingManager->CullingObject(renderObject->GetWorldBoundingBox());
-			renderObject->Show(show);
-			
+			renderable->UpdateTransform();
+			bool show = !m_FrustumCullingManager->CullingObject(renderable->GetWorldBoundingBox());
+			renderable->Show(show);
+			renderable->Render(*camera);
 		}
+		m_GridMesh->Render(*camera);
+		m_CoordinateAxis->Render(*camera);
 
-		m_RenderCamera->draw(m_RenderDrawable);
 		m_FrameProfiler.End();
 		char title[256];
 		sprintf(title, "%s %.1f FPS %.1f ms", m_ApplicationName.c_str(), m_FrameProfiler.GetFrameRate(), m_FrameProfiler.GetFrameTime());
@@ -180,17 +175,24 @@ namespace MagnumRender
 		redraw();
 	}
 
-	void RendererImpl::AddRenderObjecct(std::shared_ptr<RenderObject>& renderObject)
+	void RendererImpl::AddRenderObject(std::shared_ptr<RenderObject>& renderObject)
 	{
 		m_RenderObjects.emplace(renderObject);
+		renderObject->AddToScene(m_RenderScene);
 	}
 
 	void RendererImpl::RemoveRenderObject(std::shared_ptr<RenderObject>& renderObject)
 	{
 		m_RenderObjects.erase(renderObject);
+		renderObject->RemoveFromScene();
 	}
 
-	Renderer* CreateRender(int argc, char** argv)
+	MathLib::GraphicUtils::Camera* RendererImpl::GetActiveCamera()
+	{
+		return m_CameraManager.GetActiveCamera();
+	}
+
+	Renderer* CreateRenderer(int argc, char** argv)
 	{
 		return new RendererImpl({ argc, argv });
 	}

@@ -111,7 +111,7 @@ public:
 	void SetScale(const MathLib::HVector3 &scale) override
 	{
 		m_Scale = scale;
-		const auto halfExtents = MathLib::HadamardProduct(MathLib::HVector3(m_Radius, m_HalfHeight, m_Radius), scale);
+		const auto halfExtents = MathLib::HadamardProduct(MathLib::HVector3(m_HalfHeight + m_Radius,m_Radius, m_Radius), scale);
 		m_BoundingBox = MathLib::HAABBox3D(-halfExtents, halfExtents);
 	}
 	MathLib::HReal GetRadius() const { return m_Radius; }
