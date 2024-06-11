@@ -68,13 +68,9 @@ namespace Magnum {
 			void _InitPhysics(bool interactive);
 			void _AddPhysicsDebugRenderableObject(const PhysicsPtr<IPhysicsObject>& object);
 			PhysicsPtr<IPhysicsObject> _CreateDynamic(const MathLib::HTransform3& t, PhysicsPtr < IColliderGeometry>& geometry, const MathLib::HVector3& velocity = MathLib::HVector3(0, 0, 0));
-			private:
+		private:
 
 			MagnumRender::Scene3D m_RenderScene;
-			SceneGraph::DrawableGroup3D m_RenderDrawable;
-			MagnumRender::Object3D* m_RenderCameraObject;
-			SceneGraph::Camera3D* m_RenderCamera;
-			MagnumRender::Object3D* m_GridObject = nullptr;
 			MagnumRender::FlatDrawable* m_GridMesh = nullptr;
 
 			std::vector<std::shared_ptr<MagnumRender::PhysicsRenderObject>> m_DynamicRenderableObjects;
@@ -110,19 +106,12 @@ namespace Magnum {
 			GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
 
 			m_GridMesh= new MagnumRender::FlatDrawable{Primitives::grid3DWireframe({ 1500, 1500 }) };	
-			m_GridMesh->AddToScene(m_RenderScene);
 			m_GridMesh->GetObject().rotateX(90.0_degf)
-				.scale(Vector3{ 800.0f });
-
-
+				.scale(Vector3{ 800.0f });	
+			m_GridMesh->AddToScene(m_RenderScene);
 
 			/* Set up the camera */
-			m_RenderCameraObject = new MagnumRender::Object3D{ &m_RenderScene };
-			m_RenderCameraObject->setTransformation(ToMagnum(m_CameraManager.GetActiveCamera()->GetViewMatrix()));
 
-			m_RenderCamera = new SceneGraph::Camera3D{ *m_RenderCameraObject };
-
-			m_RenderCamera->setProjectionMatrix(ToMagnum(m_CameraManager.GetActiveCamera()->GetProjectMatrix()));
 			m_FrustumCullingManager->UpdateFrustum();
 			_InitPhysics(true);
 		}
@@ -153,7 +142,6 @@ namespace Magnum {
 			}
 			if (m_CameraManager.GetActiveCamera()->HandleKey(cameraKey, 0, 0))
 			{
-				m_RenderCameraObject->setTransformation(ToMagnum(m_CameraManager.GetActiveCamera()->GetViewMatrix()));
 				m_FrustumCullingManager->UpdateFrustum();
 			}
 		}
@@ -209,7 +197,6 @@ namespace Magnum {
 			}
 			m_CameraManager.GetActiveCamera()->HandleAnalogMove(0, 0);
 			//m_RenderCameraObject->setTransformation(ToMagnumMatrix4(m_MainCamera->getTransform().matrix()));
-			m_RenderCameraObject->setTransformation(ToMagnum(m_CameraManager.GetActiveCamera()->GetViewMatrix()));
 			m_FrustumCullingManager->UpdateFrustum();
 
 		}
@@ -230,7 +217,6 @@ namespace Magnum {
 				m_CameraManager.GetActiveCamera()->HandleMotion(event.position().x(), event.position().y());
 
 			//m_RenderCameraObject->setTransformation(ToMagnumMatrix4(m_MainCamera->getTransform().matrix()));
-			m_RenderCameraObject->setTransformation(ToMagnum(m_CameraManager.GetActiveCamera()->GetViewMatrix()));
 			m_FrustumCullingManager->UpdateFrustum();
 
 			//printf("Dir:%f,%f,%f\n", m_MainCamera->getDir().x(), m_MainCamera->getDir().y(), m_MainCamera->getDir().z());
@@ -254,7 +240,7 @@ namespace Magnum {
 				renderable->UpdateTransform();
 				bool show = !m_FrustumCullingManager->CullingObject(renderable->GetWorldBoundingBox());
 				if (show)
-					renderable->Render(m_RenderCamera);
+					renderable->Render(*m_CameraManager.GetActiveCamera());
 				//renderable->Show(show);
 				//if (show) renderableNum++;
 			}
@@ -336,7 +322,8 @@ namespace Magnum {
 
 		void TestingApplication::_AddPhysicsDebugRenderableObject(const PhysicsPtr<IPhysicsObject>& physicsObject)
 		{
-			std::shared_ptr<MagnumRender::PhysicsRenderObject> renderable = std::make_shared<MagnumRender::PhysicsRenderObject>(m_RenderScene, physicsObject);
+			std::shared_ptr<MagnumRender::PhysicsRenderObject> renderable = std::make_shared<MagnumRender::PhysicsRenderObject>(physicsObject);
+			renderable->AddToScene(m_RenderScene);
 			m_DynamicRenderableObjects.push_back(renderable);
 			//renderable->UseWorldBoundingBox(true);
 		}

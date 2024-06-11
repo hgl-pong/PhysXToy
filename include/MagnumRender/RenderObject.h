@@ -31,6 +31,7 @@
 #include <Magnum/SceneGraph/Drawable.h>
 #include "Physics/PhysicsCommon.h"
 #include <Math/GraphicUtils/Camara.h>
+#include "MagnumRender/MagnumConvertUtils.h"
 #include "MeshDataLoader.h"
 namespace MagnumRender
 {
@@ -53,6 +54,7 @@ namespace MagnumRender
 				return;
 			m_FlatShader = Magnum::Shaders::Flat3D{};
 			m_PhongShader = Magnum::Shaders::Phong{};
+			m_bIsInitialized = true;
 		}
 
 		Magnum::Shaders::Flat3D& GetFlatShader()
@@ -80,12 +82,21 @@ namespace MagnumRender
 			m_Mesh(Magnum::MeshTools::compile(meshData)) {
 		}
 
+		void UpdateTransformation() {
+			m_TransformationMatrix = m_Object.absoluteTransformationMatrix();
+		}
+
+		void ResetTransformation()
+		{
+			m_Object.resetTransformation();
+			m_TransformationMatrix = m_Object.transformation();
+		}
+
 		void Render(MathLib::GraphicUtils::Camera& camera)
 		{
-			const Magnum::Matrix4& transformation = m_Object.absoluteTransformationMatrix();
 			m_ShaderTable.GetFlatShader()
 				.setColor(m_Color)
-				.setTransformationProjectionMatrix(ToMagnum(camera.GetProjectMatrix()) * ToMagnum(camera.GetViewMatrix()) * transformation.transposed())
+				.setTransformationProjectionMatrix(ToMagnum(camera.GetViewProjectMatrix()) *  m_TransformationMatrix)
 				.draw(m_Mesh);
 		}
 
@@ -102,9 +113,10 @@ namespace MagnumRender
 			m_Mesh = Magnum::MeshTools::compile(meshdata);
 		}
 
-		void AddToScene(Scene3D& scene)
+		void AddToScene(Object3D& scene)
 		{
 			m_Object.setParent(&scene);
+			m_TransformationMatrix = m_Object.transformation();
 		}
 
 		void RemoveFromScene()
@@ -117,25 +129,42 @@ namespace MagnumRender
 			return m_Object;
 		}
 
+		void SetTransformation(const MathLib::HMatrix4& transform)
+		{
+			m_Object.setTransformation(ToMagnum(transform));
+		}
+
 	private:
 		Object3D m_Object;
 		bool m_bShow = true;
 		Magnum::GL::Mesh m_Mesh;
 		Magnum::Color4 m_Color = 0x747474_rgbf;
+		Magnum::Matrix4 m_TransformationMatrix;
 	};
 
 	class RenderUnit {
 	public:
-		explicit RenderUnit(Object3D& object,const Magnum::Trade::MeshData& meshData, Magnum::SceneGraph::DrawableGroup3D& group, const Magnum::Matrix4& matrix) :
-			 m_Mesh(Magnum::MeshTools::compile(meshData)) , m_LocalPos(matrix)
+		explicit RenderUnit(const Magnum::Trade::MeshData& meshData) :
+			 m_Mesh(Magnum::MeshTools::compile(meshData))
 		{
-
-			m_Object.setParent(object.parent());
 		}
 
-		void draw(const Magnum::Matrix4& transformationMatrix, Magnum::SceneGraph::Camera3D& camera) {
+		void UpdateTransformation()
+		{
+			m_TransformationMatrix = m_Object.absoluteTransformationMatrix();
+		}
+
+		void ResetTransformation()
+		{
+			m_Object.resetTransformation();
+			m_TransformationMatrix = m_Object.transformation();
+		}
+
+		void Render(MathLib::GraphicUtils::Camera& camera) {
 			if (!m_bShow)
 				return;
+			const Magnum::Matrix4& transformationMatrix = ToMagnum(camera.GetViewMatrix()) * m_TransformationMatrix;
+
 			m_Mesh.setPrimitive(Magnum::MeshPrimitive::Triangles);
 			m_ShaderTable.GetPhongShader().setLightPosition(ToMagnum(mLightPosition))
 				.setAmbientColor(IsSleeping? m_AmbientColor*0.5:m_AmbientColor)
@@ -143,13 +172,13 @@ namespace MagnumRender
 				.setLightColor(mLightColor)
 				.setTransformationMatrix(transformationMatrix)
 				.setNormalMatrix(transformationMatrix.normalMatrix())
-				.setProjectionMatrix(camera.projectionMatrix());
+				.setProjectionMatrix(ToMagnum(camera.GetProjectMatrix()));
 			m_Mesh.draw(m_ShaderTable.GetPhongShader());
 			if (m_bShowWireframe)
 			{
 				m_Mesh.setPrimitive(Magnum::MeshPrimitive::Lines);
 				m_ShaderTable.GetFlatShader().setColor(0x000000_rgbf)
-					.setTransformationProjectionMatrix(camera.projectionMatrix() * transformationMatrix)
+					.setTransformationProjectionMatrix(ToMagnum(camera.GetProjectMatrix()) * transformationMatrix)
 					.draw(m_Mesh);
 			}
 		}
@@ -179,6 +208,23 @@ namespace MagnumRender
 		{
 			m_bShow = show;
 		}
+
+		void AddToScene(Object3D& scene)
+		{
+			m_Object.setParent(&scene);	
+			m_TransformationMatrix = m_Object.transformation();
+		}
+
+		void RemoveFromScene()
+		{
+			m_Object.setParent(nullptr);
+		}
+
+		void SetTransformation(const MathLib::HMatrix4& transform)
+		{
+			m_Object.resetTransformation();
+			m_Object.setTransformation(ToMagnum(transform));
+		}
 	private:
 		bool m_bShow = true;
 		bool IsSleeping = false;
@@ -187,7 +233,7 @@ namespace MagnumRender
 		Magnum::Color4 m_DiffuseColor = { 1.f,1.f,1.f,1.f };
 		Magnum::GL::Mesh m_Mesh;
 		Object3D m_Object;
-		Magnum::Matrix4 m_LocalPos;
+		Magnum::Matrix4x4 m_TransformationMatrix;
 	};
 
 	class RenderObject  {
@@ -201,7 +247,7 @@ namespace MagnumRender
 				Magnum::Trade::MeshData meshData = Magnum::Primitives::cubeWireframe();
 				m_BoundingBoxObject = std::make_shared < Object3D>(&renderScene);
 				m_BoundingBoxObject->scale(Magnum::Vector3(halfSize[0], halfSize[1], halfSize[2]));
-				m_ParentObject = &renderScene;
+				m_Scene = &renderScene;
 				m_BoundingBoxObject->setParent(m_Object.get());
 				m_BoundingBox = std::make_shared<FlatDrawable>( meshData);				
 				m_BoundingBox->SetColor(0x999999_rgbf);
@@ -239,7 +285,8 @@ namespace MagnumRender
 			m_UseWorldBoundingBox = useWorldBoundingBox;
 			if (m_UseWorldBoundingBox)
 			{				
-				m_BoundingBoxObject->setParent(m_ParentObject);
+				m_BoundingBoxObject->resetTransformation();
+				m_BoundingBoxObject->setParent(m_Scene);
 			}
 			else
 			{
@@ -253,7 +300,7 @@ namespace MagnumRender
 			return m_WorldBoundingBox;
 		}
 	private:
-		Object3D* m_ParentObject = nullptr;
+		Scene3D* m_Scene = nullptr;
 		bool m_bShowBoundingBox = true;
 		bool m_UseWorldBoundingBox = false;
 		std::shared_ptr<FlatDrawable> m_BoundingBox;

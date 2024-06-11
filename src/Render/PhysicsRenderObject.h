@@ -6,12 +6,9 @@ namespace MagnumRender
 {
 	class PhysicsRenderObject {
 	public:
-		explicit PhysicsRenderObject(Scene3D& renderScene, const PhysicsPtr<IPhysicsObject>& physicsObject)
+		explicit PhysicsRenderObject(const PhysicsPtr<IPhysicsObject>& physicsObject)
 			: m_PhysicsObject(physicsObject)
 		{
-			m_Object = std::make_shared < Object3D>();
-			m_Object->setParent(&renderScene);
-
 			std::vector<PhysicsPtr<IColliderGeometry>> geometries;
 			std::vector<MathLib::HTransform3> transforms;
 			bool isDynamic = physicsObject->GetType() == PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
@@ -23,7 +20,6 @@ namespace MagnumRender
 				geometry->GetParams(options);
 
 				Magnum::Trade::MeshData meshData = Magnum::Primitives::cubeSolid();
-				auto* object = new Object3D{ &renderScene };
 				Magnum::Matrix4 matrix;
 				if (!transforms.empty())
 				{
@@ -31,33 +27,31 @@ namespace MagnumRender
 					matrix = ToMagnum(transposeMatrix);
 				}
 				Magnum::Matrix4 scalingMatrix= Magnum::Matrix4::scaling(Magnum::Vector3(1.f));
+				Magnum::Matrix4x4 rotateMatrix;
 				PhysicsMeshData newMeshData;
 				switch (options.m_GeometryType)
 				{
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE:
 				{
-					newMeshData = MathLib::GraphicUtils::GenerateSphereMeshData(options.m_SphereParams.m_Radius, 8, 8);
-					meshData = CreateMesh(newMeshData.m_Vertices, newMeshData.m_Indices);
+					meshData = CreateMesh(MathLib::GraphicUtils::GenerateSphereMeshData(options.m_SphereParams.m_Radius, 8, 8));
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				}
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX:
 				{
-					newMeshData = MathLib::GraphicUtils::GenerateBoxMeshData(options.m_BoxParams.m_HalfExtents);
-					meshData = CreateMesh(newMeshData.m_Vertices, newMeshData.m_Indices);
+					meshData = CreateMesh(MathLib::GraphicUtils::GenerateBoxMeshData(options.m_BoxParams.m_HalfExtents));
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				}
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CAPSULE:
 				{
-					 newMeshData = MathLib::GraphicUtils::GenerateCapsuleMeshData(options.m_CapsuleParams.m_Radius, options.m_CapsuleParams.m_HalfHeight, 8, 8);
-					meshData = CreateMesh(newMeshData.m_Vertices, newMeshData.m_Indices);
+					meshData = CreateMesh(MathLib::GraphicUtils::GenerateCapsuleMeshData(options.m_CapsuleParams.m_Radius, options.m_CapsuleParams.m_HalfHeight, 8, 8));
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				}
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE:
 					meshData = Magnum::Primitives::planeSolid();
-					object->rotateXLocal(90.0_degf);
+					rotateMatrix=Magnum::Matrix4::rotationX(90.0_degf);
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH:
@@ -71,10 +65,9 @@ namespace MagnumRender
 				default:
 					continue;
 				}
-				matrix = matrix * scalingMatrix;
-				object->setTransformation(matrix);
-				object->setParent(m_Object.get());
-				std::shared_ptr<RenderUnit> newObject = std::make_shared<RenderUnit>(*object,meshData, m_RenderCluster, matrix);
+				matrix = matrix * rotateMatrix * scalingMatrix;
+				std::shared_ptr<RenderUnit> newObject = std::make_shared<RenderUnit>(meshData);
+				newObject->SetTransformation(FromMagnum(matrix));
 				if(!isDynamic)
 					newObject->SetAmbientColor(0x66000000_rgbaf);
 				else
@@ -91,41 +84,37 @@ namespace MagnumRender
 
 			{
 				MathLib::HVector3 halfSize = physicsObject->GetLocalBoundingBox().sizes() / 2.f;
-				//Trade::MeshData meshData = Primitives::cubeWireframe();
-				PhysicsMeshData newMeshData = MathLib::GraphicUtils::GenerateBoxWireFrameMeshData(halfSize);
-				Magnum::Trade::MeshData meshData = CreateMesh(newMeshData.m_Vertices, newMeshData.m_Indices);
-				m_BoundingBoxObject = std::make_shared < Object3D>(&renderScene);
-				m_ParentObject = m_BoundingBoxObject->parent();
-				m_BoundingBoxObject->setParent(m_Object.get());
+				Magnum::Trade::MeshData meshData = CreateMesh(MathLib::GraphicUtils::GenerateBoxWireFrameMeshData(halfSize));
 				m_BoundingBox = std::make_shared<FlatDrawable>(meshData);
-				m_BoundingBox->AddToScene(renderScene);
 				m_BoundingBox->SetColor(0x999999_rgbf);
 			}
 		}
 
 		void UpdateTransform() {
+			if (m_Scene == nullptr)
+				return;
 			if ((m_PhysicsObject == nullptr && m_PhysicsObject->GetType() == PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC))
 				return;
 			const MathLib::HMatrix4& matrix = m_PhysicsObject->GetTransform().matrix();
 			MathLib::HMatrix4 transposeMatrix = matrix.transpose();
 
-			m_Object->setTransformation(ToMagnum(transposeMatrix));
+			m_Object.setTransformation(ToMagnum(transposeMatrix));
 			if(m_UseWorldBoundingBox)
 			{
 				MathLib::HVector3 halfSize = m_PhysicsObject->GetWorldBoundingBox().sizes() / 2.f;
-				m_BoundingBoxObject->resetTransformation();
-				m_BoundingBoxObject->scale(Magnum::Vector3(halfSize[0], halfSize[1], halfSize[2]));
-				auto meshData= Magnum::Primitives::cubeWireframe();
 				MathLib::HVector3 center = m_PhysicsObject->GetWorldBoundingBox().center();
+				auto meshData = CreateMesh(MathLib::GraphicUtils::GenerateBoxWireFrameMeshData(halfSize,center));
 				m_BoundingBox->SetMeshData(meshData);
-				m_BoundingBoxObject->translate(ToMagnum(center));
 			}
 			IDynamicObject* dynamicObject = dynamic_cast<IDynamicObject*>(m_PhysicsObject.get());
+			bool isDynamic = dynamicObject!=nullptr;
 			bool isSleeping = dynamicObject ? dynamicObject->IsSleeping() : false;
 			for (auto& renderObject : m_RenderObjects)
 			{
 				renderObject -> SetIsSleeping(isSleeping);
+				renderObject->UpdateTransformation();
 			}
+			m_BoundingBox->UpdateTransformation();
 		}
 
 		void ShowWireframe(bool show) {
@@ -156,18 +145,15 @@ namespace MagnumRender
 			m_UseWorldBoundingBox = useWorldBoundingBox;
 			if (m_UseWorldBoundingBox)
 			{				
-				m_BoundingBoxObject->setParent(m_ParentObject);
+				m_BoundingBox->AddToScene(*m_Scene);
 			}
 			else
 			{
-				m_BoundingBoxObject->resetTransformation();
 				MathLib::HVector3 halfSize = m_PhysicsObject->GetLocalBoundingBox().sizes() / 2.f;
-				//Trade::MeshData meshData = Primitives::cubeWireframe();
-				//m_BoundingBoxObject->scale(Vector3(halfSize[0], halfSize[1], halfSize[2]));
-				PhysicsMeshData newMeshData = MathLib::GraphicUtils::GenerateBoxWireFrameMeshData(halfSize);
-				Magnum::Trade::MeshData meshData = CreateMesh(newMeshData.m_Vertices, newMeshData.m_Indices);
+				Magnum::Trade::MeshData meshData = CreateMesh(MathLib::GraphicUtils::GenerateBoxWireFrameMeshData(halfSize));
 				m_BoundingBox->SetMeshData(meshData);
-				m_BoundingBoxObject->setParent(m_Object.get());
+				m_BoundingBox->AddToScene(m_Object);
+				m_BoundingBox->UpdateTransformation();
 			}
 		}
 
@@ -178,22 +164,56 @@ namespace MagnumRender
 			return m_PhysicsObject->GetWorldBoundingBox();
 		}
 
-		void Render(Magnum::SceneGraph::Camera3D* camera)
+		void Render(MathLib::GraphicUtils::Camera& camera)
 		{
-			if (camera == nullptr)
-				return;
-			camera->draw(m_RenderCluster);
-			//m_BoundingBox->Render(*camera);
+			m_BoundingBox->Render(camera);
+			for (auto& renderObject : m_RenderObjects)
+			{
+				renderObject->Render(camera);
+			}
+		}
+
+		void AddToScene(Scene3D& scene)
+		{
+			m_Scene = &scene;
+			m_Object.setParent(&scene);
+			for (auto& renderObject : m_RenderObjects)
+			{
+				renderObject->AddToScene(m_Object);
+			}
+			if (m_UseWorldBoundingBox)
+			{
+				m_BoundingBox->AddToScene(*m_Scene);
+			}
+			else
+			{
+				MathLib::HVector3 halfSize = m_PhysicsObject->GetLocalBoundingBox().sizes() / 2.f;
+				PhysicsMeshData newMeshData = MathLib::GraphicUtils::GenerateBoxWireFrameMeshData(halfSize);
+				Magnum::Trade::MeshData meshData = CreateMesh(newMeshData.m_Vertices, newMeshData.m_Indices);
+				m_BoundingBox->SetMeshData(meshData);
+				m_BoundingBox->AddToScene(m_Object);
+				m_BoundingBox->UpdateTransformation();
+			}
+		}
+
+		void RemoveFromScene()
+		{
+			for (auto& renderObject : m_RenderObjects)
+			{
+				renderObject->RemoveFromScene();
+			}
+			m_BoundingBox->RemoveFromScene();
+			m_Object.setParent(nullptr);
+			m_Scene = nullptr;
 		}
 	private:
 		Magnum::SceneGraph::DrawableGroup3D m_RenderCluster;
-		Object3D* m_ParentObject = nullptr;
+		Scene3D* m_Scene = nullptr;
 		bool m_bShowBoundingBox = true;
 		bool m_UseWorldBoundingBox = false;
 		std::shared_ptr<FlatDrawable> m_BoundingBox;
 		std::vector<std::shared_ptr<RenderUnit>> m_RenderObjects;
 		PhysicsPtr<IPhysicsObject> m_PhysicsObject;
-		std::shared_ptr < Object3D> m_BoundingBoxObject ;
-		std::shared_ptr < Object3D> m_Object ;
+		Object3D m_Object ;
 	};
 }

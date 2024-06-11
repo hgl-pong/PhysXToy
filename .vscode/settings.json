@@ -2,7 +2,6 @@
   "cmake.configureSettings": {
     "CMAKE_TOOLCHAIN_FILE": "${env.VCPKG_PATH}\\scripts\\buildsystems\\vcpkg.cmake",
   },
-  "cmake.generator": "Ninja",  
   "files.associations": {
     "*.ush": "hlsl",
     "*.fx5": "hlsl",
