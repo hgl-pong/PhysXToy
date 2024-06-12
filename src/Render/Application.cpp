@@ -148,8 +148,8 @@ void TestingApplication::_InitPhysics(bool interactive)
 
 	TestRigidBody::CreateTestingMeshData(); // Bunny
 	// TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\teapot.obj", 0.2);
-	// TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\banana.obj", 1);
-	// TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\armadillo.obj",0.4);
+	 //TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\banana.obj", 1);
+	 //TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\armadillo.obj",0.4);
 	auto physicsObject = TestRigidBody::TestRigidBodyCreate();
 	if (m_Scene)
 	{

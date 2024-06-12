@@ -20,7 +20,6 @@ namespace MagnumRender
 				CollisionGeometryCreateOptions options;
 				geometry->GetParams(options);
 
-				Magnum::Trade::MeshData meshData = Magnum::Primitives::cubeSolid();
 				Magnum::Matrix4 matrix;
 				if (!transforms.empty())
 				{
@@ -29,38 +28,40 @@ namespace MagnumRender
 				}
 				Magnum::Matrix4 scalingMatrix= Magnum::Matrix4::scaling(Magnum::Vector3(1.f));
 				Magnum::Matrix4x4 rotateMatrix;
-				PhysicsMeshData newMeshData;
+				MathLib::GraphicUtils::MeshData meshData;
 				switch (options.m_GeometryType)
 				{
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE:
 				{
-					meshData = CreateMesh(MathLib::GraphicUtils::GenerateSphereMeshData(options.m_SphereParams.m_Radius, 8, 8));
+					meshData = MathLib::GraphicUtils::GenerateSphereMeshData(options.m_SphereParams.m_Radius, 8, 8);
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				}
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX:
 				{
-					meshData = CreateMesh(MathLib::GraphicUtils::GenerateBoxMeshData(options.m_BoxParams.m_HalfExtents));
+					meshData = MathLib::GraphicUtils::GenerateBoxMeshData(options.m_BoxParams.m_HalfExtents);
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				}
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CAPSULE:
 				{
-					meshData = CreateMesh(MathLib::GraphicUtils::GenerateCapsuleMeshData(options.m_CapsuleParams.m_Radius, options.m_CapsuleParams.m_HalfHeight, 8, 8));
+					meshData = MathLib::GraphicUtils::GenerateCapsuleMeshData(options.m_CapsuleParams.m_Radius, options.m_CapsuleParams.m_HalfHeight, 8, 8);
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				}
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE:
-					meshData = Magnum::Primitives::planeSolid();
+					meshData = MathLib::GraphicUtils::GeneratePlaneMeshData(options.m_PlaneParams.m_Normal, options.m_PlaneParams.m_Distance);
 					rotateMatrix=Magnum::Matrix4::rotationX(90.0_degf);
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH:
-					meshData = CreateMesh(options.m_TriangleMeshParams.m_Vertices, options.m_TriangleMeshParams.m_Indices);
+					meshData.m_Vertices= options.m_TriangleMeshParams.m_Vertices;
+					meshData.m_Indices = options.m_TriangleMeshParams.m_Indices;
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH:
-					meshData = CreateMesh(options.m_ConvexMeshParams.m_Vertices, options.m_ConvexMeshParams.m_Indices);
+					meshData.m_Vertices = options.m_ConvexMeshParams.m_Vertices;
+					meshData.m_Indices = options.m_ConvexMeshParams.m_Indices;
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				default:
@@ -85,8 +86,7 @@ namespace MagnumRender
 
 			{
 				MathLib::HVector3 halfSize = physicsObject->GetLocalBoundingBox().sizes() / 2.f;
-				Magnum::Trade::MeshData meshData = CreateMesh(MathLib::GraphicUtils::GenerateBoxWireFrameMeshData(MathLib::HVector3(1,1,1)));
-				m_BoundingBox = std::make_shared<GizmoRenderUnit>(meshData);
+				m_BoundingBox = std::make_shared<GizmoRenderUnit>(MathLib::GraphicUtils::GenerateBoxWireFrameMeshData(MathLib::HVector3(1,1,1)));
 				m_BoundingBox->SetColor(0x999999_rgbf);
 				m_BoundingBox->SetTransformation(&halfSize);
 			}
