@@ -24,10 +24,9 @@ public:
 	}
 	int Run() override
 	{
-		while (true)
+		while (m_Renderer->Tick())
 		{
 			m_Scene->Tick(1.f / 60.f);
-			m_Renderer->Tick();
 		}
 		return 1;
 	}
