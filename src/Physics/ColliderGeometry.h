@@ -18,7 +18,7 @@ public:
 	void SetScale(const MathLib::HVector3 &scale) override
 	{
 		m_Scale = scale;
-		const auto halfExtents = MathLib::HadamardProduct(m_HalfExtents, scale);
+		const auto halfExtents = MathLib::HadamardProduct<3>(m_HalfExtents, scale);
 		m_BoundingBox = MathLib::HAABBox3D(-halfExtents, halfExtents);
 	}
 	MathLib::HVector3 GetHalfSize() const { return m_HalfExtents; }
@@ -111,7 +111,7 @@ public:
 	void SetScale(const MathLib::HVector3 &scale) override
 	{
 		m_Scale = scale;
-		const auto halfExtents = MathLib::HadamardProduct(MathLib::HVector3(m_HalfHeight + m_Radius,m_Radius, m_Radius), scale);
+		const auto halfExtents = MathLib::HadamardProduct<3>(MathLib::HVector3(m_HalfHeight + m_Radius,m_Radius, m_Radius), scale);
 		m_BoundingBox = MathLib::HAABBox3D(-halfExtents, halfExtents);
 	}
 	MathLib::HReal GetRadius() const { return m_Radius; }
@@ -148,7 +148,7 @@ public:
 		m_Scale = scale;
 		m_BoundingBox.setEmpty();
 		for (const auto &v : m_Vertices)
-			m_BoundingBox.extend(MathLib::HadamardProduct(v, scale));
+			m_BoundingBox.extend(MathLib::HadamardProduct<3>(v, scale));
 	}
 	const std::vector<MathLib::HVector3> &GetVertices() const { return m_Vertices; }
 	const std::vector<uint32_t> &GetIndices() const { return m_Indices; }
@@ -184,7 +184,7 @@ public:
 		m_Scale = scale;
 		m_BoundingBox.setEmpty();
 		for (const auto &v : m_Vertices)
-			m_BoundingBox.extend(MathLib::HadamardProduct(v, scale));
+			m_BoundingBox.extend(MathLib::HadamardProduct<3>(v, scale));
 	}
 	const std::vector<MathLib::HVector3> &GetVertices() const { return m_Vertices; }
 	const std::vector<uint32_t> &GetIndices() const { return m_Indices; }
