@@ -28,29 +28,29 @@ namespace MagnumRender
 				}
 				Magnum::Matrix4 scalingMatrix= Magnum::Matrix4::scaling(Magnum::Vector3(1.f));
 				Magnum::Matrix4x4 rotateMatrix;
-				MathLib::GraphicUtils::MeshData meshData;
+				MathLib::GraphicUtils::MeshData32 meshData;
 				switch (options.m_GeometryType)
 				{
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE:
 				{
-					meshData = MathLib::GraphicUtils::GenerateSphereMeshData(options.m_SphereParams.m_Radius, 8, 8);
+					meshData = MathLib::GraphicUtils::GenerateSphereMeshData<uint32_t>(options.m_SphereParams.m_Radius, 8, 8);
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				}
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX:
 				{
-					meshData = MathLib::GraphicUtils::GenerateBoxMeshData(options.m_BoxParams.m_HalfExtents);
+					meshData = MathLib::GraphicUtils::GenerateBoxMeshData<uint32_t>(options.m_BoxParams.m_HalfExtents);
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				}
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CAPSULE:
 				{
-					meshData = MathLib::GraphicUtils::GenerateCapsuleMeshData(options.m_CapsuleParams.m_Radius, options.m_CapsuleParams.m_HalfHeight, 8, 8);
+					meshData = MathLib::GraphicUtils::GenerateCapsuleMeshData<uint32_t>(options.m_CapsuleParams.m_Radius, options.m_CapsuleParams.m_HalfHeight, 8, 8);
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
 				}
 				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE:
-					meshData = MathLib::GraphicUtils::GeneratePlaneMeshData(options.m_PlaneParams.m_Normal, options.m_PlaneParams.m_Distance);
+					meshData = MathLib::GraphicUtils::GeneratePlaneMeshData<uint32_t>(options.m_PlaneParams.m_Normal, options.m_PlaneParams.m_Distance);
 					rotateMatrix=Magnum::Matrix4::rotationX(90.0_degf);
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
@@ -86,7 +86,7 @@ namespace MagnumRender
 
 			{
 				MathLib::HVector3 halfSize = physicsObject->GetLocalBoundingBox().sizes() / 2.f;
-				m_BoundingBox = std::make_shared<GizmoRenderUnit>(MathLib::GraphicUtils::GenerateBoxWireFrameMeshData(MathLib::HVector3(1,1,1)));
+				m_BoundingBox = std::make_shared<GizmoRenderUnit>(MathLib::GraphicUtils::GenerateBoxWireFrameMeshData<uint32_t>(MathLib::HVector3(1,1,1)));
 				m_BoundingBox->SetColor(0x999999_rgbf);
 				m_BoundingBox->SetTransformation(&halfSize);
 			}
