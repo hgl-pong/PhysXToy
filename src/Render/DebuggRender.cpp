@@ -45,6 +45,7 @@
 #endif
 
 #include <omp.h>
+#include <chrono>
 #include <Math/GraphicUtils/Camara.h>
 #include "foundation/PxArray.h"
 #include "foundation/PxMathUtils.h"

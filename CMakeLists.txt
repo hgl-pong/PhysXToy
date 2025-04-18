@@ -31,16 +31,7 @@ find_package(GLUT REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(OpenCL REQUIRED)
 find_package(tinyobjloader CONFIG REQUIRED)
-find_package(Magnum REQUIRED
-    GL
-    MeshTools
-    Primitives
-    SceneGraph
-    Shaders
-    Trade
-    Text
-    Sdl2Application
-)
+find_package(glfw3 CONFIG REQUIRED)
 
 target_include_directories(${PHYSX_TOY} PUBLIC ./include
     PRIVATE
@@ -54,15 +45,7 @@ target_link_libraries(${PHYSX_TOY} PRIVATE
     Eigen3::Eigen
     OpenCL::OpenCL
     tinyobjloader::tinyobjloader
-    Magnum::Application
-    Magnum::GL
-    Magnum::MeshTools
-    Magnum::Primitives
-    Magnum::Shaders
-    Magnum::Trade
-    Magnum::Text
-    Magnum::SceneGraph
-    Magnum::Sdl2Application
+    glfw
 )
 
 add_custom_command(TARGET ${PHYSX_TOY} POST_BUILD

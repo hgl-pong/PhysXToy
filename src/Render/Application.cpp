@@ -1,10 +1,9 @@
 #include "Application.h"
-#include "MagnumRender/MagnumRenderCommon.h"
 #include "Physics/PhysicsCommon.h"
 #include "PxPhysicsAPI.h"
-
+#include <Math/GraphicUtils/Camara.h>
 #include "TestRigidBodyCreate.h"
-#include "PhysicsRenderObject.h"
+#include "RenderObjectAdapter.h"
 
 using namespace physx;
 PhysicsEngineTestingApplication *pApp = nullptr;
@@ -17,9 +16,17 @@ public:
 public:
 	void Release() override
 	{
+		// 先停止场景和物理引擎
 		m_Scene.reset();
 		m_Material.reset();
 		PhysicsEngineUtils::DestroyPhysicsEngine();
+		
+		// 释放渲染器资源
+		if (m_Renderer) {
+			m_Renderer->Release();
+			m_Renderer.reset();
+		}
+		
 		delete this;
 	}
 	int Run() override
@@ -32,46 +39,54 @@ public:
 	}
 
 private:
-	void _KeyPressEvent(Magnum::Platform::Sdl2Application::KeyEvent &event);
-	void _KeyReleaseEvent(Magnum::Platform::Sdl2Application::KeyEvent &event);
-	void _MousePressEvent(Magnum::Platform::Sdl2Application::MouseEvent &event);
-	void _MouseMoveEvent(Magnum::Platform::Sdl2Application::MouseMoveEvent &event);
-	void _MouseScrollEvent(Magnum::Platform::Sdl2Application::MouseScrollEvent &event);
+	void _KeyPressEvent(void* eventData);
+	void _KeyReleaseEvent(void* eventData);
+	void _MousePressEvent(void* eventData);
+	void _MouseReleaseEvent(void* eventData);
+	void _MouseMoveEvent(void* eventData);
+	void _MouseScrollEvent(void* eventData);
 
 	void _InitPhysics(bool interactive);
 	void _AddPhysicsDebugRenderableObject(const PhysicsPtr<IPhysicsObject> &object);
 	PhysicsPtr<IPhysicsObject> _CreateDynamic(const MathLib::HTransform3 &t, PhysicsPtr<IColliderGeometry> &geometry, const MathLib::HVector3 &velocity = MathLib::HVector3(0, 0, 0));
 
 private:
-	PhysicsPtr<MagnumRender::Renderer> m_Renderer;
+	PhysicsPtr<IRenderer> m_Renderer;
 	PhysicsPtr<IPhysicsMaterial> m_Material;
 	PhysicsPtr<IPhysicsScene> m_Scene;
 };
 
 TestingApplication::TestingApplication(int argc, char **argv)
 {
-	m_Renderer = make_physics_ptr(MagnumRender::CreateRenderer(argc, argv));
+	m_Renderer = make_physics_ptr(CreateRenderer(argc, argv));
 	m_Renderer->SetApplicationName("Physics Engine Testing Application");
-	m_Renderer->SetUp(std::bind(&TestingApplication::_MousePressEvent, this, std::placeholders::_1),
-					  std::bind(&TestingApplication::_MousePressEvent, this, std::placeholders::_1),
-					  std::bind(&TestingApplication::_MouseMoveEvent, this, std::placeholders::_1),
-					  std::bind(&TestingApplication::_MouseScrollEvent, this, std::placeholders::_1),
-					  std::bind(&TestingApplication::_KeyPressEvent, this, std::placeholders::_1),
-					  std::bind(&TestingApplication::_KeyReleaseEvent, this, std::placeholders::_1));
+	m_Renderer->SetUp(
+		std::bind(&TestingApplication::_MousePressEvent, this, std::placeholders::_1),
+		std::bind(&TestingApplication::_MouseReleaseEvent, this, std::placeholders::_1),
+		std::bind(&TestingApplication::_MouseMoveEvent, this, std::placeholders::_1),
+		std::bind(&TestingApplication::_MouseScrollEvent, this, std::placeholders::_1),
+		std::bind(&TestingApplication::_KeyPressEvent, this, std::placeholders::_1),
+		std::bind(&TestingApplication::_KeyReleaseEvent, this, std::placeholders::_1)
+	);
 	_InitPhysics(true);
 }
 
-void TestingApplication::_KeyPressEvent(Magnum::Platform::Sdl2Application::KeyEvent &event)
+void TestingApplication::_KeyPressEvent(void* eventData)
 {
+	if (!eventData) return;
+	
+	int key = *reinterpret_cast<int*>(eventData);
+	// 处理键盘按下事件
 }
 
-void TestingApplication::_KeyReleaseEvent(Magnum::Platform::Sdl2Application::KeyEvent &event)
+void TestingApplication::_KeyReleaseEvent(void* eventData)
 {
-	char cameraKey = '\0';
-	switch (event.key())
-	{
-	case Magnum::Platform::Sdl2Application::KeyEvent::Key::Space:
-	{
+	if (!eventData) return;
+	
+	int key = *reinterpret_cast<int*>(eventData);
+	
+	// 处理空格键发射球体
+	if (key == ' ') {
 		CollisionGeometryCreateOptions options;
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
 		options.m_SphereParams.m_Radius = 2.0f;
@@ -79,10 +94,9 @@ void TestingApplication::_KeyReleaseEvent(Magnum::Platform::Sdl2Application::Key
 		PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
 
 		_CreateDynamic(m_Renderer->GetActiveCamera()->GetTransform(), geometry, m_Renderer->GetActiveCamera()->GetDir() * 75);
-		break;
 	}
-	case Magnum::Platform::Sdl2Application::KeyEvent::Key::B:
-	{
+	// 处理B键创建物理体
+	else if (key == 'B' || key == 'b') {
 		auto physicsObject = TestRigidBody::TestRigidBodyCreate();
 		if (m_Scene)
 		{
@@ -92,23 +106,49 @@ void TestingApplication::_KeyReleaseEvent(Magnum::Platform::Sdl2Application::Key
 				_AddPhysicsDebugRenderableObject(physicsObject);
 			}
 		}
-		break;
-	}
-	default:
-		break;
 	}
 }
 
-void TestingApplication::_MousePressEvent(Magnum::Platform::Sdl2Application::MouseEvent &event)
+void TestingApplication::_MousePressEvent(void* eventData)
 {
+	if (!eventData) return;
+	
+	int button = *reinterpret_cast<int*>(eventData);
+	// 处理鼠标按下事件
 }
 
-void TestingApplication::_MouseMoveEvent(Magnum::Platform::Sdl2Application::MouseMoveEvent &event)
+void TestingApplication::_MouseReleaseEvent(void* eventData)
 {
+	if (!eventData) return;
+	
+	int button = *reinterpret_cast<int*>(eventData);
+	// 处理鼠标释放事件
 }
 
-void TestingApplication::_MouseScrollEvent(Magnum::Platform::Sdl2Application::MouseScrollEvent &event)
+void TestingApplication::_MouseMoveEvent(void* eventData)
 {
+	if (!eventData) return;
+	
+	// 从eventData中提取鼠标移动数据
+	struct MouseMoveData {
+		double xpos, ypos, deltaX, deltaY;
+	};
+	
+	MouseMoveData* moveData = reinterpret_cast<MouseMoveData*>(eventData);
+	// 处理鼠标移动事件
+}
+
+void TestingApplication::_MouseScrollEvent(void* eventData)
+{
+	if (!eventData) return;
+	
+	// 从eventData中提取滚轮数据
+	struct ScrollData {
+		double xoffset, yoffset;
+	};
+	
+	ScrollData* scrollData = reinterpret_cast<ScrollData*>(eventData);
+	// 处理鼠标滚轮事件
 }
 
 void TestingApplication::_InitPhysics(bool interactive)
@@ -177,10 +217,8 @@ void TestingApplication::_InitPhysics(bool interactive)
 
 void TestingApplication::_AddPhysicsDebugRenderableObject(const PhysicsPtr<IPhysicsObject> &physicsObject)
 {
-	std::shared_ptr<MagnumRender::RenderObject> renderable = std::make_shared<MagnumRender::PhysicsRenderObject>(physicsObject);
+	std::shared_ptr<RenderObject> renderable = std::make_shared<RenderObjectAdapter>(physicsObject);
 	m_Renderer->AddRenderObject(renderable);
-	// renderable->UseWorldBoundingBox(true);
-	// renderable->ShowBoundingBox(false);
 }
 
 PhysicsPtr<IPhysicsObject> TestingApplication::_CreateDynamic(const MathLib::HTransform3 &t, PhysicsPtr<IColliderGeometry> &geometry, const MathLib::HVector3 &velocity)
