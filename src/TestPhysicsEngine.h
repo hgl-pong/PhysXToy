@@ -10,7 +10,7 @@ static PhysicsPtr < IPhysicsScene>gScene;
 void initPhysics(bool interactive)
 {
 	PhysicsEngineOptions options;
-	options.m_iNumThreads = 10;
+	options.m_NumThreads = 10;
 	IPhysicsEngine *engine = PhysicsEngineUtils::CreatePhysicsEngine(options);
 
 	PhysicsSceneCreateOptions sceneOptions;
