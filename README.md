@@ -10,7 +10,6 @@ PhysX Toy 是一个基于 PhysX 的物理引擎的小玩具，用于学习物理
 
 ```bash
 git clone https://github.com/microsoft/vcpkg.git
-git submodule update --init
 ```
 
 ### 步骤 2：安装 glm、glew、freeglut、physx、Eigen3、OpenCL、tinyobjloader、Magnum
@@ -26,6 +25,14 @@ vcpkg install Eigen3
 vcpkg install OpenCL
 vcpkg install tinyobjloader
 vcpkg install Magnum
+```
+
+### 步骤 3：clone
+
+```bash
+git clone https://github.com/hgl-pong/PhysXToy.git
+git submodule update --init --recursive
+git submodule update --recursive --remote
 ```
 
 ## 运行结果

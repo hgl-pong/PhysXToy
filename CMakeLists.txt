@@ -14,8 +14,6 @@ add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 set(PHYSX_TOY PhysXToy)
 
 file(GLOB SOURCE_FILES
-    include/MagnumRender/*
-    src/MagnumRender/*
     src/*
     src/Render/*
     src/Physics/*
@@ -43,9 +41,12 @@ find_package(Magnum REQUIRED
     Sdl2Application
 )
 
+add_subdirectory(ThirdParty/MagnumRenderer)
+
 target_include_directories(${PHYSX_TOY} PUBLIC ./include
     PRIVATE
     ThirdParty/HMath/include
+    ThirdParty/MagnumRenderer/include
 )
 
 target_link_libraries(${PHYSX_TOY} PRIVATE 
@@ -64,6 +65,7 @@ target_link_libraries(${PHYSX_TOY} PRIVATE
     Magnum::Text
     Magnum::SceneGraph
     Magnum::Sdl2Application
+    MagnumRenderer
 )
 
 add_custom_command(TARGET ${PHYSX_TOY} POST_BUILD

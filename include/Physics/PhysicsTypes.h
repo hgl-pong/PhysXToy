@@ -134,7 +134,7 @@ struct PhysicsObjectCreateOptions
 	PhysicsMaterialCreateOptions m_MaterialOptions;
 };
 
-typedef MathLib::GraphicUtils::MeshData PhysicsMeshData;
+typedef MathLib::GraphicUtils::MeshData32 PhysicsMeshData;
 
 struct ConvexDecomposeOptions
 {

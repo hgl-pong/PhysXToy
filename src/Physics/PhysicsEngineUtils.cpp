@@ -54,7 +54,7 @@ bool PhysicsEngineUtils::ConvexDecomposition(const PhysicsMeshData& meshData, co
 {
 	if (!gConvexMeshDecomposer)
 		return false;
-	gConvexMeshDecomposer->Decompose(meshData, params, convexMeshesData);
+	return gConvexMeshDecomposer->Decompose(meshData, params, convexMeshesData);
 }
 
 void PhysicsEngineUtils::BuildConvexMesh(const std::vector<MathLib::HVector3>& vertices, const std::vector<uint32_t>& indices, PhysicsMeshData& meshdata)
