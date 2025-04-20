@@ -1,10 +1,27 @@
 #include "Renderer/Renderer.h"
 #include "Renderer/RenderUnit.h"
 #include <chrono>
-#include <Math/GraphicUtils/Camara.h>
-#include <GL/glew.h>
+#include "Math/GraphicUtils/Camara.h"
 #include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
 #include <iostream>
+#include <d3d11.h>
+#include <DirectXMath.h>
+#include <d3dcompiler.h>
+#include <vector>
+#include <wrl/client.h>
+
+// DirectX需要链接的库
+#pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "d3dcompiler.lib")
+
+using Microsoft::WRL::ComPtr;
+
+// 全局DirectX设备和上下文对象，供RenderUnit.cpp使用
+ComPtr<ID3D11Device> g_d3dDevice;
+ComPtr<ID3D11DeviceContext> g_d3dDeviceContext;
 
 // 实现Renderer类
 class Renderer : public IRenderer {
@@ -28,7 +45,8 @@ public:
     MathLib::GraphicUtils::Camera* GetActiveCamera() override;
 
 private:
-    void InitializeGL();
+    void InitializeGLFW();
+    void InitializeDirectX();
     void InitializeCamera();
     void Render();
     
@@ -59,22 +77,35 @@ private:
     bool m_mousePressed = false;
     double m_lastMouseX = 0;
     double m_lastMouseY = 0;
+    
+    // DirectX 11相关
+    ComPtr<ID3D11Device> m_device;
+    ComPtr<ID3D11DeviceContext> m_deviceContext;
+    ComPtr<IDXGISwapChain> m_swapChain;
+    ComPtr<ID3D11RenderTargetView> m_renderTargetView;
+    ComPtr<ID3D11Texture2D> m_depthStencilBuffer;
+    ComPtr<ID3D11DepthStencilView> m_depthStencilView;
+    ComPtr<ID3D11DepthStencilState> m_depthStencilState;
+    ComPtr<ID3D11RasterizerState> m_rasterizerState;
+    DirectX::XMFLOAT4 m_clearColor = {0.0f, 0.0f, 0.2f, 1.0f};
 };
 
 // Renderer实现
 Renderer::Renderer(int argc, char** argv) {
-    InitializeGL();
+    InitializeGLFW();
+    InitializeDirectX();
     InitializeCamera();
 }
 
 Renderer::~Renderer() {
+    // DirectX资源会通过ComPtr自动释放
     if (m_window) {
         glfwDestroyWindow(m_window);
     }
     glfwTerminate();
 }
 
-void Renderer::InitializeGL() {
+void Renderer::InitializeGLFW() {
     // 初始化GLFW
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
@@ -83,10 +114,8 @@ void Renderer::InitializeGL() {
     
     glfwSetErrorCallback(ErrorCallback);
     
-    // 设置OpenGL版本
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    // 设置窗口创建提示，不使用OpenGL
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     
     // 创建窗口
     m_window = glfwCreateWindow(m_width, m_height, m_appName.c_str(), nullptr, nullptr);
@@ -96,31 +125,151 @@ void Renderer::InitializeGL() {
         exit(EXIT_FAILURE);
     }
     
-    glfwMakeContextCurrent(m_window);
-    
-    // 初始化GLEW
-    GLenum err = glewInit();
-    if (GLEW_OK != err) {
-        std::cerr << "Failed to initialize GLEW: " << glewGetErrorString(err) << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    
     // 设置回调函数
     glfwSetWindowUserPointer(m_window, this);
     glfwSetKeyCallback(m_window, KeyCallback);
     glfwSetMouseButtonCallback(m_window, MouseButtonCallback);
     glfwSetCursorPosCallback(m_window, CursorPosCallback);
     glfwSetScrollCallback(m_window, ScrollCallback);
-    glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* window, int width, int height) {
-        // 窗口大小改变回调
-        glViewport(0, 0, width, height);
-    });
+}
+
+void Renderer::InitializeDirectX() {
+    // 获取HWND
+    HWND hwnd = glfwGetWin32Window(m_window);
     
-    // 设置OpenGL状态
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    // 创建设备和交换链
+    DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
+    swapChainDesc.BufferCount = 1;
+    swapChainDesc.BufferDesc.Width = m_width;
+    swapChainDesc.BufferDesc.Height = m_height;
+    swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    swapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
+    swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapChainDesc.OutputWindow = hwnd;
+    swapChainDesc.SampleDesc.Count = 1;
+    swapChainDesc.SampleDesc.Quality = 0;
+    swapChainDesc.Windowed = TRUE;
+    
+    D3D_FEATURE_LEVEL featureLevel;
+    UINT createDeviceFlags = 0;
+    
+#ifdef _DEBUG
+    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+    
+    HRESULT hr = D3D11CreateDeviceAndSwapChain(
+        nullptr,                        // 默认适配器
+        D3D_DRIVER_TYPE_HARDWARE,       // 使用硬件渲染
+        nullptr,                        // 不使用软件光栅化
+        createDeviceFlags,
+        nullptr,                        // 默认功能级别
+        0,
+        D3D11_SDK_VERSION,
+        &swapChainDesc,
+        &m_swapChain,
+        &m_device,
+        &featureLevel,
+        &m_deviceContext
+    );
+    
+    if (FAILED(hr)) {
+        std::cerr << "Failed to create DirectX device and swap chain" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    // 更新全局变量供RenderUnit使用
+    g_d3dDevice = m_device;
+    g_d3dDeviceContext = m_deviceContext;
+    
+    // 创建渲染目标视图
+    ComPtr<ID3D11Texture2D> backBuffer;
+    hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backBuffer);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to get back buffer" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_renderTargetView);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to create render target view" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    // 创建深度缓冲区和深度模板视图
+    D3D11_TEXTURE2D_DESC depthStencilDesc = {};
+    depthStencilDesc.Width = m_width;
+    depthStencilDesc.Height = m_height;
+    depthStencilDesc.MipLevels = 1;
+    depthStencilDesc.ArraySize = 1;
+    depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthStencilDesc.SampleDesc.Count = 1;
+    depthStencilDesc.SampleDesc.Quality = 0;
+    depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
+    depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    depthStencilDesc.CPUAccessFlags = 0;
+    depthStencilDesc.MiscFlags = 0;
+    
+    hr = m_device->CreateTexture2D(&depthStencilDesc, nullptr, &m_depthStencilBuffer);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to create depth stencil buffer" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    hr = m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), nullptr, &m_depthStencilView);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to create depth stencil view" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    // 创建深度模板状态
+    D3D11_DEPTH_STENCIL_DESC dsDesc = {};
+    dsDesc.DepthEnable = TRUE;
+    dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+    dsDesc.StencilEnable = FALSE;
+    
+    hr = m_device->CreateDepthStencilState(&dsDesc, &m_depthStencilState);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to create depth stencil state" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    m_deviceContext->OMSetDepthStencilState(m_depthStencilState.Get(), 1);
+    
+    // 创建光栅化状态
+    D3D11_RASTERIZER_DESC rasterizerDesc = {};
+    rasterizerDesc.FillMode = D3D11_FILL_SOLID;
+    rasterizerDesc.CullMode = D3D11_CULL_NONE; // 禁用背面剔除，便于调试
+    rasterizerDesc.FrontCounterClockwise = FALSE;
+    rasterizerDesc.DepthBias = 0;
+    rasterizerDesc.DepthBiasClamp = 0.0f;
+    rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+    rasterizerDesc.DepthClipEnable = TRUE;
+    rasterizerDesc.ScissorEnable = FALSE;
+    rasterizerDesc.MultisampleEnable = FALSE;
+    rasterizerDesc.AntialiasedLineEnable = FALSE;
+    
+    hr = m_device->CreateRasterizerState(&rasterizerDesc, &m_rasterizerState);
+    if (FAILED(hr)) {
+        std::cerr << "Failed to create rasterizer state" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    m_deviceContext->RSSetState(m_rasterizerState.Get());
+    
+    // 设置渲染目标和视口
+    m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
+    
+    D3D11_VIEWPORT viewport = {};
+    viewport.TopLeftX = 0.0f;
+    viewport.TopLeftY = 0.0f;
+    viewport.Width = static_cast<float>(m_width);
+    viewport.Height = static_cast<float>(m_height);
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+    
+    m_deviceContext->RSSetViewports(1, &viewport);
 }
 
 void Renderer::InitializeCamera() {
@@ -183,7 +332,7 @@ bool Renderer::Tick() {
     Render();
     
     // 交换缓冲区并处理事件
-    glfwSwapBuffers(m_window);
+    m_swapChain->Present(1, 0);
     glfwPollEvents();
     
     return true;
@@ -195,18 +344,94 @@ MathLib::GraphicUtils::Camera* Renderer::GetActiveCamera() {
 
 void Renderer::Render() {
     // 清除缓冲区
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    float clearColor[4] = {m_clearColor.x, m_clearColor.y, m_clearColor.z, m_clearColor.w};
+    m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
+    m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
     
-    // 设置相机
+    // 检查窗口大小是否变化
     int width, height;
     glfwGetFramebufferSize(m_window, &width, &height);
-    glViewport(0, 0, width, height);
-    
-    // 相机宽高比可能需要更新
-    float aspectRatio = static_cast<float>(width) / height;
-    if (m_camera && fabs(m_camera->GetAspectRatio() - aspectRatio) > 0.01f) {
-        // 如果宽高比有明显变化，我们可能需要更新相机的投影矩阵
-        // 但是这里依赖于Camera类的实现方式
+    if (width != m_width || height != m_height) {
+        m_width = width;
+        m_height = height;
+        
+        // 释放旧的渲染目标和深度缓冲
+        m_renderTargetView.Reset();
+        m_depthStencilView.Reset();
+        m_depthStencilBuffer.Reset();
+        
+        // 调整交换链大小
+        HRESULT hr = m_swapChain->ResizeBuffers(1, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to resize swap chain" << std::endl;
+            return;
+        }
+        
+        // 重新创建渲染目标视图
+        ComPtr<ID3D11Texture2D> backBuffer;
+        hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backBuffer);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to get back buffer" << std::endl;
+            return;
+        }
+        
+        hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_renderTargetView);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create render target view" << std::endl;
+            return;
+        }
+        
+        // 重新创建深度缓冲区
+        D3D11_TEXTURE2D_DESC depthStencilDesc = {};
+        depthStencilDesc.Width = width;
+        depthStencilDesc.Height = height;
+        depthStencilDesc.MipLevels = 1;
+        depthStencilDesc.ArraySize = 1;
+        depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        depthStencilDesc.SampleDesc.Count = 1;
+        depthStencilDesc.SampleDesc.Quality = 0;
+        depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
+        depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+        depthStencilDesc.CPUAccessFlags = 0;
+        depthStencilDesc.MiscFlags = 0;
+        
+        hr = m_device->CreateTexture2D(&depthStencilDesc, nullptr, &m_depthStencilBuffer);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create depth stencil buffer" << std::endl;
+            return;
+        }
+        
+        hr = m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), nullptr, &m_depthStencilView);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create depth stencil view" << std::endl;
+            return;
+        }
+        
+        // 重新设置渲染目标和视口
+        m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
+        
+        D3D11_VIEWPORT viewport = {};
+        viewport.TopLeftX = 0.0f;
+        viewport.TopLeftY = 0.0f;
+        viewport.Width = static_cast<float>(width);
+        viewport.Height = static_cast<float>(height);
+        viewport.MinDepth = 0.0f;
+        viewport.MaxDepth = 1.0f;
+        
+        m_deviceContext->RSSetViewports(1, &viewport);
+        
+        // 更新相机宽高比
+        if (m_camera) {
+            float aspectRatio = static_cast<float>(width) / height;
+            if (fabs(m_camera->GetAspectRatio() - aspectRatio) > 0.01f) {
+                // 注意：这里需要重新设置相机的姿态以更新投影矩阵
+                MathLib::HVector3 eye = m_camera->GetEye();
+                MathLib::HVector3 dir = m_camera->GetDir();
+                m_camera = std::make_unique<MathLib::GraphicUtils::Camera>(
+                    eye, dir, aspectRatio
+                );
+            }
+        }
     }
     
     // 渲染所有对象
@@ -215,6 +440,29 @@ void Renderer::Render() {
             obj->Render(*m_camera);
         }
     }
+}
+
+void Renderer::Release() {
+    // 释放全局DirectX资源引用
+    g_d3dDeviceContext.Reset();
+    g_d3dDevice.Reset();
+    
+    // 释放DirectX资源
+    m_renderTargetView.Reset();
+    m_depthStencilView.Reset();
+    m_depthStencilBuffer.Reset();
+    m_depthStencilState.Reset();
+    m_rasterizerState.Reset();
+    m_deviceContext.Reset();
+    m_swapChain.Reset();
+    m_device.Reset();
+    
+    // 释放GLFW资源
+    if (m_window) {
+        glfwDestroyWindow(m_window);
+        m_window = nullptr;
+    }
+    glfwTerminate();
 }
 
 // 静态回调函数实现
@@ -249,10 +497,17 @@ void Renderer::KeyCallback(GLFWwindow* window, int key, int scancode, int action
             }
         }
         
-        if (action == GLFW_PRESS && renderer->m_keyPressCb) {
-            renderer->m_keyPressCb(reinterpret_cast<void*>(&key));
-        } else if (action == GLFW_RELEASE && renderer->m_keyReleaseCb) {
-            renderer->m_keyReleaseCb(reinterpret_cast<void*>(&key));
+        // 用户自定义按键回调
+        if (renderer->m_keyPressCb && action == GLFW_PRESS) {
+            struct KeyData {
+                int key, scancode, mods;
+            } data = {key, scancode, mods};
+            renderer->m_keyPressCb(&data);
+        } else if (renderer->m_keyReleaseCb && action == GLFW_RELEASE) {
+            struct KeyData {
+                int key, scancode, mods;
+            } data = {key, scancode, mods};
+            renderer->m_keyReleaseCb(&data);
         }
     }
 }
@@ -260,22 +515,25 @@ void Renderer::KeyCallback(GLFWwindow* window, int key, int scancode, int action
 void Renderer::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     Renderer* renderer = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
     if (renderer) {
-        if (action == GLFW_PRESS) {
-            renderer->m_mousePressed = true;
-            // 获取当前鼠标位置
-            double xpos, ypos;
-            glfwGetCursorPos(window, &xpos, &ypos);
-            renderer->m_lastMouseX = xpos;
-            renderer->m_lastMouseY = ypos;
-            
-            if (renderer->m_mousePressCb) {
-                renderer->m_mousePressCb(reinterpret_cast<void*>(&button));
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            if (action == GLFW_PRESS) {
+                renderer->m_mousePressed = true;
+            } else if (action == GLFW_RELEASE) {
+                renderer->m_mousePressed = false;
             }
-        } else if (action == GLFW_RELEASE) {
-            renderer->m_mousePressed = false;
-            if (renderer->m_mouseReleaseCb) {
-                renderer->m_mouseReleaseCb(reinterpret_cast<void*>(&button));
-            }
+        }
+        
+        // 用户自定义鼠标按钮回调
+        if (action == GLFW_PRESS && renderer->m_mousePressCb) {
+            struct MouseButtonData {
+                int button, mods;
+            } data = {button, mods};
+            renderer->m_mousePressCb(&data);
+        } else if (action == GLFW_RELEASE && renderer->m_mouseReleaseCb) {
+            struct MouseButtonData {
+                int button, mods;
+            } data = {button, mods};
+            renderer->m_mouseReleaseCb(&data);
         }
     }
 }
@@ -283,39 +541,33 @@ void Renderer::MouseButtonCallback(GLFWwindow* window, int button, int action, i
 void Renderer::CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     Renderer* renderer = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
     if (renderer) {
-        // 计算鼠标移动
+        // 计算鼠标移动量
         double deltaX = xpos - renderer->m_lastMouseX;
         double deltaY = ypos - renderer->m_lastMouseY;
+        renderer->m_lastMouseX = xpos;
+        renderer->m_lastMouseY = ypos;
         
-        // 更新相机
-        if (renderer->m_camera && renderer->m_mousePressed) {
+        // 如果鼠标左键按下，旋转相机
+        if (renderer->m_mousePressed && renderer->m_camera) {
             renderer->m_camera->HandleMotion(xpos, ypos);
         }
         
-        // 调用回调函数
-        if (renderer->m_mouseMoveCb && renderer->m_mousePressed) {
-            // 创建临时数据结构
+        // 用户自定义鼠标移动回调
+        if (renderer->m_mouseMoveCb) {
             struct MouseMoveData {
                 double xpos, ypos, deltaX, deltaY;
             } data = {xpos, ypos, deltaX, deltaY};
-            
-            renderer->m_mouseMoveCb(reinterpret_cast<void*>(&data));
+            renderer->m_mouseMoveCb(&data);
         }
-    }
-    
-    // 保存鼠标位置
-    if (renderer) {
-        renderer->m_lastMouseX = xpos;
-        renderer->m_lastMouseY = ypos;
     }
 }
 
 void Renderer::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
     Renderer* renderer = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
     if (renderer) {
-        // 更新相机
+        // 使用滚轮缩放相机
         if (renderer->m_camera) {
-            // 相机缩放 - 调整相机速度而不是直接变换
+            // 调整相机速度
             float speed = renderer->m_camera->GetSpeed();
             speed += yoffset * 0.1f;
             if (speed < 0.1f) speed = 0.1f;
@@ -323,34 +575,22 @@ void Renderer::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset
             renderer->m_camera->SetSpeed(speed);
         }
         
-        // 调用回调函数
+        // 用户自定义滚轮回调
         if (renderer->m_mouseScrollCb) {
             struct ScrollData {
                 double xoffset, yoffset;
             } data = {xoffset, yoffset};
-            
-            renderer->m_mouseScrollCb(reinterpret_cast<void*>(&data));
+            renderer->m_mouseScrollCb(&data);
         }
     }
 }
 
-void Renderer::Release() {
-    if (m_window) {
-        glfwDestroyWindow(m_window);
-        m_window = nullptr;
-    }
-    
-    // 清空渲染对象列表
-    m_renderObjects.clear();
-    
-    // 释放相机资源
-    m_camera.reset();
-    
-    // 终止GLFW
-    glfwTerminate();
-}
-
 // 创建渲染器实例
 IRenderer* CreateRenderer(int argc, char** argv) {
-    return new Renderer(argc, argv);
+    try {
+        return new Renderer(argc, argv);
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create renderer: " << e.what() << std::endl;
+        return nullptr;
+    }
 } 

@@ -1,149 +1,199 @@
 #include "Renderer/RenderUnit.h"
 #include <chrono>
 #include "Math/GraphicUtils/Camara.h"
-#include <GL/glew.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#include <d3d11.h>
+#include <DirectXMath.h>
+#include <d3dcompiler.h>
+#include <wrl/client.h>
 #include <iostream>
 
-// 顶点着色器
+using Microsoft::WRL::ComPtr;
+
+#pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "d3dcompiler.lib")
+
+extern ComPtr<ID3D11Device> g_d3dDevice;
+extern ComPtr<ID3D11DeviceContext> g_d3dDeviceContext;
+
+struct ModelViewProjectionConstantBuffer
+{
+    DirectX::XMMATRIX world;
+    DirectX::XMMATRIX view;
+    DirectX::XMMATRIX projection;
+    DirectX::XMFLOAT4 lightPos;
+    DirectX::XMFLOAT4 viewPos;
+    DirectX::XMFLOAT4 ambientColor;
+    DirectX::XMFLOAT4 diffuseColor;
+    int isWireframe;
+    DirectX::XMFLOAT3 padding;
+};
+
 const char* vertexShaderSource = R"(
-#version 330 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 aNormal;
-
-out vec3 FragPos;
-out vec3 Normal;
-
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-
-void main()
+cbuffer ModelViewProjectionConstantBuffer : register(b0)
 {
-    FragPos = vec3(model * vec4(aPos, 1.0));
-    Normal = mat3(transpose(inverse(model))) * aNormal;  
+    matrix World;
+    matrix View;
+    matrix Projection;
+    float4 LightPos;
+    float4 ViewPos;
+    float4 AmbientColor;
+    float4 DiffuseColor;
+    int IsWireframe;
+    float3 padding;
+};
+
+struct VS_INPUT
+{
+    float4 Pos : POSITION;
+    float3 Normal : NORMAL;
+};
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float3 FragPos : POSITION;
+    float3 Normal : NORMAL;
+    float4 Color : COLOR;
+};
+
+PS_INPUT main(VS_INPUT input)
+{
+    PS_INPUT output;
     
-    gl_Position = projection * view * vec4(FragPos, 1.0);
+    float4 worldPos = mul(World, input.Pos);
+    output.FragPos = worldPos.xyz;
+    
+    output.Normal = mul((float3x3)World, input.Normal);
+    
+    float4 viewPos = mul(View, worldPos);
+    output.Pos = mul(Projection, viewPos);
+    
+    output.Color = float4(1.0f, 0.0f, 0.0f, 1.0f);
+    return output;
 }
 )";
 
-// 片段着色器 - 标准材质
-const char* fragmentShaderSource = R"(
-#version 330 core
-out vec4 FragColor;
-
-in vec3 FragPos;
-in vec3 Normal;
-
-uniform vec3 lightPos;
-uniform vec3 viewPos;
-uniform vec4 objectColor;
-uniform vec4 ambientColor;
-uniform bool isWireframe;
-
-void main()
+const char* pixelShaderSource = R"(
+cbuffer ModelViewProjectionConstantBuffer : register(b0)
 {
-    if (isWireframe) {
-        FragColor = objectColor;
-    } else {
-        // 环境光
-        vec3 ambient = 0.2 * ambientColor.rgb;
-        
-        // 漫反射
-        vec3 norm = normalize(Normal);
-        vec3 lightDir = normalize(lightPos - FragPos);
-        float diff = max(dot(norm, lightDir), 0.0);
-        vec3 diffuse = diff * objectColor.rgb;
-        
-        // 高光
-        vec3 viewDir = normalize(viewPos - FragPos);
-        vec3 reflectDir = reflect(-lightDir, norm);  
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-        vec3 specular = 0.5 * spec * vec3(1.0, 1.0, 1.0);  
-        
-        vec3 result = ambient + diffuse + specular;
-        FragColor = vec4(result, objectColor.a);
-    }
-}
-)";
+    matrix World;
+    matrix View;
+    matrix Projection;
+    float4 LightPos;
+    float4 ViewPos;
+    float4 AmbientColor;
+    float4 DiffuseColor;
+    int IsWireframe;
+    float3 padding;
+};
 
-// 线框着色器
-const char* lineShaderSource = R"(
-#version 330 core
-layout (location = 0) in vec3 aPos;
-
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-
-void main()
+struct PS_INPUT
 {
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
-}
-)";
+    float4 Pos : SV_POSITION;
+    float3 FragPos : POSITION;
+    float3 Normal : NORMAL;
+    float4 Color : COLOR;
+};
 
-const char* lineFragmentShaderSource = R"(
-#version 330 core
-out vec4 FragColor;
-
-uniform vec4 lineColor;
-
-void main()
+float4 main(PS_INPUT input) : SV_TARGET
 {
-    FragColor = lineColor;
-}
-)";
-
-// 编译着色器辅助函数
-GLuint compileShader(GLenum shaderType, const char* source) {
-    GLuint shader = glCreateShader(shaderType);
-    glShaderSource(shader, 1, &source, NULL);
-    glCompileShader(shader);
-    
-    // 检查编译错误
-    GLint success;
-    GLchar infoLog[512];
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(shader, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::COMPILATION_FAILED\n" << infoLog << std::endl;
-        return 0;
-    }
-    return shader;
-}
-
-// 创建着色器程序
-GLuint createShaderProgram(const char* vertexSource, const char* fragmentSource) {
-    GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexSource);
-    GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentSource);
-    
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    
-    // 检查链接错误
-    GLint success;
-    GLchar infoLog[512];
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-        return 0;
+    if (IsWireframe == 1)
+    {
+        return DiffuseColor;
     }
     
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    float3 norm = normalize(input.Normal);
+    float3 lightDir = normalize(LightPos.xyz - input.FragPos);
     
-    return shaderProgram;
+    float diff = max(dot(norm, lightDir), 0.0);
+    
+    float3 ambient = AmbientColor.rgb;
+    
+    float3 diffuse = diff * DiffuseColor.rgb;
+    
+    float3 finalColor = ambient + diffuse;
+
+    finalColor = max(finalColor, float3(0.2, 0.2, 0.2));
+    
+    return float4(finalColor, 1.0);
+}
+)";
+
+const char* lineVertexShaderSource = R"(
+cbuffer ModelViewProjectionConstantBuffer : register(b0)
+{
+    matrix World;
+    matrix View;
+    matrix Projection;
+    float4 LineColor;
+};
+
+struct VS_INPUT
+{
+    float4 Pos : POSITION;
+};
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+};
+
+PS_INPUT main(VS_INPUT input)
+{
+    PS_INPUT output;
+    
+    float4 worldPos = mul(World, input.Pos);
+    float4 viewPos = mul(View, worldPos);
+    output.Pos = mul(Projection, viewPos);
+    
+    return output;
+}
+)";
+
+const char* linePixelShaderSource = R"(
+cbuffer ModelViewProjectionConstantBuffer : register(b0)
+{
+    matrix World;
+    matrix View;
+    matrix Projection;
+    float4 LineColor;
+};
+
+float4 main() : SV_TARGET
+{
+    return LineColor;
+}
+)";
+
+HRESULT CompileShaderFromSource(const char* source, const char* entryPoint, const char* shaderModel, ID3DBlob** shaderBlob) {
+    UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
+#ifdef _DEBUG
+    flags |= D3DCOMPILE_DEBUG;
+#endif
+
+    ComPtr<ID3DBlob> errorBlob;
+    HRESULT hr = D3DCompile(source, strlen(source), nullptr, nullptr, nullptr, entryPoint, shaderModel, flags, 0, shaderBlob, &errorBlob);
+    if (FAILED(hr) && errorBlob) {
+        std::cerr << "Shader compilation error: " << static_cast<char*>(errorBlob->GetBufferPointer()) << std::endl;
+    }
+    return hr;
 }
 
-// SimpleRenderUnit实现
 struct SimpleRenderUnit::Impl {
-    GLuint VAO, VBO, EBO;
-    GLuint shaderProgram;
+    ComPtr<ID3D11Buffer> vertexBuffer;
+    ComPtr<ID3D11Buffer> indexBuffer;
+    ComPtr<ID3D11Buffer> normalBuffer;
+    ComPtr<ID3D11Buffer> constantBuffer;
+    ComPtr<ID3D11VertexShader> vertexShader;
+    ComPtr<ID3D11PixelShader> pixelShader;
+    ComPtr<ID3D11InputLayout> inputLayout;
+    ComPtr<ID3D11RasterizerState> rasterizerStateSolid;
+    ComPtr<ID3D11RasterizerState> rasterizerStateWireframe;
+    
     MathLib::HMatrix4 transform;
     MathLib::HVector3 position{0, 0, 0};
     MathLib::HVector3 scale{1, 1, 1};
@@ -155,59 +205,176 @@ struct SimpleRenderUnit::Impl {
     void* sceneParent = nullptr;
     
     void CreateBuffers(const MathLib::GraphicUtils::MeshData32& meshData) {
-        glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &VBO);
-        glGenBuffers(1, &EBO);
+        HRESULT hr;
         
-        glBindVertexArray(VAO);
+        D3D11_BUFFER_DESC vertexBufferDesc = {};
+        vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+        vertexBufferDesc.ByteWidth = sizeof(MathLib::HVector3) * meshData.m_Vertices.size();
+        vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        vertexBufferDesc.CPUAccessFlags = 0;
         
-        // 顶点数据
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, meshData.m_Vertices.size() * sizeof(MathLib::HVector3), meshData.m_Vertices.data(), GL_STATIC_DRAW);
+        D3D11_SUBRESOURCE_DATA vertexData = {};
+        vertexData.pSysMem = meshData.m_Vertices.data();
         
-        // 索引数据
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshData.m_Indices.size() * sizeof(uint32_t), meshData.m_Indices.data(), GL_STATIC_DRAW);
-        
-        // 设置顶点属性指针
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MathLib::HVector3), (void*)0);
-        glEnableVertexAttribArray(0);
-        
-        // 简单的法线计算（假设每个顶点法线指向顶点位置方向）
-        std::vector<MathLib::HVector3> normals(meshData.m_Vertices.size());
-        for (size_t i = 0; i < meshData.m_Vertices.size(); i++) {
-            normals[i] = meshData.m_Vertices[i].normalized();
+        hr = g_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexData, &vertexBuffer);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create vertex buffer" << std::endl;
+            return;
         }
         
-        // 创建并绑定法线缓冲区
-        GLuint normalVBO;
-        glGenBuffers(1, &normalVBO);
-        glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
-        glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(MathLib::HVector3), normals.data(), GL_STATIC_DRAW);
+        D3D11_BUFFER_DESC indexBufferDesc = {};
+        indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+        indexBufferDesc.ByteWidth = sizeof(uint32_t) * meshData.m_Indices.size();
+        indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+        indexBufferDesc.CPUAccessFlags = 0;
         
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(MathLib::HVector3), (void*)0);
-        glEnableVertexAttribArray(1);
+        D3D11_SUBRESOURCE_DATA indexData = {};
+        indexData.pSysMem = meshData.m_Indices.data();
+        
+        hr = g_d3dDevice->CreateBuffer(&indexBufferDesc, &indexData, &indexBuffer);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create index buffer" << std::endl;
+            return;
+        }
         
         indicesCount = static_cast<int>(meshData.m_Indices.size());
         
-        // 解绑
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
+        std::vector<MathLib::HVector3> normals(meshData.m_Vertices.size());
         
-        // 创建着色器
-        shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
+        for (size_t i = 0; i < normals.size(); i++) {
+            normals[i] = MathLib::HVector3(0.0f, 0.0f, 0.0f);
+        }
+        
+        for (size_t i = 0; i < meshData.m_Indices.size(); i += 3) {
+            if (i + 2 < meshData.m_Indices.size()) {
+                uint32_t idx0 = meshData.m_Indices[i];
+                uint32_t idx1 = meshData.m_Indices[i + 1];
+                uint32_t idx2 = meshData.m_Indices[i + 2];
+                
+                if (idx0 < meshData.m_Vertices.size() && 
+                    idx1 < meshData.m_Vertices.size() && 
+                    idx2 < meshData.m_Vertices.size()) {
+                    
+                    MathLib::HVector3 edge1 = meshData.m_Vertices[idx1] - meshData.m_Vertices[idx0];
+                    MathLib::HVector3 edge2 = meshData.m_Vertices[idx2] - meshData.m_Vertices[idx0];
+                    MathLib::HVector3 faceNormal = edge1.cross(edge2);
+                    
+                    normals[idx0] += faceNormal;
+                    normals[idx1] += faceNormal;
+                    normals[idx2] += faceNormal;
+                }
+            }
+        }
+        
+        for (size_t i = 0; i < normals.size(); i++) {
+            if (normals[i].squaredNorm() > 0.000001f) {
+                normals[i].normalize();
+            } else {
+                if (meshData.m_Vertices[i].squaredNorm() > 0.000001f) {
+            normals[i] = meshData.m_Vertices[i].normalized();
+                } else {
+                    normals[i] = MathLib::HVector3(0.0f, 1.0f, 0.0f);
+                }
+            }
+        }
+        
+        D3D11_BUFFER_DESC normalBufferDesc = {};
+        normalBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+        normalBufferDesc.ByteWidth = sizeof(MathLib::HVector3) * normals.size();
+        normalBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        normalBufferDesc.CPUAccessFlags = 0;
+        
+        D3D11_SUBRESOURCE_DATA normalData = {};
+        normalData.pSysMem = normals.data();
+        
+        hr = g_d3dDevice->CreateBuffer(&normalBufferDesc, &normalData, &normalBuffer);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create normal buffer" << std::endl;
+            return;
+        }
+        
+        
+        D3D11_BUFFER_DESC constantBufferDesc = {};
+        constantBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+        constantBufferDesc.ByteWidth = sizeof(ModelViewProjectionConstantBuffer);
+        constantBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        constantBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+        
+        hr = g_d3dDevice->CreateBuffer(&constantBufferDesc, nullptr, &constantBuffer);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create constant buffer" << std::endl;
+            return;
+        }
+        
+        ComPtr<ID3DBlob> vertexShaderBlob;
+        hr = CompileShaderFromSource(vertexShaderSource, "main", "vs_5_0", &vertexShaderBlob);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to compile vertex shader" << std::endl;
+            return;
+        }
+        
+        hr = g_d3dDevice->CreateVertexShader(vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize(), nullptr, &vertexShader);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create vertex shader" << std::endl;
+            return;
+        }
+        
+        D3D11_INPUT_ELEMENT_DESC layout[] = {
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+        };
+        
+        hr = g_d3dDevice->CreateInputLayout(layout, 2, vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize(), &inputLayout);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create input layout" << std::endl;
+            return;
+        }
+        
+        ComPtr<ID3DBlob> pixelShaderBlob;
+        hr = CompileShaderFromSource(pixelShaderSource, "main", "ps_5_0", &pixelShaderBlob);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to compile pixel shader" << std::endl;
+            return;
+        }
+        
+        hr = g_d3dDevice->CreatePixelShader(pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize(), nullptr, &pixelShader);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create pixel shader" << std::endl;
+            return;
+        }
+        
+        D3D11_RASTERIZER_DESC rasterizerDesc = {};
+        rasterizerDesc.FillMode = D3D11_FILL_SOLID;
+        rasterizerDesc.CullMode = D3D11_CULL_NONE;
+        rasterizerDesc.FrontCounterClockwise = FALSE;
+        rasterizerDesc.DepthClipEnable = TRUE;
+
+        rasterizerDesc.DepthBias = 0;
+        rasterizerDesc.DepthBiasClamp = 0.0f;
+        rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+        
+        hr = g_d3dDevice->CreateRasterizerState(&rasterizerDesc, &rasterizerStateSolid);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create solid rasterizer state" << std::endl;
+            return;
+        }
+        
+        rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
+        
+        hr = g_d3dDevice->CreateRasterizerState(&rasterizerDesc, &rasterizerStateWireframe);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create wireframe rasterizer state" << std::endl;
+            return;
+        }
     }
     
     void CleanUp() {
-        glDeleteVertexArrays(1, &VAO);
-        glDeleteBuffers(1, &VBO);
-        glDeleteBuffers(1, &EBO);
-        glDeleteProgram(shaderProgram);
     }
 };
 
 SimpleRenderUnit::SimpleRenderUnit(const MathLib::GraphicUtils::MeshData32& meshData)
-    : m_impl(new Impl()) {
+    : m_impl(std::make_unique<Impl>())
+{
     m_impl->CreateBuffers(meshData);
 }
 
@@ -217,7 +384,9 @@ SimpleRenderUnit::~SimpleRenderUnit() {
 
 void SimpleRenderUnit::SetTransformation(const MathLib::HMatrix4* transform) {
     if (transform) {
-        m_impl->transform = *transform;
+        m_impl->transform = transform->transpose();
+    } else {
+        m_impl->transform = MathLib::HMatrix4::Identity();
     }
 }
 
@@ -225,20 +394,26 @@ void SimpleRenderUnit::SetTransformation(const MathLib::HVector3* scale, const M
     if (scale) {
         m_impl->scale = *scale;
     }
+    
     if (position) {
         m_impl->position = *position;
     }
     
-    // 构建变换矩阵
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(m_impl->position[0], m_impl->position[1], m_impl->position[2]));
-    model = glm::scale(model, glm::vec3(m_impl->scale[0], m_impl->scale[1], m_impl->scale[2]));
-    
-    m_impl->transform = *reinterpret_cast<MathLib::HMatrix4*>(&model);
+    UpdateTransformation();
 }
 
 void SimpleRenderUnit::UpdateTransformation() {
-    // 如果需要动态更新变换矩阵，在这里实现
+    MathLib::HMatrix4 scaleMat = MathLib::HMatrix4::Identity();
+    scaleMat(0, 0) = m_impl->scale.x();
+    scaleMat(1, 1) = m_impl->scale.y();
+    scaleMat(2, 2) = m_impl->scale.z();
+    
+    MathLib::HMatrix4 translateMat = MathLib::HMatrix4::Identity();
+    translateMat(0, 3) = m_impl->position.x();
+    translateMat(1, 3) = m_impl->position.y();
+    translateMat(2, 3) = m_impl->position.z();
+    
+    m_impl->transform = translateMat * scaleMat;
 }
 
 void SimpleRenderUnit::Show(bool show) {
@@ -246,48 +421,76 @@ void SimpleRenderUnit::Show(bool show) {
 }
 
 void SimpleRenderUnit::Render(MathLib::GraphicUtils::Camera& camera) {
-    if (!m_impl->visible) return;
-    
-    glUseProgram(m_impl->shaderProgram);
-    
-    // 设置着色器参数
-    glUniformMatrix4fv(glGetUniformLocation(m_impl->shaderProgram, "model"), 1, GL_FALSE, m_impl->transform.data());
-    
-    // 假设Camera类提供了视图和投影矩阵
-    MathLib::HMatrix4 viewMatrix = camera.GetViewMatrix();
-    MathLib::HMatrix4 projMatrix = camera.GetProjectMatrix();
-    
-    glUniformMatrix4fv(glGetUniformLocation(m_impl->shaderProgram, "view"), 1, GL_FALSE, viewMatrix.data());
-    glUniformMatrix4fv(glGetUniformLocation(m_impl->shaderProgram, "projection"), 1, GL_FALSE, projMatrix.data());
-    
-    // 设置光源位置 (可以是摄像机位置)
-    MathLib::HVector3 cameraPos = camera.GetEye();
-    glUniform3f(glGetUniformLocation(m_impl->shaderProgram, "lightPos"), cameraPos[0], cameraPos[1], cameraPos[2]);
-    glUniform3f(glGetUniformLocation(m_impl->shaderProgram, "viewPos"), cameraPos[0], cameraPos[1], cameraPos[2]);
-    
-    // 设置颜色
-    glUniform4fv(glGetUniformLocation(m_impl->shaderProgram, "objectColor"), 1, m_impl->diffuseColor);
-    glUniform4fv(glGetUniformLocation(m_impl->shaderProgram, "ambientColor"), 1, m_impl->ambientColor);
-    glUniform1i(glGetUniformLocation(m_impl->shaderProgram, "isWireframe"), m_impl->wireframe ? 1 : 0);
-    
-    // 绘制
-    glBindVertexArray(m_impl->VAO);
-    if (m_impl->wireframe) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    } else {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    if (!m_impl->visible) {
+        return;
     }
     
-    glDrawElements(GL_TRIANGLES, m_impl->indicesCount, GL_UNSIGNED_INT, 0);
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    HRESULT hr = g_d3dDeviceContext->Map(m_impl->constantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    if (SUCCEEDED(hr)) {
+        ModelViewProjectionConstantBuffer* dataPtr = reinterpret_cast<ModelViewProjectionConstantBuffer*>(mappedResource.pData);
+        
+        DirectX::XMMATRIX worldMatrix = DirectX::XMMatrixSet(
+            m_impl->transform(0, 0), m_impl->transform(0, 1), m_impl->transform(0, 2), m_impl->transform(0, 3),
+            m_impl->transform(1, 0), m_impl->transform(1, 1), m_impl->transform(1, 2), m_impl->transform(1, 3),
+            m_impl->transform(2, 0), m_impl->transform(2, 1), m_impl->transform(2, 2), m_impl->transform(2, 3),
+            m_impl->transform(3, 0), m_impl->transform(3, 1), m_impl->transform(3, 2), m_impl->transform(3, 3)
+        );
+
+        MathLib::HMatrix4 viewMat = camera.GetViewMatrix();
+        DirectX::XMMATRIX viewMatrix = DirectX::XMMatrixSet(
+            viewMat(0, 0), viewMat(0, 1), viewMat(0, 2), viewMat(0, 3),
+            viewMat(1, 0), viewMat(1, 1), viewMat(1, 2), viewMat(1, 3),
+            viewMat(2, 0), viewMat(2, 1), viewMat(2, 2), viewMat(2, 3),
+            viewMat(3, 0), viewMat(3, 1), viewMat(3, 2), viewMat(3, 3)
+        );
+        
+        MathLib::HMatrix4 projMat = camera.GetProjectMatrix();
+        DirectX::XMMATRIX projMatrix = DirectX::XMMatrixSet(
+            projMat(0, 0), projMat(0, 1), projMat(0, 2), projMat(0, 3),
+            projMat(1, 0), projMat(1, 1), projMat(1, 2), projMat(1, 3),
+            projMat(2, 0), projMat(2, 1), projMat(2, 2), projMat(2, 3),
+            projMat(3, 0), projMat(3, 1), projMat(3, 2), projMat(3, 3)
+        );
+        
+        MathLib::HVector3 camPos = camera.GetEye();
+        
+        dataPtr->world = worldMatrix;
+        dataPtr->view = viewMatrix;
+        dataPtr->projection = projMatrix;
+        dataPtr->lightPos = DirectX::XMFLOAT4(50.0f, 50.0f, 50.0f, 1.0f);
+        dataPtr->viewPos = DirectX::XMFLOAT4(camPos.x(), camPos.y(), camPos.z(), 1.0f);
+        dataPtr->ambientColor = DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+        dataPtr->diffuseColor = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f); // Bright red color
+        dataPtr->isWireframe = m_impl->wireframe ? 1 : 0;
+        
+        g_d3dDeviceContext->Unmap(m_impl->constantBuffer.Get(), 0);
+    }
     
-    // 恢复默认设置
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glBindVertexArray(0);
+    UINT stride = sizeof(MathLib::HVector3);
+    UINT offset = 0;
+    g_d3dDeviceContext->IASetVertexBuffers(0, 1, m_impl->vertexBuffer.GetAddressOf(), &stride, &offset);
+    
+    g_d3dDeviceContext->IASetVertexBuffers(1, 1, m_impl->normalBuffer.GetAddressOf(), &stride, &offset);
+    
+    g_d3dDeviceContext->IASetIndexBuffer(m_impl->indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+    
+    g_d3dDeviceContext->IASetInputLayout(m_impl->inputLayout.Get());
+    g_d3dDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    
+    g_d3dDeviceContext->VSSetShader(m_impl->vertexShader.Get(), nullptr, 0);
+    g_d3dDeviceContext->VSSetConstantBuffers(0, 1, m_impl->constantBuffer.GetAddressOf());
+    g_d3dDeviceContext->PSSetShader(m_impl->pixelShader.Get(), nullptr, 0);
+    g_d3dDeviceContext->PSSetConstantBuffers(0, 1, m_impl->constantBuffer.GetAddressOf());
+    
+    g_d3dDeviceContext->RSSetState(m_impl->wireframe ? m_impl->rasterizerStateWireframe.Get() : m_impl->rasterizerStateSolid.Get());
+    
+    g_d3dDeviceContext->DrawIndexed(m_impl->indicesCount, 0, 0);
+    
 }
 
 void SimpleRenderUnit::AddToScene(void* scene) {
     m_impl->sceneParent = scene;
-    // 可能需要更多场景整合代码
 }
 
 void SimpleRenderUnit::RemoveFromScene() {
@@ -300,17 +503,13 @@ void SimpleRenderUnit::ShowWireframe(bool show) {
 
 void SimpleRenderUnit::SetAmbientColor(const float* color) {
     if (color) {
-        for (int i = 0; i < 4; i++) {
-            m_impl->ambientColor[i] = color[i];
-        }
+        memcpy(m_impl->ambientColor, color, 4 * sizeof(float));
     }
 }
 
 void SimpleRenderUnit::SetDiffuseColor(const float* color) {
     if (color) {
-        for (int i = 0; i < 4; i++) {
-            m_impl->diffuseColor[i] = color[i];
-        }
+        memcpy(m_impl->diffuseColor, color, 4 * sizeof(float));
     }
 }
 
@@ -318,10 +517,15 @@ const float* SimpleRenderUnit::GetAmbientColor() const {
     return m_impl->ambientColor;
 }
 
-// GizmoRenderUnit实现
 struct GizmoRenderUnit::Impl {
-    GLuint VAO, VBO, EBO;
-    GLuint shaderProgram;
+    ComPtr<ID3D11Buffer> vertexBuffer;
+    ComPtr<ID3D11Buffer> indexBuffer;
+    ComPtr<ID3D11Buffer> constantBuffer;
+    ComPtr<ID3D11VertexShader> vertexShader;
+    ComPtr<ID3D11PixelShader> pixelShader;
+    ComPtr<ID3D11InputLayout> inputLayout;
+    ComPtr<ID3D11RasterizerState> rasterizerState;
+    
     MathLib::HMatrix4 transform;
     MathLib::HVector3 position{0, 0, 0};
     MathLib::HVector3 scale{1, 1, 1};
@@ -331,44 +535,115 @@ struct GizmoRenderUnit::Impl {
     void* sceneParent = nullptr;
     
     void CreateBuffers(const MathLib::GraphicUtils::MeshData32& meshData) {
-        glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &VBO);
-        glGenBuffers(1, &EBO);
+        HRESULT hr;
         
-        glBindVertexArray(VAO);
+        D3D11_BUFFER_DESC vertexBufferDesc = {};
+        vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+        vertexBufferDesc.ByteWidth = sizeof(MathLib::HVector3) * meshData.m_Vertices.size();
+        vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        vertexBufferDesc.CPUAccessFlags = 0;
         
-        // 顶点数据
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, meshData.m_Vertices.size() * sizeof(MathLib::HVector3), meshData.m_Vertices.data(), GL_STATIC_DRAW);
+        D3D11_SUBRESOURCE_DATA vertexData = {};
+        vertexData.pSysMem = meshData.m_Vertices.data();
         
-        // 索引数据
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshData.m_Indices.size() * sizeof(uint32_t), meshData.m_Indices.data(), GL_STATIC_DRAW);
+        hr = g_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexData, &vertexBuffer);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create vertex buffer for gizmo" << std::endl;
+            return;
+        }
         
-        // 设置顶点属性指针
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MathLib::HVector3), (void*)0);
-        glEnableVertexAttribArray(0);
+        D3D11_BUFFER_DESC indexBufferDesc = {};
+        indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+        indexBufferDesc.ByteWidth = sizeof(uint32_t) * meshData.m_Indices.size();
+        indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+        indexBufferDesc.CPUAccessFlags = 0;
+        
+        D3D11_SUBRESOURCE_DATA indexData = {};
+        indexData.pSysMem = meshData.m_Indices.data();
+        
+        hr = g_d3dDevice->CreateBuffer(&indexBufferDesc, &indexData, &indexBuffer);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create index buffer for gizmo" << std::endl;
+            return;
+        }
         
         indicesCount = static_cast<int>(meshData.m_Indices.size());
         
-        // 解绑
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
+        struct LineConstantBuffer {
+            DirectX::XMMATRIX world;
+            DirectX::XMMATRIX view;
+            DirectX::XMMATRIX projection;
+            DirectX::XMFLOAT4 lineColor;
+        };
         
-        // 创建着色器
-        shaderProgram = createShaderProgram(lineShaderSource, lineFragmentShaderSource);
+        D3D11_BUFFER_DESC constantBufferDesc = {};
+        constantBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+        constantBufferDesc.ByteWidth = sizeof(LineConstantBuffer);
+        constantBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        constantBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+        
+        hr = g_d3dDevice->CreateBuffer(&constantBufferDesc, nullptr, &constantBuffer);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create constant buffer for gizmo" << std::endl;
+            return;
+        }
+        
+        ComPtr<ID3DBlob> vertexShaderBlob;
+        hr = CompileShaderFromSource(lineVertexShaderSource, "main", "vs_5_0", &vertexShaderBlob);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to compile line vertex shader" << std::endl;
+            return;
+        }
+        
+        hr = g_d3dDevice->CreateVertexShader(vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize(), nullptr, &vertexShader);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create line vertex shader" << std::endl;
+            return;
+        }
+        
+        D3D11_INPUT_ELEMENT_DESC layout[] = {
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+        };
+        
+        hr = g_d3dDevice->CreateInputLayout(layout, 1, vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize(), &inputLayout);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create input layout for gizmo" << std::endl;
+            return;
+        }
+        
+        ComPtr<ID3DBlob> pixelShaderBlob;
+        hr = CompileShaderFromSource(linePixelShaderSource, "main", "ps_5_0", &pixelShaderBlob);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to compile line pixel shader" << std::endl;
+            return;
+        }
+        
+        hr = g_d3dDevice->CreatePixelShader(pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize(), nullptr, &pixelShader);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create line pixel shader" << std::endl;
+            return;
+        }
+        
+        D3D11_RASTERIZER_DESC rasterizerDesc = {};
+        rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
+        rasterizerDesc.CullMode = D3D11_CULL_NONE;
+        rasterizerDesc.FrontCounterClockwise = FALSE;
+        rasterizerDesc.DepthClipEnable = TRUE;
+        
+        hr = g_d3dDevice->CreateRasterizerState(&rasterizerDesc, &rasterizerState);
+        if (FAILED(hr)) {
+            std::cerr << "Failed to create rasterizer state for gizmo" << std::endl;
+            return;
+        }
     }
     
     void CleanUp() {
-        glDeleteVertexArrays(1, &VAO);
-        glDeleteBuffers(1, &VBO);
-        glDeleteBuffers(1, &EBO);
-        glDeleteProgram(shaderProgram);
     }
 };
 
 GizmoRenderUnit::GizmoRenderUnit(const MathLib::GraphicUtils::MeshData32& meshData)
-    : m_impl(new Impl()) {
+    : m_impl(std::make_unique<Impl>())
+{
     m_impl->CreateBuffers(meshData);
 }
 
@@ -378,7 +653,9 @@ GizmoRenderUnit::~GizmoRenderUnit() {
 
 void GizmoRenderUnit::SetTransformation(const MathLib::HMatrix4* transform) {
     if (transform) {
-        m_impl->transform = *transform;
+        m_impl->transform = transform->transpose();
+    } else {
+        m_impl->transform = MathLib::HMatrix4::Identity();
     }
 }
 
@@ -386,20 +663,26 @@ void GizmoRenderUnit::SetTransformation(const MathLib::HVector3* scale, const Ma
     if (scale) {
         m_impl->scale = *scale;
     }
+    
     if (position) {
         m_impl->position = *position;
     }
     
-    // 构建变换矩阵
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(m_impl->position[0], m_impl->position[1], m_impl->position[2]));
-    model = glm::scale(model, glm::vec3(m_impl->scale[0], m_impl->scale[1], m_impl->scale[2]));
-    
-    m_impl->transform = *reinterpret_cast<MathLib::HMatrix4*>(&model);
+    UpdateTransformation();
 }
 
 void GizmoRenderUnit::UpdateTransformation() {
-    // 如果需要动态更新变换矩阵，在这里实现
+    MathLib::HMatrix4 scaleMat = MathLib::HMatrix4::Identity();
+    scaleMat(0, 0) = m_impl->scale.x();
+    scaleMat(1, 1) = m_impl->scale.y();
+    scaleMat(2, 2) = m_impl->scale.z();
+    
+    MathLib::HMatrix4 translateMat = MathLib::HMatrix4::Identity();
+    translateMat(0, 3) = m_impl->position.x();
+    translateMat(1, 3) = m_impl->position.y();
+    translateMat(2, 3) = m_impl->position.z();
+    
+    m_impl->transform = translateMat * scaleMat;
 }
 
 void GizmoRenderUnit::Show(bool show) {
@@ -407,38 +690,83 @@ void GizmoRenderUnit::Show(bool show) {
 }
 
 void GizmoRenderUnit::Render(MathLib::GraphicUtils::Camera& camera) {
-    if (!m_impl->visible) return;
+    if (!m_impl->visible) {
+        return;
+    }
     
-    glUseProgram(m_impl->shaderProgram);
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    HRESULT hr = g_d3dDeviceContext->Map(m_impl->constantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    if (SUCCEEDED(hr)) {
+        struct LineConstantBuffer {
+            DirectX::XMMATRIX world;
+            DirectX::XMMATRIX view;
+            DirectX::XMMATRIX projection;
+            DirectX::XMFLOAT4 lineColor;
+        };
+        
+        LineConstantBuffer* dataPtr = reinterpret_cast<LineConstantBuffer*>(mappedResource.pData);
+        
+        // 对所有矩阵进行转置处理，与顶点着色器的mul(vector, matrix)约定匹配
+        DirectX::XMMATRIX worldMatrix = DirectX::XMMatrixSet(
+            m_impl->transform(0, 0), m_impl->transform(0, 1), m_impl->transform(0, 2), m_impl->transform(0, 3),
+            m_impl->transform(1, 0), m_impl->transform(1, 1), m_impl->transform(1, 2), m_impl->transform(1, 3),
+            m_impl->transform(2, 0), m_impl->transform(2, 1), m_impl->transform(2, 2), m_impl->transform(2, 3),
+            m_impl->transform(3, 0), m_impl->transform(3, 1), m_impl->transform(3, 2), m_impl->transform(3, 3)
+        );
+        
+        MathLib::HMatrix4 viewMat = camera.GetViewMatrix();
+        DirectX::XMMATRIX viewMatrix = DirectX::XMMatrixSet(
+            viewMat(0, 0), viewMat(0, 1), viewMat(0, 2), viewMat(0, 3),
+            viewMat(1, 0), viewMat(1, 1), viewMat(1, 2), viewMat(1, 3),
+            viewMat(2, 0), viewMat(2, 1), viewMat(2, 2), viewMat(2, 3),
+            viewMat(3, 0), viewMat(3, 1), viewMat(3, 2), viewMat(3, 3)
+        );
+        
+        MathLib::HMatrix4 projMat = camera.GetProjectMatrix();
+        DirectX::XMMATRIX projMatrix = DirectX::XMMatrixSet(
+            projMat(0, 0), projMat(0, 1), projMat(0, 2), projMat(0, 3),
+            projMat(1, 0), projMat(1, 1), projMat(1, 2), projMat(1, 3),
+            projMat(2, 0), projMat(2, 1), projMat(2, 2), projMat(2, 3),
+            projMat(3, 0), projMat(3, 1), projMat(3, 2), projMat(3, 3)
+        );
+        
+        dataPtr->world = worldMatrix;
+        dataPtr->view = viewMatrix;
+        dataPtr->projection = projMatrix;
+        dataPtr->lineColor = DirectX::XMFLOAT4(m_impl->color[0], m_impl->color[1], m_impl->color[2], m_impl->color[3]);
+        
+        g_d3dDeviceContext->Unmap(m_impl->constantBuffer.Get(), 0);
+    }
     
-    // 设置着色器参数
-    glUniformMatrix4fv(glGetUniformLocation(m_impl->shaderProgram, "model"), 1, GL_FALSE, m_impl->transform.data());
+    // Set up rendering state
+    UINT stride = sizeof(MathLib::HVector3);
+    UINT offset = 0;
+    g_d3dDeviceContext->IASetVertexBuffers(0, 1, m_impl->vertexBuffer.GetAddressOf(), &stride, &offset);
+    g_d3dDeviceContext->IASetIndexBuffer(m_impl->indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+    g_d3dDeviceContext->IASetInputLayout(m_impl->inputLayout.Get());
     
-    // 假设Camera类提供了视图和投影矩阵
-    MathLib::HMatrix4 viewMatrix = camera.GetViewMatrix();
-    MathLib::HMatrix4 projMatrix = camera.GetProjectMatrix();
+    // Always use line list for more predictable results
+    g_d3dDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
     
-    glUniformMatrix4fv(glGetUniformLocation(m_impl->shaderProgram, "view"), 1, GL_FALSE, viewMatrix.data());
-    glUniformMatrix4fv(glGetUniformLocation(m_impl->shaderProgram, "projection"), 1, GL_FALSE, projMatrix.data());
+    g_d3dDeviceContext->VSSetShader(m_impl->vertexShader.Get(), nullptr, 0);
+    g_d3dDeviceContext->VSSetConstantBuffers(0, 1, m_impl->constantBuffer.GetAddressOf());
+    g_d3dDeviceContext->PSSetShader(m_impl->pixelShader.Get(), nullptr, 0);
+    g_d3dDeviceContext->PSSetConstantBuffers(0, 1, m_impl->constantBuffer.GetAddressOf());
     
-    // 设置颜色
-    glUniform4fv(glGetUniformLocation(m_impl->shaderProgram, "lineColor"), 1, m_impl->color);
+    g_d3dDeviceContext->RSSetState(m_impl->rasterizerState.Get());
     
-    // 线框模式
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    
-    // 绘制
-    glBindVertexArray(m_impl->VAO);
-    glDrawElements(GL_LINES, m_impl->indicesCount, GL_UNSIGNED_INT, 0);
-    
-    // 恢复默认设置
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glBindVertexArray(0);
+    // Make sure indices count is even for line list
+    int actualIndicesCount = m_impl->indicesCount;
+    if (actualIndicesCount % 2 != 0) {
+        actualIndicesCount--;
+    }
+    if (actualIndicesCount > 0) {
+        g_d3dDeviceContext->DrawIndexed(actualIndicesCount, 0, 0);
+    }
 }
 
 void GizmoRenderUnit::AddToScene(void* scene) {
     m_impl->sceneParent = scene;
-    // 可能需要更多场景整合代码
 }
 
 void GizmoRenderUnit::RemoveFromScene() {
@@ -447,8 +775,6 @@ void GizmoRenderUnit::RemoveFromScene() {
 
 void GizmoRenderUnit::SetColor(const float* color) {
     if (color) {
-        for (int i = 0; i < 4; i++) {
-            m_impl->color[i] = color[i];
-        }
+        memcpy(m_impl->color, color, 4 * sizeof(float));
     }
 }
