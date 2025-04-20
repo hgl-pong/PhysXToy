@@ -384,7 +384,8 @@ SimpleRenderUnit::~SimpleRenderUnit() {
 
 void SimpleRenderUnit::SetTransformation(const MathLib::HMatrix4* transform) {
     if (transform) {
-        m_impl->transform = transform->transpose();
+        MathLib::HMatrix4 scalingMatrix = MathLib::Scaling(m_impl->scale);
+        m_impl->transform = scalingMatrix * transform->transpose();
     } else {
         m_impl->transform = MathLib::HMatrix4::Identity();
     }
@@ -414,6 +415,10 @@ void SimpleRenderUnit::UpdateTransformation() {
     translateMat(2, 3) = m_impl->position.z();
     
     m_impl->transform = translateMat * scaleMat;
+}
+
+void SimpleRenderUnit::SetScale(const MathLib::HVector3& scale) {
+    m_impl->scale = scale;
 }
 
 void SimpleRenderUnit::Show(bool show) {
@@ -460,8 +465,8 @@ void SimpleRenderUnit::Render(MathLib::GraphicUtils::Camera& camera) {
         dataPtr->projection = projMatrix;
         dataPtr->lightPos = DirectX::XMFLOAT4(50.0f, 50.0f, 50.0f, 1.0f);
         dataPtr->viewPos = DirectX::XMFLOAT4(camPos.x(), camPos.y(), camPos.z(), 1.0f);
-        dataPtr->ambientColor = DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-        dataPtr->diffuseColor = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f); // Bright red color
+        dataPtr->ambientColor = DirectX::XMFLOAT4(m_impl->ambientColor[0], m_impl->ambientColor[1], m_impl->ambientColor[2], m_impl->ambientColor[3]);
+        dataPtr->diffuseColor = DirectX::XMFLOAT4(m_impl->diffuseColor[0], m_impl->diffuseColor[1], m_impl->diffuseColor[2], m_impl->diffuseColor[3]);
         dataPtr->isWireframe = m_impl->wireframe ? 1 : 0;
         
         g_d3dDeviceContext->Unmap(m_impl->constantBuffer.Get(), 0);
@@ -706,7 +711,6 @@ void GizmoRenderUnit::Render(MathLib::GraphicUtils::Camera& camera) {
         
         LineConstantBuffer* dataPtr = reinterpret_cast<LineConstantBuffer*>(mappedResource.pData);
         
-        // 对所有矩阵进行转置处理，与顶点着色器的mul(vector, matrix)约定匹配
         DirectX::XMMATRIX worldMatrix = DirectX::XMMatrixSet(
             m_impl->transform(0, 0), m_impl->transform(0, 1), m_impl->transform(0, 2), m_impl->transform(0, 3),
             m_impl->transform(1, 0), m_impl->transform(1, 1), m_impl->transform(1, 2), m_impl->transform(1, 3),
@@ -738,14 +742,12 @@ void GizmoRenderUnit::Render(MathLib::GraphicUtils::Camera& camera) {
         g_d3dDeviceContext->Unmap(m_impl->constantBuffer.Get(), 0);
     }
     
-    // Set up rendering state
     UINT stride = sizeof(MathLib::HVector3);
     UINT offset = 0;
     g_d3dDeviceContext->IASetVertexBuffers(0, 1, m_impl->vertexBuffer.GetAddressOf(), &stride, &offset);
     g_d3dDeviceContext->IASetIndexBuffer(m_impl->indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
     g_d3dDeviceContext->IASetInputLayout(m_impl->inputLayout.Get());
     
-    // Always use line list for more predictable results
     g_d3dDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
     
     g_d3dDeviceContext->VSSetShader(m_impl->vertexShader.Get(), nullptr, 0);
@@ -755,7 +757,6 @@ void GizmoRenderUnit::Render(MathLib::GraphicUtils::Camera& camera) {
     
     g_d3dDeviceContext->RSSetState(m_impl->rasterizerState.Get());
     
-    // Make sure indices count is even for line list
     int actualIndicesCount = m_impl->indicesCount;
     if (actualIndicesCount % 2 != 0) {
         actualIndicesCount--;

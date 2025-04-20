@@ -1,5 +1,6 @@
 #include "RenderObjectAdapter.h"
 #include "Renderer/RenderUnit.h"
+#include <Math/Math.h>
 
 RenderObjectAdapter::RenderObjectAdapter(const PhysicsPtr<IPhysicsObject>& physicsObject)
     : m_physicsObject(physicsObject)
@@ -47,7 +48,7 @@ void RenderObjectAdapter::CreateRenderGeometry(const PhysicsPtr<IColliderGeometr
     geometry->GetParams(options);
     
     MathLib::GraphicUtils::MeshData32 meshData;
-
+    MathLib::HMatrix4             scalingMatrix = MathLib::Scaling(options.m_Scale);
     switch (options.m_GeometryType) {
         case CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE:
             meshData = MathLib::GraphicUtils::GenerateSphereMeshData<uint32_t>(options.m_SphereParams.m_Radius, 16, 16);
@@ -76,6 +77,10 @@ void RenderObjectAdapter::CreateRenderGeometry(const PhysicsPtr<IColliderGeometr
     std::shared_ptr<SimpleRenderUnit> renderUnit = std::make_shared<SimpleRenderUnit>(meshData);
     
     MathLib::HMatrix4 localTransform = transform.matrix();
+
+    localTransform = localTransform * scalingMatrix;
+
+    renderUnit->SetScale(options.m_Scale);
     renderUnit->SetTransformation(&localTransform);
     
     if (m_isDynamic) {
@@ -104,7 +109,6 @@ void RenderObjectAdapter::UpdateTransform()
     
     const MathLib::HTransform3& physTransform = m_physicsObject->GetTransform();
     MathLib::HMatrix4 renderMatrix = physTransform.matrix();
-    
     /*
     MathLib::HMatrix4 transposed;
     for (int i = 0; i < 4; i++) {

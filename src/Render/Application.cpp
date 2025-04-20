@@ -85,7 +85,7 @@ void TestingApplication::_KeyReleaseEvent(void* eventData)
 	
 	int key = *reinterpret_cast<int*>(eventData);
 	
-	// 处理空格键发射球体
+
 	if (key == ' ') {
 		CollisionGeometryCreateOptions options;
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
@@ -95,7 +95,7 @@ void TestingApplication::_KeyReleaseEvent(void* eventData)
 
 		_CreateDynamic(m_Renderer->GetActiveCamera()->GetTransform(), geometry, m_Renderer->GetActiveCamera()->GetDir() * 75);
 	}
-	// 处理B键创建物理体
+
 	else if (key == 'B' || key == 'b') {
 		auto physicsObject = TestRigidBody::TestRigidBodyCreate();
 		if (m_Scene)
@@ -114,7 +114,6 @@ void TestingApplication::_MousePressEvent(void* eventData)
 	if (!eventData) return;
 	
 	int button = *reinterpret_cast<int*>(eventData);
-	// 处理鼠标按下事件
 }
 
 void TestingApplication::_MouseReleaseEvent(void* eventData)
@@ -122,33 +121,28 @@ void TestingApplication::_MouseReleaseEvent(void* eventData)
 	if (!eventData) return;
 	
 	int button = *reinterpret_cast<int*>(eventData);
-	// 处理鼠标释放事件
 }
 
 void TestingApplication::_MouseMoveEvent(void* eventData)
 {
 	if (!eventData) return;
 	
-	// 从eventData中提取鼠标移动数据
 	struct MouseMoveData {
 		double xpos, ypos, deltaX, deltaY;
 	};
 	
 	MouseMoveData* moveData = reinterpret_cast<MouseMoveData*>(eventData);
-	// 处理鼠标移动事件
 }
 
 void TestingApplication::_MouseScrollEvent(void* eventData)
 {
 	if (!eventData) return;
 	
-	// 从eventData中提取滚轮数据
 	struct ScrollData {
 		double xoffset, yoffset;
 	};
 	
 	ScrollData* scrollData = reinterpret_cast<ScrollData*>(eventData);
-	// 处理鼠标滚轮事件
 }
 
 void TestingApplication::_InitPhysics(bool interactive)
