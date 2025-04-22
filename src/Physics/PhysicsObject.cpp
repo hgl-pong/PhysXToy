@@ -91,6 +91,7 @@ PhysicsRigidDynamic::PhysicsRigidDynamic(PhysicsPtr<IPhysicsMaterial> &material)
 	m_LinearVelocity.setZero();
 	m_AngularVelocity.setZero();
 	m_AngularDamping = 0.0f;
+	m_LinearDamping = 0.0f;
 	m_Transform.setIdentity();
 	m_BoundingBox.setEmpty();
 	m_Type = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
@@ -108,6 +109,7 @@ void PhysicsRigidDynamic::Update()
 		return;
 	m_RigidDynamic->setSolverIterationCounts(PhysicsEngineUtils::GetPhysicsEngine()->GetSolverIterationCount());
 	m_AngularDamping = m_RigidDynamic->getAngularDamping();
+	m_LinearDamping = m_RigidDynamic->getLinearDamping();
 	m_LinearVelocity = ConvertUtils::FromPx(m_RigidDynamic->getLinearVelocity());
 	m_AngularVelocity = ConvertUtils::FromPx(m_RigidDynamic->getAngularVelocity());
 	m_Transform = ConvertUtils::FromPx(m_RigidDynamic->getGlobalPose());
@@ -139,6 +141,37 @@ bool PhysicsRigidDynamic::AddColliderGeometry(PhysicsPtr<IColliderGeometry> &col
 	return true;
 }
 
+bool PhysicsRigidDynamic::RemoveColliderGeometry(PhysicsPtr<IColliderGeometry> &colliderGeometry)
+{
+	if (m_RigidDynamic == nullptr || colliderGeometry == nullptr)
+		return false;
+
+	auto it = std::find(m_ColliderGeometries.begin(), m_ColliderGeometries.end(), colliderGeometry);
+	if (it == m_ColliderGeometries.end())
+		return false;
+
+	size_t index = std::distance(m_ColliderGeometries.begin(), it);
+	PxU32 numShapes = m_RigidDynamic->getNbShapes();
+	if (index >= numShapes)
+		return false;
+
+	std::vector<PxShape*> shapes(numShapes);
+	m_RigidDynamic->getShapes(shapes.data(), numShapes);
+	
+	m_RigidDynamic->detachShape(*shapes[index]);
+	
+	if (m_RigidDynamic->getNbShapes() > 0)
+		PxRigidBodyExt::updateMassAndInertia(*m_RigidDynamic, m_Material->GetDensity());
+	
+	m_ColliderGeometries.erase(m_ColliderGeometries.begin() + index);
+	m_ColliderLocalPos.erase(m_ColliderLocalPos.begin() + index);
+	
+	m_BoundingBox = ComputeBoundingBox(this);
+	m_Mass = m_RigidDynamic->getMass();
+	
+	return true;
+}
+
 size_t PhysicsRigidDynamic::GetOffset() const
 {
 	return offsetof(PhysicsRigidDynamic, m_RigidDynamic);
@@ -160,6 +193,14 @@ void PhysicsRigidDynamic::SetAngularDamping(const MathLib::HReal &damping)
 	m_AngularDamping = damping;
 }
 
+void PhysicsRigidDynamic::SetLinearDamping(const MathLib::HReal &damping)
+{
+	if (m_RigidDynamic == nullptr)
+		return;
+	m_RigidDynamic->setLinearDamping(damping);
+	m_LinearDamping = damping;
+}
+
 void PhysicsRigidDynamic::SetLinearVelocity(const MathLib::HVector3 &velocity)
 {
 	if (m_RigidDynamic == nullptr)
@@ -174,6 +215,152 @@ void PhysicsRigidDynamic::SetAngularVelocity(const MathLib::HVector3 &velocity)
 		return;
 	m_RigidDynamic->setAngularVelocity(ConvertUtils::ToPx(velocity));
 	m_AngularVelocity = velocity;
+}
+
+void PhysicsRigidDynamic::SetMass(const MathLib::HReal &mass)
+{
+	if (m_RigidDynamic == nullptr || mass <= 0.0f)
+		return;
+		
+	PxRigidBodyExt::setMassAndUpdateInertia(*m_RigidDynamic, mass);
+	m_Mass = mass;
+}
+
+void PhysicsRigidDynamic::AddForce(const MathLib::HVector3 &force, ForceMode mode)
+{
+	if (m_RigidDynamic == nullptr)
+		return;
+		
+	PxForceMode::Enum pxMode;
+	switch (mode)
+	{
+	case ForceMode::FORCE:
+		pxMode = PxForceMode::eFORCE;
+		break;
+	case ForceMode::IMPULSE:
+		pxMode = PxForceMode::eIMPULSE;
+		break;
+	case ForceMode::VELOCITY_CHANGE:
+		pxMode = PxForceMode::eVELOCITY_CHANGE;
+		break;
+	case ForceMode::ACCELERATION:
+		pxMode = PxForceMode::eACCELERATION;
+		break;
+	default:
+		pxMode = PxForceMode::eFORCE;
+	}
+	
+	m_RigidDynamic->addForce(ConvertUtils::ToPx(force), pxMode);
+}
+
+void PhysicsRigidDynamic::AddTorque(const MathLib::HVector3 &torque, ForceMode mode)
+{
+	if (m_RigidDynamic == nullptr)
+		return;
+		
+	PxForceMode::Enum pxMode;
+	switch (mode)
+	{
+	case ForceMode::FORCE:
+		pxMode = PxForceMode::eFORCE;
+		break;
+	case ForceMode::IMPULSE:
+		pxMode = PxForceMode::eIMPULSE;
+		break;
+	case ForceMode::VELOCITY_CHANGE:
+		pxMode = PxForceMode::eVELOCITY_CHANGE;
+		break;
+	case ForceMode::ACCELERATION:
+		pxMode = PxForceMode::eACCELERATION;
+		break;
+	default:
+		pxMode = PxForceMode::eFORCE;
+	}
+	
+	m_RigidDynamic->addTorque(ConvertUtils::ToPx(torque), pxMode);
+}
+
+void PhysicsRigidDynamic::AddForceAtLocalPosition(const MathLib::HVector3 &force, const MathLib::HVector3 &pos, ForceMode mode)
+{
+	if (m_RigidDynamic == nullptr)
+		return;
+		
+	PxForceMode::Enum pxMode;
+	switch (mode)
+	{
+	case ForceMode::FORCE:
+		pxMode = PxForceMode::eFORCE;
+		break;
+	case ForceMode::IMPULSE:
+		pxMode = PxForceMode::eIMPULSE;
+		break;
+	case ForceMode::VELOCITY_CHANGE:
+		pxMode = PxForceMode::eVELOCITY_CHANGE;
+		break;
+	case ForceMode::ACCELERATION:
+		pxMode = PxForceMode::eACCELERATION;
+		break;
+	default:
+		pxMode = PxForceMode::eFORCE;
+	}
+	
+	PxRigidBodyExt::addForceAtLocalPos(*m_RigidDynamic, ConvertUtils::ToPx(force), ConvertUtils::ToPx(pos), pxMode);
+}
+
+void PhysicsRigidDynamic::AddForceAtPosition(const MathLib::HVector3 &force, const MathLib::HVector3 &pos, ForceMode mode)
+{
+	if (m_RigidDynamic == nullptr)
+		return;
+		
+	PxForceMode::Enum pxMode;
+	switch (mode)
+	{
+	case ForceMode::FORCE:
+		pxMode = PxForceMode::eFORCE;
+		break;
+	case ForceMode::IMPULSE:
+		pxMode = PxForceMode::eIMPULSE;
+		break;
+	case ForceMode::VELOCITY_CHANGE:
+		pxMode = PxForceMode::eVELOCITY_CHANGE;
+		break;
+	case ForceMode::ACCELERATION:
+		pxMode = PxForceMode::eACCELERATION;
+		break;
+	default:
+		pxMode = PxForceMode::eFORCE;
+	}
+	
+	PxRigidBodyExt::addForceAtPos(*m_RigidDynamic, ConvertUtils::ToPx(force), ConvertUtils::ToPx(pos), pxMode);
+}
+
+void PhysicsRigidDynamic::ClearForce(bool clearVelocity)
+{
+	if (m_RigidDynamic == nullptr)
+		return;
+		
+	m_RigidDynamic->clearForce(PxForceMode::eFORCE);
+	m_RigidDynamic->clearTorque(PxForceMode::eFORCE);
+	
+	if (clearVelocity)
+	{
+		m_RigidDynamic->setLinearVelocity(physx::PxVec3(0.0f, 0.0f, 0.0f));
+		m_RigidDynamic->setAngularVelocity(physx::PxVec3(0.0f, 0.0f, 0.0f));
+		m_LinearVelocity.setZero();
+		m_AngularVelocity.setZero();
+	}
+}
+
+MathLib::HMatrix3 PhysicsRigidDynamic::GetInertiaTensor() const
+{
+	if (m_RigidDynamic == nullptr)
+		return MathLib::HMatrix3::Zero();
+		
+	PxVec3 diagonalInertia = m_RigidDynamic->getMassSpaceInertiaTensor();
+	
+	physx::PxMat33 pxInertiaTensor = physx::PxMat33::createDiagonal(diagonalInertia);
+	
+	return ConvertUtils::FromPx(pxInertiaTensor);
 }
 
 bool PhysicsRigidDynamic::IsSleeping() const
@@ -202,7 +389,8 @@ PhysicsRigidStatic::PhysicsRigidStatic(PhysicsPtr<IPhysicsMaterial> &material)
 
 void PhysicsRigidStatic::Release()
 {
-	PX_RELEASE(m_RigidStatic);
+	m_RigidStatic.reset();
+	m_Material.reset();
 }
 
 bool PhysicsRigidStatic::AddColliderGeometry(PhysicsPtr<IColliderGeometry> &colliderGeometry, const MathLib::HTransform3 &localTrans)
@@ -227,6 +415,34 @@ bool PhysicsRigidStatic::AddColliderGeometry(PhysicsPtr<IColliderGeometry> &coll
 	m_ColliderGeometries.push_back(colliderGeometry);
 	m_ColliderLocalPos.push_back(localTrans);
 	m_BoundingBox = ComputeBoundingBox(this);
+	return true;
+}
+
+bool PhysicsRigidStatic::RemoveColliderGeometry(PhysicsPtr<IColliderGeometry> &colliderGeometry)
+{
+	if (m_RigidStatic == nullptr || colliderGeometry == nullptr)
+		return false;
+
+	auto it = std::find(m_ColliderGeometries.begin(), m_ColliderGeometries.end(), colliderGeometry);
+	if (it == m_ColliderGeometries.end())
+		return false;
+
+	size_t index = std::distance(m_ColliderGeometries.begin(), it);
+	
+	PxU32 numShapes = m_RigidStatic->getNbShapes();
+	if (index >= numShapes)
+		return false;
+
+	std::vector<PxShape*> shapes(numShapes);
+	m_RigidStatic->getShapes(shapes.data(), numShapes);
+	
+	m_RigidStatic->detachShape(*shapes[index]);
+	
+	m_ColliderGeometries.erase(m_ColliderGeometries.begin() + index);
+	m_ColliderLocalPos.erase(m_ColliderLocalPos.begin() + index);
+
+	m_BoundingBox = ComputeBoundingBox(this);
+	
 	return true;
 }
 

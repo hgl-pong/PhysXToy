@@ -66,6 +66,24 @@ namespace ConvertUtils
 	{
 		return physx::PxBounds3(ToPx(bounds.min()), ToPx(bounds.max()));
 	}
+
+	inline MathLib::HMatrix3 FromPx(const physx::PxMat33& mat)
+	{
+		MathLib::HMatrix3 result;
+		for (int i = 0; i < 3; ++i)
+			for (int j = 0; j < 3; ++j)
+				result(i, j) = mat(i, j);
+		return result;
+	}
+
+	inline physx::PxMat33 ToPx(const MathLib::HMatrix3& mat)
+	{
+		physx::PxMat33 result;
+		for (int i = 0; i < 3; ++i)
+			for (int j = 0; j < 3; ++j)
+				result(i, j) = mat(i, j);
+		return result;
+	}
 };
 
 namespace PhysXConstructTools
@@ -124,7 +142,7 @@ namespace PhysXConstructTools
 		physx::PxTriangleMeshDesc meshDesc;
 		meshDesc.points.count = numVerts;
 		meshDesc.points.stride = sizeof(physx::PxVec3);
-		meshDesc.points.data = reinterpret_cast<const physx::PxVec3*>(verts); // ÀàÐÍ×ª»»
+		meshDesc.points.data = reinterpret_cast<const physx::PxVec3*>(verts); // ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
 
 		meshDesc.triangles.count = numTris;
 		meshDesc.triangles.stride = 3 * sizeof(physx::PxU32);

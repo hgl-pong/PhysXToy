@@ -29,7 +29,7 @@ RenderObjectAdapter::RenderObjectAdapter(const PhysicsPtr<IPhysicsObject>& physi
     
     m_boundingBox = std::make_shared<GizmoRenderUnit>(boxMeshData);
     
-    float color[4] = { 0.2f, 0.2f, 1.0f, 1.0f };
+    float color[4] = { 0.7f, 0.7f, 0.7f, 1.0f };
     m_boundingBox->SetColor(color);
     
     MathLib::HMatrix4 identityMatrix = MathLib::HMatrix4::Identity();

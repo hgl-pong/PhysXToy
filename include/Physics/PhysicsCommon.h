@@ -10,6 +10,14 @@ class IColliderGeometry;
 class IPhysicsObject;
 class IPhysicsMaterial;
 
+enum class ForceMode
+{
+	FORCE,          
+	IMPULSE,        
+	VELOCITY_CHANGE,
+	ACCELERATION    
+};
+
 class IPhysicsEngine
 {
 public:
@@ -50,6 +58,7 @@ public:
 	virtual void Release() = 0;
 	virtual void Update() = 0;
 	virtual bool AddColliderGeometry(PhysicsPtr<IColliderGeometry> &colliderGeometry, const MathLib::HTransform3 &localTrans) = 0;
+	virtual bool RemoveColliderGeometry(PhysicsPtr<IColliderGeometry> &colliderGeometry) = 0;
 	virtual void GetColliderGeometries(std::vector<PhysicsPtr<IColliderGeometry>> &geomeries, std::vector<MathLib::HTransform3> *geoLocalPos) = 0;
 	virtual PhysicsObjectType GetType() const = 0;
 	virtual size_t GetOffset() const = 0;
@@ -64,14 +73,23 @@ class IDynamicObject
 {
 public:
 	virtual void SetAngularDamping(const MathLib::HReal &damping) = 0;
+	virtual void SetLinearDamping(const MathLib::HReal &damping) = 0;
 	virtual void SetLinearVelocity(const MathLib::HVector3 &velocity) = 0;
 	virtual void SetAngularVelocity(const MathLib::HVector3 &velocity) = 0;
 	virtual void SetKinematic(bool bKinematic) = 0;
+	virtual void SetMass(const MathLib::HReal &mass) = 0;
+	virtual void AddForce(const MathLib::HVector3 &force, ForceMode mode = ForceMode::FORCE) = 0;
+	virtual void AddTorque(const MathLib::HVector3 &torque, ForceMode mode = ForceMode::FORCE) = 0;
+	virtual void AddForceAtLocalPosition(const MathLib::HVector3 &force, const MathLib::HVector3 &pos, ForceMode mode = ForceMode::FORCE) = 0;
+	virtual void AddForceAtPosition(const MathLib::HVector3 &force, const MathLib::HVector3 &pos, ForceMode mode = ForceMode::FORCE) = 0;
+	virtual void ClearForce(bool clearVelocity = false) = 0;
 	virtual bool IsKinematic() const = 0;
 	virtual MathLib::HReal GetMass() const = 0;
 	virtual MathLib::HVector3 GetLinearVelocity() const = 0;
 	virtual MathLib::HReal GetAngularDamping() const = 0;
+	virtual MathLib::HReal GetLinearDamping() const = 0;
 	virtual MathLib::HVector3 GetAngularVelocity() const = 0;
+	virtual MathLib::HMatrix3 GetInertiaTensor() const = 0;
 	virtual bool IsSleeping() const = 0;
 };
 
