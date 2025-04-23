@@ -48,11 +48,32 @@ PhysXPtr<T> make_physx_ptr(T *ptr)
 	return PhysXPtr<T>(ptr);
 }
 
+namespace MathLib {
+    class HRay3D
+    {
+    public:
+        HRay3D() : m_Origin(0, 0, 0), m_Direction(0, 1, 0) {}
+        HRay3D(const HVector3& origin, const HVector3& direction) 
+            : m_Origin(origin), m_Direction(direction.normalized()) {}
+        
+        const HVector3& GetOrigin() const { return m_Origin; }
+        const HVector3& GetDirection() const { return m_Direction; }
+        
+        HVector3 GetPoint(HReal t) const { return m_Origin + m_Direction * t; }
+        
+    private:
+        HVector3 m_Origin;
+        HVector3 m_Direction;
+    };
+}
+
 struct PhysicsEngineOptions
 {
 	uint32_t m_NumThreads = DEFAULT_CPU_DISPATCHER_NUM_THREADS;
 	bool m_bEnablePVD = true;
 	uint32_t m_SolverIterationCount = DEFAULT_SOLVER_ITERATION_COUNT;
+    bool m_EnableCCD = false;               
+    bool m_EnableDebugVisualization = false;
 };
 
 enum class PhysicsSceneFilterShaderType
@@ -64,6 +85,8 @@ struct PhysicsSceneCreateOptions
 {
 	MathLib::HVector3 m_Gravity;
 	PhysicsSceneFilterShaderType m_FilterShaderType;
+    uint32_t m_MaxSubSteps = 3;                      
+    MathLib::HReal m_FixedTimeStep = 1.0f / 60.0f;   
 };
 
 struct PhysicsMaterialCreateOptions
@@ -132,6 +155,15 @@ struct PhysicsObjectCreateOptions
 	PhysicsObjectType m_ObjectType;
 	MathLib::HTransform3 m_Transform;
 	PhysicsMaterialCreateOptions m_MaterialOptions;
+    uint32_t m_CollisionLayer = 1;      
+    uint32_t m_CollisionMask = 0xFFFFFFFF; 
+    bool m_EnableCCD = false;           
+    MathLib::HReal m_LinearDamping = 0.1f;  
+    MathLib::HReal m_AngularDamping = 0.1f; 
+    MathLib::HReal m_Mass = 1.0f;           
+    bool m_IsKinematic = false;        
+    bool m_EnableGravity = true;       
+    void* m_UserData = nullptr;        
 };
 
 typedef MathLib::GraphicUtils::MeshData32 PhysicsMeshData;
@@ -142,4 +174,51 @@ struct ConvexDecomposeOptions
 	uint32_t m_MaximumNumberOfVerticesPerHull = 64; // (default=64, range=4-1024)
 	uint32_t m_VoxelGridResolution = 1000000;		//(default=1,000,000, range=10,000-16,000,000).
 	MathLib::HReal m_Concavity = 0.0025f;			// Value between 0 and 1
+};
+
+enum class QueryFilterFlag
+{
+    STATIC = (1 << 0),      
+    DYNAMIC = (1 << 1),     
+    KINEMATIC = (1 << 2),   
+    DEBRIS = (1 << 3),      
+    TRIGGER = (1 << 4),     
+    CHARACTER = (1 << 5),   
+    ALL = 0xFFFFFFFF        
+};
+
+struct RaycastOptions
+{
+    uint32_t m_FilterMask = static_cast<uint32_t>(QueryFilterFlag::ALL); 
+    bool m_HitBackFaces = false;                      
+    bool m_HitTriggers = false;                       
+    MathLib::HReal m_MaxDistance = FLT_MAX;           
+};
+
+struct JointLimitOptions
+{
+    struct LinearLimit
+    {
+        MathLib::HReal m_LowerLimit = 0;              
+        MathLib::HReal m_UpperLimit = 0;              
+        MathLib::HReal m_Stiffness = 0;               
+        MathLib::HReal m_Damping = 0;                 
+        bool m_IsLimited = false;                     
+    };
+    
+    struct AngularLimit
+    {
+        MathLib::HReal m_LowerLimit = 0;              
+        MathLib::HReal m_UpperLimit = 0;              
+        MathLib::HReal m_Stiffness = 0;               
+        MathLib::HReal m_Damping = 0;                 
+        bool m_IsLimited = false;                     
+    };
+    
+    LinearLimit m_XAxis;                             
+    LinearLimit m_YAxis;                             
+    LinearLimit m_ZAxis;                             
+    AngularLimit m_Twist;                            
+    AngularLimit m_Swing1;                           
+    AngularLimit m_Swing2;                           
 };

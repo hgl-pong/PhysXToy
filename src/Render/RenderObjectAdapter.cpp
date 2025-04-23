@@ -89,13 +89,21 @@ void RenderObjectAdapter::CreateRenderGeometry(const PhysicsPtr<IColliderGeometr
         float b = static_cast<float>(rand()) / RAND_MAX;
         float ambientColor[4] = { r * 0.5f, g * 0.5f, b * 0.5f, 1.0f };
         float diffuseColor[4] = { r, g, b, 1.0f };
+        float specularParams[4] = { 0.7f, 64.0f, 0.4f, 0.8f };
+        float lightParams[4] = { 1.0f, 0.09f, 0.032f, 0.15f };
         renderUnit->SetAmbientColor(ambientColor);
         renderUnit->SetDiffuseColor(diffuseColor);
+        renderUnit->SetSpecularParams(specularParams);
+        renderUnit->SetLightParams(lightParams);
     } else {
         float ambientColor[4] = { 0.3f, 0.1f, 0.1f, 1.0f };
         float diffuseColor[4] = { 0.8f, 0.2f, 0.2f, 1.0f };
+        float specularParams[4] = { 0.3f, 16.0f, 0.2f, 0.7f };
+        float lightParams[4] = { 1.0f, 0.09f, 0.032f, 0.1f };
         renderUnit->SetAmbientColor(ambientColor);
         renderUnit->SetDiffuseColor(diffuseColor);
+        renderUnit->SetSpecularParams(specularParams);
+        renderUnit->SetLightParams(lightParams);
     }
     
     m_renderUnits.push_back(renderUnit);

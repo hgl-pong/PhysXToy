@@ -21,9 +21,57 @@ public:
 		const auto halfExtents = MathLib::HadamardProduct<3>(m_HalfExtents, scale);
 		m_BoundingBox = MathLib::HAABBox3D(-halfExtents, halfExtents);
 	}
+	void SetMaterial(PhysicsPtr<IPhysicsMaterial>& material) override { m_Material = material; }
+	PhysicsPtr<IPhysicsMaterial> GetMaterial() const override { return m_Material; }
+	bool RaycastTest(const MathLib::HRay3D& ray, const MathLib::HTransform3& worldTransform, MathLib::HReal& distance, MathLib::HVector3& normal) override
+	{
+		MathLib::HAABBox3D worldBox = GetBoundingBox();
+		worldBox.transform(worldTransform);
+		
+		MathLib::HVector3 invDir(
+			ray.GetDirection()[0] != 0 ? 1.0f / ray.GetDirection()[0] : 0,
+			ray.GetDirection()[1] != 0 ? 1.0f / ray.GetDirection()[1] : 0,
+			ray.GetDirection()[2] != 0 ? 1.0f / ray.GetDirection()[2] : 0
+		);
+		
+		MathLib::HVector3 t0 = MathLib::HadamardProduct<3>((worldBox.min() - ray.GetOrigin()), invDir);
+		MathLib::HVector3 t1 = MathLib::HadamardProduct<3>((worldBox.max() - ray.GetOrigin()), invDir);
+		
+		MathLib::HVector3 tmin = MathLib::Min(t0, t1);
+		MathLib::HVector3 tmax = MathLib::Max(t0, t1);
+		
+		MathLib::HReal distMin = MathLib::Max(tmin[0], MathLib::Max(tmin[1], tmin[2]));
+		MathLib::HReal distMax = MathLib::Min(tmax[0], MathLib::Min(tmax[1], tmax[2]));
+		
+		if (distMax < 0 || distMin > distMax)
+			return false;
+			
+		distance = distMin >= 0 ? distMin : distMax;
+		
+		MathLib::HVector3 hitPoint = ray.GetOrigin() + ray.GetDirection() * distance;
+		MathLib::HVector3 center = worldTransform.translation();
+		MathLib::HVector3 dir = (hitPoint - center).normalized();
+		
+		MathLib::HVector3 localDir = worldTransform.rotation().transpose() * dir;
+		MathLib::HVector3 absDir = MathLib::HVector3(
+			MathLib::Abs(localDir[0]), 
+			MathLib::Abs(localDir[1]), 
+			MathLib::Abs(localDir[2])
+		);
+
+		if (absDir[0] > absDir[1] && absDir[0] > absDir[2])
+			normal = worldTransform.rotation() * MathLib::HVector3(localDir[0] > 0 ? 1 : -1, 0, 0);
+		else if (absDir[1] > absDir[0] && absDir[1] > absDir[2])
+			normal = worldTransform.rotation() * MathLib::HVector3(0, localDir[1] > 0 ? 1 : -1, 0);
+		else
+			normal = worldTransform.rotation() * MathLib::HVector3(0, 0, localDir[2] > 0 ? 1 : -1);
+		
+		return true;
+	}
+	
 	MathLib::HVector3 GetHalfSize() const { return m_HalfExtents; }
 	MathLib::HVector3 GetScale() const { return m_Scale; }
-	void GetParams(CollisionGeometryCreateOptions &options)
+	void GetParams(CollisionGeometryCreateOptions &options) override
 	{
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX;
 		options.m_BoxParams.m_HalfExtents = m_HalfExtents;
@@ -35,6 +83,7 @@ private:
 	MathLib::HVector3 m_HalfExtents;
 	MathLib::HVector3 m_Scale;
 	MathLib::HAABBox3D m_BoundingBox;
+	PhysicsPtr<IPhysicsMaterial> m_Material;
 };
 
 class SphereColliderGeometry : public IColliderGeometry
@@ -53,9 +102,40 @@ public:
 		const auto halfExtents = m_Scale * m_Radius;
 		m_BoundingBox = MathLib::HAABBox3D(-halfExtents, halfExtents);
 	}
+	void SetMaterial(PhysicsPtr<IPhysicsMaterial>& material) override { m_Material = material; }
+	PhysicsPtr<IPhysicsMaterial> GetMaterial() const override { return m_Material; }
+	bool RaycastTest(const MathLib::HRay3D& ray, const MathLib::HTransform3& worldTransform, MathLib::HReal& distance, MathLib::HVector3& normal) override
+	{
+		MathLib::HVector3 center = worldTransform.translation();
+		MathLib::HReal scaledRadius = m_Radius * (m_Scale[0] + m_Scale[1] + m_Scale[2]) / 3.0f;
+		
+		MathLib::HVector3 oc = ray.GetOrigin() - center;
+		MathLib::HReal a = ray.GetDirection().norm();
+		MathLib::HReal b = 2.0f * oc.dot(ray.GetDirection());
+		MathLib::HReal c = oc.norm() - scaledRadius * scaledRadius;
+		MathLib::HReal discriminant = b * b - 4 * a * c;
+		
+		if (discriminant < 0)
+			return false;
+			
+		MathLib::HReal t = (-b - sqrt(discriminant)) / (2.0f * a);
+		if (t < 0) {
+			t = (-b + sqrt(discriminant)) / (2.0f * a);
+			if (t < 0)
+				return false;
+		}
+		
+		distance = t;
+		
+		MathLib::HVector3 hitPoint = ray.GetOrigin() + ray.GetDirection() * distance;
+		normal = (hitPoint - center).normalized();
+		
+		return true;
+	}
+	
 	MathLib::HReal GetRadius() const { return m_Radius; }
 	MathLib::HVector3 GetScale() const { return m_Scale; }
-	void GetParams(CollisionGeometryCreateOptions &options)
+	void GetParams(CollisionGeometryCreateOptions &options) override
 	{
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
 		options.m_SphereParams.m_Radius = m_Radius;
@@ -67,6 +147,7 @@ private:
 	MathLib::HReal m_Radius;
 	MathLib::HVector3 m_Scale;
 	MathLib::HAABBox3D m_BoundingBox;
+	PhysicsPtr<IPhysicsMaterial> m_Material;
 };
 
 class PlaneColliderGeometry : public IColliderGeometry
@@ -81,10 +162,33 @@ public:
 	{
 		m_Scale = scale;
 	}
+	void SetMaterial(PhysicsPtr<IPhysicsMaterial>& material) override { m_Material = material; }
+	PhysicsPtr<IPhysicsMaterial> GetMaterial() const override { return m_Material; }
+	bool RaycastTest(const MathLib::HRay3D& ray, const MathLib::HTransform3& worldTransform, MathLib::HReal& distance, MathLib::HVector3& normal) override
+	{
+		MathLib::HVector3 worldNormal = worldTransform.rotation() * m_Normal;
+		worldNormal.normalize();
+		
+		MathLib::HReal denom = worldNormal.dot(ray.GetDirection());
+		if (MathLib::Abs(denom) < 1e-6) 
+			return false; 
+			
+		MathLib::HVector3 planePos = worldTransform.translation() + worldNormal * m_Distance;
+		MathLib::HReal t = (planePos - ray.GetOrigin()).dot(worldNormal) / denom;
+		
+		if (t < 0)
+			return false; 
+			
+		distance = t;
+		normal = denom < 0 ? worldNormal : -worldNormal;
+		
+		return true;
+	}
+	
 	MathLib::HVector3 GetNormal() const { return m_Normal; }
 	MathLib::HReal GetDistance() const { return m_Distance; }
 	MathLib::HVector3 GetScale() const { return m_Scale; }
-	void GetParams(CollisionGeometryCreateOptions &options)
+	void GetParams(CollisionGeometryCreateOptions &options) override
 	{
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE;
 		options.m_PlaneParams.m_Normal = m_Normal;
@@ -97,6 +201,7 @@ private:
 	MathLib::HVector3 m_Normal;
 	MathLib::HReal m_Distance;
 	MathLib::HVector3 m_Scale;
+	PhysicsPtr<IPhysicsMaterial> m_Material;
 };
 
 class CapsuleColliderGeometry : public IColliderGeometry
@@ -114,10 +219,43 @@ public:
 		const auto halfExtents = MathLib::HadamardProduct<3>(MathLib::HVector3(m_HalfHeight + m_Radius,m_Radius, m_Radius), scale);
 		m_BoundingBox = MathLib::HAABBox3D(-halfExtents, halfExtents);
 	}
+	void SetMaterial(PhysicsPtr<IPhysicsMaterial>& material) override { m_Material = material; }
+	PhysicsPtr<IPhysicsMaterial> GetMaterial() const override { return m_Material; }
+	bool RaycastTest(const MathLib::HRay3D& ray, const MathLib::HTransform3& worldTransform, MathLib::HReal& distance, MathLib::HVector3& normal) override
+	{
+		MathLib::HAABBox3D worldBox = GetBoundingBox();
+		worldBox.transform(worldTransform);
+		
+		MathLib::HVector3 invDir(
+			ray.GetDirection()[0] != 0 ? 1.0f / ray.GetDirection()[0] : 0,
+			ray.GetDirection()[1] != 0 ? 1.0f / ray.GetDirection()[1] : 0,
+			ray.GetDirection()[2] != 0 ? 1.0f / ray.GetDirection()[2] : 0
+		);
+		
+		MathLib::HVector3 t0 = MathLib::HadamardProduct<3>((worldBox.min() - ray.GetOrigin()), invDir);
+		MathLib::HVector3 t1 = MathLib::HadamardProduct<3>((worldBox.max() - ray.GetOrigin()), invDir);
+		
+		MathLib::HVector3 tmin = MathLib::Min(t0, t1);
+		MathLib::HVector3 tmax = MathLib::Max(t0, t1);
+		
+		MathLib::HReal distMin = MathLib::Max(tmin[0], MathLib::Max(tmin[1], tmin[2]));
+		MathLib::HReal distMax = MathLib::Min(tmax[0], MathLib::Min(tmax[1], tmax[2]));
+		
+		if (distMax < 0 || distMin > distMax)
+			return false;
+		
+		distance = distMin >= 0 ? distMin : distMax;
+		
+		MathLib::HVector3 hitPoint = ray.GetOrigin() + ray.GetDirection() * distance;
+		normal = (hitPoint - worldTransform.translation()).normalized();
+		
+		return true;
+	}
+	
 	MathLib::HReal GetRadius() const { return m_Radius; }
 	MathLib::HReal GetHalfHeight() const { return m_HalfHeight; }
 	MathLib::HVector3 GetScale() const { return m_Scale; }
-	void GetParams(CollisionGeometryCreateOptions &options)
+	void GetParams(CollisionGeometryCreateOptions &options) override
 	{
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CAPSULE;
 		options.m_CapsuleParams.m_Radius = m_Radius;
@@ -131,6 +269,7 @@ private:
 	MathLib::HReal m_HalfHeight;
 	MathLib::HVector3 m_Scale;
 	MathLib::HAABBox3D m_BoundingBox;
+	PhysicsPtr<IPhysicsMaterial> m_Material;
 };
 
 class TriangleMeshColliderGeometry : public IColliderGeometry
@@ -150,10 +289,41 @@ public:
 		for (const auto &v : m_Vertices)
 			m_BoundingBox.extend(MathLib::HadamardProduct<3>(v, scale));
 	}
+	void SetMaterial(PhysicsPtr<IPhysicsMaterial>& material) override { m_Material = material; }
+	PhysicsPtr<IPhysicsMaterial> GetMaterial() const override { return m_Material; }
+	bool RaycastTest(const MathLib::HRay3D& ray, const MathLib::HTransform3& worldTransform, MathLib::HReal& distance, MathLib::HVector3& normal) override
+	{
+		MathLib::HAABBox3D worldBox = GetBoundingBox();
+		worldBox.transform(worldTransform);
+		
+		MathLib::HVector3 invDir(
+			ray.GetDirection()[0] != 0 ? 1.0f / ray.GetDirection()[0] : 0,
+			ray.GetDirection()[1] != 0 ? 1.0f / ray.GetDirection()[1] : 0,
+			ray.GetDirection()[2] != 0 ? 1.0f / ray.GetDirection()[2] : 0
+		);
+		
+		MathLib::HVector3 t0 = MathLib::HadamardProduct<3>((worldBox.min() - ray.GetOrigin()), invDir);
+		MathLib::HVector3 t1 = MathLib::HadamardProduct<3>((worldBox.max() - ray.GetOrigin()), invDir);
+		
+		MathLib::HVector3 tmin = MathLib::Min(t0, t1);
+		MathLib::HVector3 tmax = MathLib::Max(t0, t1);
+		
+		MathLib::HReal distMin = MathLib::Max(tmin[0], MathLib::Max(tmin[1], tmin[2]));
+		MathLib::HReal distMax = MathLib::Min(tmax[0], MathLib::Min(tmax[1], tmax[2]));
+		
+		if (distMax < 0 || distMin > distMax)
+			return false;
+			
+		distance = distMin >= 0 ? distMin : distMax;
+		normal = MathLib::HVector3(0, 1, 0); 
+		
+		return true;
+	}
+	
 	const std::vector<MathLib::HVector3> &GetVertices() const { return m_Vertices; }
 	const std::vector<uint32_t> &GetIndices() const { return m_Indices; }
 	MathLib::HVector3 GetScale() const { return m_Scale; }
-	void GetParams(CollisionGeometryCreateOptions &options)
+	void GetParams(CollisionGeometryCreateOptions &options) override
 	{
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH;
 		options.m_TriangleMeshParams.m_Vertices = m_Vertices;
@@ -167,6 +337,7 @@ private:
 	std::vector<uint32_t> m_Indices;
 	MathLib::HVector3 m_Scale;
 	MathLib::HAABBox3D m_BoundingBox;
+	PhysicsPtr<IPhysicsMaterial> m_Material;
 };
 
 class ConvexMeshColliderGeometry : public IColliderGeometry
@@ -186,24 +357,55 @@ public:
 		for (const auto &v : m_Vertices)
 			m_BoundingBox.extend(MathLib::HadamardProduct<3>(v, scale));
 	}
+	void SetMaterial(PhysicsPtr<IPhysicsMaterial>& material) override { m_Material = material; }
+	PhysicsPtr<IPhysicsMaterial> GetMaterial() const override { return m_Material; }
+	bool RaycastTest(const MathLib::HRay3D& ray, const MathLib::HTransform3& worldTransform, MathLib::HReal& distance, MathLib::HVector3& normal) override
+	{
+		MathLib::HAABBox3D worldBox = GetBoundingBox();
+		worldBox.transform(worldTransform);
+		
+		MathLib::HVector3 invDir(
+			ray.GetDirection()[0] != 0 ? 1.0f / ray.GetDirection()[0] : 0,
+			ray.GetDirection()[1] != 0 ? 1.0f / ray.GetDirection()[1] : 0,
+			ray.GetDirection()[2] != 0 ? 1.0f / ray.GetDirection()[2] : 0
+		);
+		
+		MathLib::HVector3 t0 = MathLib::HadamardProduct<3>((worldBox.min() - ray.GetOrigin()), invDir);
+		MathLib::HVector3 t1 = MathLib::HadamardProduct<3>((worldBox.max() - ray.GetOrigin()), invDir);
+		
+		MathLib::HVector3 tmin = MathLib::Min(t0, t1);
+		MathLib::HVector3 tmax = MathLib::Max(t0, t1);
+		
+		MathLib::HReal distMin = MathLib::Max(tmin[0], MathLib::Max(tmin[1], tmin[2]));
+		MathLib::HReal distMax = MathLib::Min(tmax[0], MathLib::Min(tmax[1], tmax[2]));
+		
+		if (distMax < 0 || distMin > distMax)
+			return false;
+			
+		distance = distMin >= 0 ? distMin : distMax;
+		
+		MathLib::HVector3 hitPoint = ray.GetOrigin() + ray.GetDirection() * distance;
+		normal = (hitPoint - worldTransform.translation()).normalized();
+		
+		return true;
+	}
+	
 	const std::vector<MathLib::HVector3> &GetVertices() const { return m_Vertices; }
 	const std::vector<uint32_t> &GetIndices() const { return m_Indices; }
 	MathLib::HVector3 GetScale() const { return m_Scale; }
-	void GetParams(CollisionGeometryCreateOptions &options)
+	void GetParams(CollisionGeometryCreateOptions &options) override
 	{
 		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH;
 		options.m_ConvexMeshParams.m_Vertices = m_Vertices;
 		options.m_ConvexMeshParams.m_Indices = m_Indices;
 		options.m_Scale = m_Scale;
 	}
-	MathLib::HAABBox3D GetBoundingBox() const override
-	{
-		return m_BoundingBox;
-	}
+	MathLib::HAABBox3D GetBoundingBox() const override { return m_BoundingBox; }
 
 private:
 	std::vector<MathLib::HVector3> m_Vertices;
 	std::vector<uint32_t> m_Indices;
 	MathLib::HVector3 m_Scale;
 	MathLib::HAABBox3D m_BoundingBox;
+	PhysicsPtr<IPhysicsMaterial> m_Material;
 };

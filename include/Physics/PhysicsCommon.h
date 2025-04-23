@@ -3,12 +3,15 @@
 #include <memory>
 #include <unordered_set>
 #include <unordered_map>
+#include <functional>
 
 class IPhysicsEngine;
 class IPhysicsScene;
 class IColliderGeometry;
 class IPhysicsObject;
 class IPhysicsMaterial;
+class IPhysicsJoint;
+class IPhysicsDebugRenderer;
 
 enum class ForceMode
 {
@@ -18,6 +21,53 @@ enum class ForceMode
 	ACCELERATION    
 };
 
+struct CollisionEventData
+{
+	PhysicsPtr<IPhysicsObject> objectA;
+	PhysicsPtr<IPhysicsObject> objectB;
+	MathLib::HVector3 contactPoint;
+	MathLib::HVector3 contactNormal;
+	MathLib::HReal penetrationDepth;
+};
+
+class ICollisionCallback
+{
+public:
+	virtual ~ICollisionCallback() = default;
+	virtual void OnCollisionEnter(const CollisionEventData& eventData) = 0;
+	virtual void OnCollisionStay(const CollisionEventData& eventData) = 0;
+	virtual void OnCollisionExit(const CollisionEventData& eventData) = 0;
+};
+
+enum class JointType
+{
+	FIXED,
+	DISTANCE,
+	SPHERICAL,
+	REVOLUTE,
+	PRISMATIC,
+	D6
+};
+
+struct RaycastHit
+{
+	PhysicsPtr<IPhysicsObject> object;
+	MathLib::HVector3 position;
+	MathLib::HVector3 normal;
+	MathLib::HReal distance;
+	PhysicsPtr<IColliderGeometry> collider;
+};
+
+struct JointCreateOptions
+{
+	JointType type;
+	PhysicsPtr<IPhysicsObject> objectA;
+	PhysicsPtr<IPhysicsObject> objectB;
+	MathLib::HTransform3 localFrameA;
+	MathLib::HTransform3 localFrameB;
+	bool collisionEnabled = false;
+};
+
 class IPhysicsEngine
 {
 public:
@@ -25,8 +75,13 @@ public:
 	virtual PhysicsPtr<IPhysicsMaterial> CreateMaterial(const PhysicsMaterialCreateOptions &options) = 0;
 	virtual PhysicsPtr<IPhysicsScene> CreateScene(const PhysicsSceneCreateOptions &options) = 0;
 	virtual PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions &options) = 0;
+	virtual PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options) = 0;
 	virtual void SetSolverIterationCount(uint32_t count) = 0;
 	virtual uint32_t GetSolverIterationCount() const = 0;
+	virtual void SetDebugRenderer(PhysicsPtr<IPhysicsDebugRenderer> renderer) = 0;
+	virtual PhysicsPtr<IPhysicsDebugRenderer> GetDebugRenderer() const = 0;
+	virtual void RegisterCollisionCallback(ICollisionCallback* callback) = 0;
+	virtual void UnregisterCollisionCallback(ICollisionCallback* callback) = 0;
 };
 
 class IPhysicsScene
@@ -36,9 +91,17 @@ public:
 	virtual void Tick(MathLib::HReal deltaTime) = 0;
 	virtual bool AddPhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject) = 0;
 	virtual void RemovePhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject) = 0;
+	virtual bool AddJoint(PhysicsPtr<IPhysicsJoint> &joint) = 0;
+	virtual void RemoveJoint(PhysicsPtr<IPhysicsJoint> &joint) = 0;
 	virtual uint32_t GetPhysicsObjectCount() const = 0;
 	virtual uint32_t GetPhysicsRigidDynamicCount() const = 0;
 	virtual uint32_t GetPhysicsRigidStaticCount() const = 0;
+	virtual uint32_t GetJointCount() const = 0;
+	virtual void RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, RaycastHit& hit) = 0;
+	virtual void RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, std::vector<RaycastHit>& hits) = 0;
+	virtual void SetGravity(const MathLib::HVector3& gravity) = 0;
+	virtual MathLib::HVector3 GetGravity() const = 0;
+	virtual void DebugDraw() = 0;
 	virtual size_t GetOffset() const = 0;
 };
 
@@ -50,6 +113,9 @@ public:
 	virtual void SetScale(const MathLib::HVector3 &scale) = 0;
 	virtual void GetParams(CollisionGeometryCreateOptions &options) = 0;
 	virtual MathLib::HAABBox3D GetBoundingBox()const = 0;
+	virtual void SetMaterial(PhysicsPtr<IPhysicsMaterial>& material) = 0;
+	virtual PhysicsPtr<IPhysicsMaterial> GetMaterial() const = 0;
+	virtual bool RaycastTest(const MathLib::HRay3D& ray, const MathLib::HTransform3& worldTransform, MathLib::HReal& distance, MathLib::HVector3& normal) = 0;
 };
 
 class IPhysicsObject
@@ -59,7 +125,7 @@ public:
 	virtual void Update() = 0;
 	virtual bool AddColliderGeometry(PhysicsPtr<IColliderGeometry> &colliderGeometry, const MathLib::HTransform3 &localTrans) = 0;
 	virtual bool RemoveColliderGeometry(PhysicsPtr<IColliderGeometry> &colliderGeometry) = 0;
-	virtual void GetColliderGeometries(std::vector<PhysicsPtr<IColliderGeometry>> &geomeries, std::vector<MathLib::HTransform3> *geoLocalPos) = 0;
+	virtual void GetColliderGeometries(std::vector<PhysicsPtr<IColliderGeometry>> &geomeries, std::vector<MathLib::HTransform3> *geoLocalPos = nullptr) = 0;
 	virtual PhysicsObjectType GetType() const = 0;
 	virtual size_t GetOffset() const = 0;
 	virtual void SetTransform(const MathLib::HTransform3 &trans) = 0;
@@ -67,6 +133,12 @@ public:
 	virtual bool IsValid() const = 0;
 	virtual MathLib::HAABBox3D GetLocalBoundingBox() const = 0;
 	virtual MathLib::HAABBox3D GetWorldBoundingBox() const = 0;
+	virtual void SetUserData(void* userData) = 0;
+	virtual void* GetUserData() const = 0;
+	virtual void SetCollisionLayer(uint32_t layer) = 0;
+	virtual uint32_t GetCollisionLayer() const = 0;
+	virtual void SetCollisionMask(uint32_t mask) = 0;
+	virtual uint32_t GetCollisionMask() const = 0;
 };
 
 class IDynamicObject
@@ -91,6 +163,12 @@ public:
 	virtual MathLib::HVector3 GetAngularVelocity() const = 0;
 	virtual MathLib::HMatrix3 GetInertiaTensor() const = 0;
 	virtual bool IsSleeping() const = 0;
+	virtual void SetCenterOfMass(const MathLib::HVector3& centerOfMass) = 0;
+	virtual MathLib::HVector3 GetCenterOfMass() const = 0;
+	virtual void SetGravityEnabled(bool enabled) = 0;
+	virtual bool IsGravityEnabled() const = 0;
+	virtual void SetSleepThreshold(const MathLib::HReal& threshold) = 0;
+	virtual MathLib::HReal GetSleepThreshold() const = 0;
 };
 
 class IPhysicsMaterial
@@ -108,6 +186,37 @@ public:
 	virtual size_t GetOffset() const = 0;
 };
 
+class IPhysicsJoint
+{
+public:
+	virtual void Release() = 0;
+	virtual JointType GetType() const = 0;
+	virtual void SetBreakForce(const MathLib::HReal& force) = 0;
+	virtual MathLib::HReal GetBreakForce() const = 0;
+	virtual void SetBreakTorque(const MathLib::HReal& torque) = 0;
+	virtual MathLib::HReal GetBreakTorque() const = 0;
+	virtual PhysicsPtr<IPhysicsObject> GetObjectA() const = 0;
+	virtual PhysicsPtr<IPhysicsObject> GetObjectB() const = 0;
+	virtual void SetLocalPose(bool isObjectA, const MathLib::HTransform3& pose) = 0;
+	virtual MathLib::HTransform3 GetLocalPose(bool isObjectA) const = 0;
+	virtual bool IsBroken() const = 0;
+	virtual size_t GetOffset() const = 0;
+};
+
+class IPhysicsDebugRenderer
+{
+public:
+	virtual void Release() = 0;
+	virtual void DrawLine(const MathLib::HVector3& start, const MathLib::HVector3& end, const MathLib::HVector3& color) = 0;
+	virtual void DrawSphere(const MathLib::HVector3& center, float radius, const MathLib::HVector3& color) = 0;
+	virtual void DrawBox(const MathLib::HVector3& center, const MathLib::HVector3& halfExtents, const MathLib::HVector3& color) = 0;
+	virtual void DrawCapsule(const MathLib::HVector3& center, float radius, float halfHeight, const MathLib::HVector3& color) = 0;
+	virtual void DrawTriangleMesh(const std::vector<MathLib::HVector3>& vertices, const std::vector<uint32_t>& indices, const MathLib::HVector3& color) = 0;
+	virtual void DrawConvexMesh(const std::vector<MathLib::HVector3>& vertices, const std::vector<uint32_t>& indices, const MathLib::HVector3& color) = 0;
+	virtual void DrawTransform(const MathLib::HTransform3& transform, float size) = 0;
+	virtual void Flush() = 0;
+};
+
 class PhysicsEngineUtils
 {
 public:
@@ -118,6 +227,24 @@ public:
 	static PhysicsPtr<IPhysicsMaterial> CreateMaterial(const PhysicsMaterialCreateOptions &options);
 	static PhysicsPtr<IPhysicsScene> CreateScene(const PhysicsSceneCreateOptions &options);
 	static PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions &options);
+	static PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options);
 	static void BuildConvexMesh(const std::vector<MathLib::HVector3> &vertices, const std::vector<uint32_t> &indices, PhysicsMeshData &meshdata);
 	static bool ConvexDecomposition(const PhysicsMeshData &meshData, const ConvexDecomposeOptions &params, std::vector<PhysicsMeshData> &convexMeshesData);
+	
+	static bool RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, RaycastHit& hit);
+	static bool RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, std::vector<RaycastHit>& hits);
+	static bool SweepTest(PhysicsPtr<IColliderGeometry> geometry, const MathLib::HTransform3& startTransform, 
+						 const MathLib::HVector3& direction, MathLib::HReal maxDistance, RaycastHit& hit);
+	static bool BoxOverlap(const MathLib::HVector3& center, const MathLib::HVector3& halfExtents, 
+						  std::vector<PhysicsPtr<IPhysicsObject>>& overlappingObjects);
+	static bool SphereOverlap(const MathLib::HVector3& center, MathLib::HReal radius, 
+							 std::vector<PhysicsPtr<IPhysicsObject>>& overlappingObjects);
+	
+	static void EnableDebugDrawing(bool enable);
+	static bool IsDebugDrawingEnabled();
+	static void SetDebugRenderer(PhysicsPtr<IPhysicsDebugRenderer> renderer);
+	static PhysicsPtr<IPhysicsDebugRenderer> GetDebugRenderer();
+	
+	static void SetCollisionFilterCallback(std::function<bool(uint32_t, uint32_t)> callback);
+	static bool DefaultCollisionFilter(uint32_t layerA, uint32_t layerB);
 };

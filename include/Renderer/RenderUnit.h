@@ -42,10 +42,13 @@ public:
     void ShowWireframe(bool show);
     
     void SetAmbientColor(const float* color);
-    
     void SetDiffuseColor(const float* color);
-    
     const float* GetAmbientColor() const;
+    
+    void SetSpecularParams(const float* params);
+    const float* GetSpecularParams() const;
+    void SetLightParams(const float* params);
+    const float* GetLightParams() const;
     
 private:
     struct Impl;

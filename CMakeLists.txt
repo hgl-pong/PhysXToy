@@ -33,6 +33,7 @@ find_package(OpenCL REQUIRED)
 find_package(tinyobjloader CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
+find_package(Jolt CONFIG REQUIRED)
 
 target_include_directories(${PHYSX_TOY} PUBLIC ./include
     PRIVATE
@@ -48,6 +49,7 @@ target_link_libraries(${PHYSX_TOY} PRIVATE
     tinyobjloader::tinyobjloader
     glfw
     imgui::imgui
+    Jolt::Jolt
 )
 
 add_custom_command(TARGET ${PHYSX_TOY} POST_BUILD

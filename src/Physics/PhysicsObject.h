@@ -30,6 +30,12 @@ public:
 	const MathLib::HTransform3 &GetTransform() const override { return m_Transform; };
 	MathLib::HAABBox3D GetLocalBoundingBox() const override { return m_BoundingBox; };
 	MathLib::HAABBox3D GetWorldBoundingBox() const override;
+	void SetUserData(void* userData) override { m_UserData = userData; }
+	void* GetUserData() const override { return m_UserData; }
+	void SetCollisionLayer(uint32_t layer) override { m_CollisionLayer = layer; }
+	uint32_t GetCollisionLayer() const override { return m_CollisionLayer; }
+	void SetCollisionMask(uint32_t mask) override { m_CollisionMask = mask; }
+	uint32_t GetCollisionMask() const override { return m_CollisionMask; }
 
 public:
 	void SetAngularDamping(const MathLib::HReal &damping)override;
@@ -51,6 +57,12 @@ public:
 	MathLib::HVector3 GetAngularVelocity() const override { return m_AngularVelocity; };
 	MathLib::HMatrix3 GetInertiaTensor() const override;
 	bool IsSleeping() const override;
+	void SetCenterOfMass(const MathLib::HVector3& centerOfMass) override { m_CenterOfMass = centerOfMass; }
+	MathLib::HVector3 GetCenterOfMass() const override { return m_CenterOfMass; }
+	void SetGravityEnabled(bool enabled) override { m_GravityEnabled = enabled; }
+	bool IsGravityEnabled() const override { return m_GravityEnabled; }
+	void SetSleepThreshold(const MathLib::HReal& threshold) override { m_SleepThreshold = threshold; }
+	MathLib::HReal GetSleepThreshold() const override { return m_SleepThreshold; }
 
 private:
 	PhysicsObjectType m_Type;
@@ -66,6 +78,12 @@ private:
 	MathLib::HVector3 m_AngularVelocity;
 	MathLib::HTransform3 m_Transform;
 	MathLib::HAABBox3D m_BoundingBox;
+	void* m_UserData = nullptr;
+	uint32_t m_CollisionLayer = 1;
+	uint32_t m_CollisionMask = 0xFFFFFFFF;
+	MathLib::HVector3 m_CenterOfMass = MathLib::HVector3(0, 0, 0);
+	bool m_GravityEnabled = true;
+	MathLib::HReal m_SleepThreshold = 0.05f;
 };
 
 class PhysicsRigidStatic : public IPhysicsObject
@@ -90,6 +108,12 @@ public:
 	size_t GetOffset() const override;
 	MathLib::HAABBox3D GetLocalBoundingBox() const override { return m_BoundingBox; };
 	MathLib::HAABBox3D GetWorldBoundingBox() const override;
+	void SetUserData(void* userData) override { m_UserData = userData; }
+	void* GetUserData() const override { return m_UserData; }
+	void SetCollisionLayer(uint32_t layer) override { m_CollisionLayer = layer; }
+	uint32_t GetCollisionLayer() const override { return m_CollisionLayer; }
+	void SetCollisionMask(uint32_t mask) override { m_CollisionMask = mask; }
+	uint32_t GetCollisionMask() const override { return m_CollisionMask; }
 
 private:
 	PhysicsObjectType m_Type;
@@ -99,4 +123,7 @@ private:
 	std::vector<MathLib::HTransform3> m_ColliderLocalPos;
 	MathLib::HTransform3 m_Transform;
 	MathLib::HAABBox3D m_BoundingBox;
+	void* m_UserData = nullptr;
+	uint32_t m_CollisionLayer = 1;
+	uint32_t m_CollisionMask = 0xFFFFFFFF;
 };

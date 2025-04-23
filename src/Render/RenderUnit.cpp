@@ -28,6 +28,8 @@ struct ModelViewProjectionConstantBuffer
     DirectX::XMFLOAT4 viewPos;
     DirectX::XMFLOAT4 ambientColor;
     DirectX::XMFLOAT4 diffuseColor;
+    DirectX::XMFLOAT4 specularParams;  // x: 强度, y: 光泽度, z: 边缘光强度, w: 边缘光阈值
+    DirectX::XMFLOAT4 lightParams;     // x: 常量衰减, y: 线性衰减, z: 二次衰减, w: 最小光照阈值
     int isWireframe;
     DirectX::XMFLOAT3 padding;
 };
@@ -42,6 +44,8 @@ cbuffer ModelViewProjectionConstantBuffer : register(b0)
     float4 ViewPos;
     float4 AmbientColor;
     float4 DiffuseColor;
+    float4 SpecularParams;
+    float4 LightParams;
     int IsWireframe;
     float3 padding;
 };
@@ -87,6 +91,8 @@ cbuffer ModelViewProjectionConstantBuffer : register(b0)
     float4 ViewPos;
     float4 AmbientColor;
     float4 DiffuseColor;
+    float4 SpecularParams;
+    float4 LightParams;
     int IsWireframe;
     float3 padding;
 };
@@ -115,9 +121,29 @@ float4 main(PS_INPUT input) : SV_TARGET
     
     float3 diffuse = diff * DiffuseColor.rgb;
     
-    float3 finalColor = ambient + diffuse;
-
-    finalColor = max(finalColor, float3(0.2, 0.2, 0.2));
+    float3 viewDir = normalize(ViewPos.xyz - input.FragPos);
+    float3 reflectDir = reflect(-lightDir, norm);
+    float specularStrength = SpecularParams.x;
+    float specularShininess = SpecularParams.y;
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), specularShininess);
+    float3 specular = specularStrength * spec * float3(1.0, 1.0, 1.0);
+    
+    float rimFactor = SpecularParams.z;
+    float rimThreshold = SpecularParams.w;
+    float rim = 1.0 - max(dot(viewDir, norm), 0.0);
+    rim = smoothstep(0.4, rimThreshold, rim);
+    float3 rimLight = rim * rimFactor * DiffuseColor.rgb;
+    
+    float distance = length(LightPos.xyz - input.FragPos);
+    float constantAtt = LightParams.x;
+    float linearAtt = LightParams.y;
+    float quadraticAtt = LightParams.z;
+    float minLightThreshold = LightParams.w;
+    float attenuation = 1.0 / (constantAtt + linearAtt * distance + quadraticAtt * distance * distance);
+    
+    float3 finalColor = ambient + (diffuse + specular + rimLight) * attenuation;
+    
+    finalColor = max(finalColor, float3(minLightThreshold, minLightThreshold, minLightThreshold));
     
     return float4(finalColor, 1.0);
 }
@@ -199,6 +225,8 @@ struct SimpleRenderUnit::Impl {
     MathLib::HVector3 scale{1, 1, 1};
     float ambientColor[4] = {0.5f, 0.5f, 0.5f, 1.0f};
     float diffuseColor[4] = {0.8f, 0.8f, 0.8f, 1.0f};
+    float specularParams[4] = {0.5f, 32.0f, 0.3f, 0.8f}; // 镜面反射强度，光泽度，边缘光强度，边缘光阈值
+    float lightParams[4] = {1.0f, 0.09f, 0.032f, 0.1f};  // 常量衰减，线性衰减，二次衰减，最小光照阈值
     bool visible = true;
     bool wireframe = false;
     int indicesCount = 0;
@@ -467,6 +495,8 @@ void SimpleRenderUnit::Render(MathLib::GraphicUtils::Camera& camera) {
         dataPtr->viewPos = DirectX::XMFLOAT4(camPos.x(), camPos.y(), camPos.z(), 1.0f);
         dataPtr->ambientColor = DirectX::XMFLOAT4(m_impl->ambientColor[0], m_impl->ambientColor[1], m_impl->ambientColor[2], m_impl->ambientColor[3]);
         dataPtr->diffuseColor = DirectX::XMFLOAT4(m_impl->diffuseColor[0], m_impl->diffuseColor[1], m_impl->diffuseColor[2], m_impl->diffuseColor[3]);
+        dataPtr->specularParams = DirectX::XMFLOAT4(m_impl->specularParams[0], m_impl->specularParams[1], m_impl->specularParams[2], m_impl->specularParams[3]);
+        dataPtr->lightParams = DirectX::XMFLOAT4(m_impl->lightParams[0], m_impl->lightParams[1], m_impl->lightParams[2], m_impl->lightParams[3]);
         dataPtr->isWireframe = m_impl->wireframe ? 1 : 0;
         
         g_d3dDeviceContext->Unmap(m_impl->constantBuffer.Get(), 0);
@@ -520,6 +550,26 @@ void SimpleRenderUnit::SetDiffuseColor(const float* color) {
 
 const float* SimpleRenderUnit::GetAmbientColor() const {
     return m_impl->ambientColor;
+}
+
+void SimpleRenderUnit::SetSpecularParams(const float* params) {
+    if (params) {
+        memcpy(m_impl->specularParams, params, 4 * sizeof(float));
+    }
+}
+
+const float* SimpleRenderUnit::GetSpecularParams() const {
+    return m_impl->specularParams;
+}
+
+void SimpleRenderUnit::SetLightParams(const float* params) {
+    if (params) {
+        memcpy(m_impl->lightParams, params, 4 * sizeof(float));
+    }
+}
+
+const float* SimpleRenderUnit::GetLightParams() const {
+    return m_impl->lightParams;
 }
 
 struct GizmoRenderUnit::Impl {

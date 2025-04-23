@@ -169,3 +169,43 @@ uint32_t PhysicsEngine::GetSolverIterationCount() const
 		return 0;
 	return m_Options.m_SolverIterationCount;
 }
+
+PhysicsPtr<IPhysicsJoint> PhysicsEngine::CreateJoint(const JointCreateOptions &options)
+{
+	if (!m_bInitialized || !m_Physics)
+		return nullptr;
+	
+	return nullptr;
+}
+
+void PhysicsEngine::SetDebugRenderer(PhysicsPtr<IPhysicsDebugRenderer> renderer)
+{
+	m_DebugRenderer = renderer;
+}
+
+PhysicsPtr<IPhysicsDebugRenderer> PhysicsEngine::GetDebugRenderer() const
+{
+	return m_DebugRenderer;
+}
+
+void PhysicsEngine::RegisterCollisionCallback(ICollisionCallback* callback)
+{
+	if (callback)
+		m_CollisionCallbacks.insert(callback);
+}
+
+void PhysicsEngine::UnregisterCollisionCallback(ICollisionCallback* callback)
+{
+	if (callback)
+		m_CollisionCallbacks.erase(callback);
+}
+
+PhysicsPtr<IPhysicsScene> PhysicsEngine::GetActiveScene() const
+{
+	return m_ActiveScene;
+}
+
+void PhysicsEngine::SetActiveScene(PhysicsPtr<IPhysicsScene> scene)
+{
+	m_ActiveScene = scene;
+}
