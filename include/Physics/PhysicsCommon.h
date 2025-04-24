@@ -9,6 +9,9 @@ class IPhysicsEngine;
 class IPhysicsScene;
 class IColliderGeometry;
 class IPhysicsObject;
+class IRigidBody;
+class IRigidStatic;
+class IRigidDynamic;
 class IPhysicsMaterial;
 class IPhysicsJoint;
 class IPhysicsDebugRenderer;
@@ -76,6 +79,7 @@ public:
 	virtual PhysicsPtr<IPhysicsScene> CreateScene(const PhysicsSceneCreateOptions &options) = 0;
 	virtual PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions &options) = 0;
 	virtual PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options) = 0;
+	
 	virtual void SetSolverIterationCount(uint32_t count) = 0;
 	virtual uint32_t GetSolverIterationCount() const = 0;
 	virtual void SetDebugRenderer(PhysicsPtr<IPhysicsDebugRenderer> renderer) = 0;
@@ -141,7 +145,42 @@ public:
 	virtual uint32_t GetCollisionMask() const = 0;
 };
 
-class IDynamicObject
+class IRigidBody : public IPhysicsObject
+{
+public:
+	virtual ~IRigidBody() = default;
+	
+	virtual PhysicsObjectType GetRigidBodyType() const = 0;
+	
+	virtual void SetMassProperties(const MathLib::HReal& mass, const MathLib::HVector3& centerOfMass, const MathLib::HMatrix3& inertiaTensor) = 0;
+	virtual MathLib::HReal GetMass() const = 0;
+	virtual MathLib::HVector3 GetCenterOfMass() const = 0;
+	virtual MathLib::HMatrix3 GetInertiaTensor() const = 0;
+	
+	virtual void SetGravityEnabled(bool enabled) = 0;
+	virtual bool IsGravityEnabled() const = 0;
+	
+	virtual void SetSleepThreshold(const MathLib::HReal& threshold) = 0;
+	virtual MathLib::HReal GetSleepThreshold() const = 0;
+	virtual bool IsSleeping() const = 0;
+	virtual void WakeUp() = 0;
+	virtual void PutToSleep() = 0;
+	
+	virtual void SetFriction(const MathLib::HReal& staticFriction, const MathLib::HReal& dynamicFriction) = 0;
+	virtual MathLib::HReal GetStaticFriction() const = 0;
+	virtual MathLib::HReal GetDynamicFriction() const = 0;
+	virtual void SetRestitution(const MathLib::HReal& restitution) = 0;
+	virtual MathLib::HReal GetRestitution() const = 0;
+	
+	virtual void SetLinearDamping(const MathLib::HReal& damping) = 0;
+	virtual MathLib::HReal GetLinearDamping() const = 0;
+	virtual void SetAngularDamping(const MathLib::HReal& damping) = 0;
+	virtual MathLib::HReal GetAngularDamping() const = 0;
+	
+	virtual void* GetNativeActor() const = 0;
+};
+
+class IRigidDynamic : public IRigidBody
 {
 public:
 	virtual void SetAngularDamping(const MathLib::HReal &damping) = 0;
@@ -169,6 +208,11 @@ public:
 	virtual bool IsGravityEnabled() const = 0;
 	virtual void SetSleepThreshold(const MathLib::HReal& threshold) = 0;
 	virtual MathLib::HReal GetSleepThreshold() const = 0;
+};
+
+class IRigidStatic : public IRigidBody
+{
+public:
 };
 
 class IPhysicsMaterial
@@ -228,6 +272,11 @@ public:
 	static PhysicsPtr<IPhysicsScene> CreateScene(const PhysicsSceneCreateOptions &options);
 	static PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions &options);
 	static PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options);
+	
+	// 刚体创建工具方法
+	static PhysicsPtr<IRigidStatic> CreateRigidStatic(const PhysicsObjectCreateOptions &options);
+	static PhysicsPtr<IRigidDynamic> CreateRigidDynamic(const PhysicsObjectCreateOptions &options);
+	
 	static void BuildConvexMesh(const std::vector<MathLib::HVector3> &vertices, const std::vector<uint32_t> &indices, PhysicsMeshData &meshdata);
 	static bool ConvexDecomposition(const PhysicsMeshData &meshData, const ConvexDecomposeOptions &params, std::vector<PhysicsMeshData> &convexMeshesData);
 	

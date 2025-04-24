@@ -41,7 +41,7 @@ namespace TestRigidBody
 		createOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
 		createOptions.m_Transform = t;
 		PhysicsPtr< IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(createOptions);
-		IDynamicObject* rigidDynamic = dynamic_cast<IDynamicObject*>(physicsObject.get());
+		IRigidDynamic* rigidDynamic = dynamic_cast<IRigidDynamic*>(physicsObject.get());
 		physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
 		rigidDynamic->SetAngularDamping(0.5);
 		rigidDynamic->SetLinearVelocity(velocity);

@@ -1,4 +1,4 @@
-#include "PhysicsObject.h"
+#include "PhysicsRigid.h"
 #include "PxPhysicsAPI.h"
 #include "PxRigidDynamic.h"
 #include "ColliderGeometry.h"
@@ -354,13 +354,16 @@ void PhysicsRigidDynamic::ClearForce(bool clearVelocity)
 MathLib::HMatrix3 PhysicsRigidDynamic::GetInertiaTensor() const
 {
 	if (m_RigidDynamic == nullptr)
-		return MathLib::HMatrix3::Zero();
+		return MathLib::HMatrix3::Identity();
 		
-	PxVec3 diagonalInertia = m_RigidDynamic->getMassSpaceInertiaTensor();
+	physx::PxVec3 moi = m_RigidDynamic->getMassSpaceInertiaTensor();
 	
-	physx::PxMat33 pxInertiaTensor = physx::PxMat33::createDiagonal(diagonalInertia);
+	MathLib::HMatrix3 inertiaTensor = MathLib::HMatrix3::Zero();
+	inertiaTensor(0, 0) = moi.x;
+	inertiaTensor(1, 1) = moi.y;
+	inertiaTensor(2, 2) = moi.z;
 	
-	return ConvertUtils::FromPx(pxInertiaTensor);
+	return inertiaTensor;
 }
 
 bool PhysicsRigidDynamic::IsSleeping() const
@@ -370,12 +373,141 @@ bool PhysicsRigidDynamic::IsSleeping() const
 	return m_RigidDynamic->isSleeping();
 }
 
+void PhysicsRigidDynamic::WakeUp()
+{
+	if (m_RigidDynamic == nullptr)
+		return;
+	m_RigidDynamic->wakeUp();
+}
+
+void PhysicsRigidDynamic::PutToSleep()
+{
+	if (m_RigidDynamic == nullptr)
+		return;
+	m_RigidDynamic->putToSleep();
+}
+
 MathLib::HAABBox3D PhysicsRigidDynamic::GetWorldBoundingBox() const
 {
 	if (m_RigidDynamic == nullptr)
 		return MathLib::HAABBox3D();
-	return ConvertUtils::FromPx(m_RigidDynamic->getWorldBounds());
+	MathLib::HAABBox3D box = m_BoundingBox;
+	box.transform(m_Transform);
+	return box;
 }
+
+void PhysicsRigidDynamic::SetMassProperties(const MathLib::HReal& mass, const MathLib::HVector3& centerOfMass, const MathLib::HMatrix3& inertiaTensor)
+{
+	if (m_RigidDynamic == nullptr)
+		return;
+	
+	physx::PxVec3 px_centerOfMass = ConvertUtils::ToPx(centerOfMass);
+	physx::PxVec3 px_inertiaTensor(inertiaTensor(0, 0), inertiaTensor(1, 1), inertiaTensor(2, 2));
+	
+	m_RigidDynamic->setCMassLocalPose(physx::PxTransform(px_centerOfMass));
+	m_RigidDynamic->setMass(mass);
+	m_RigidDynamic->setMassSpaceInertiaTensor(px_inertiaTensor);
+	
+	m_Mass = mass;
+	m_CenterOfMass = centerOfMass;
+}
+
+void PhysicsRigidDynamic::SetGravityEnabled(bool enabled)
+{
+	if (m_RigidDynamic == nullptr)
+		return;
+	
+	m_RigidDynamic->setActorFlag(physx::PxActorFlag::eDISABLE_GRAVITY, !enabled);
+	m_GravityEnabled = enabled;
+}
+
+void* PhysicsRigidDynamic::GetNativeActor() const 
+{
+	return m_RigidDynamic.get();
+}
+
+void PhysicsRigidDynamic::SetSleepThreshold(const MathLib::HReal& threshold)
+{
+	if (m_RigidDynamic == nullptr)
+		return;
+	
+	m_RigidDynamic->setSleepThreshold(threshold);
+	m_SleepThreshold = threshold;
+}
+
+void PhysicsRigidDynamic::SetFriction(const MathLib::HReal& staticFriction, const MathLib::HReal& dynamicFriction)
+{
+	if (m_RigidDynamic == nullptr || m_Material == nullptr)
+		return;
+	
+	m_Material->SetStaticFriction(staticFriction);
+	m_Material->SetDynamicFriction(dynamicFriction);
+	PxU32 numShapes = m_RigidDynamic->getNbShapes();
+	std::vector<PxShape*> shapes(numShapes);
+	m_RigidDynamic->getShapes(shapes.data(), numShapes);
+	
+	for (PxU32 i = 0; i < numShapes; i++)
+	{
+		PxMaterial* material = static_cast<PxMaterial*>(shapes[i]->getMaterialFromInternalFaceIndex(0));
+		if (material)
+		{
+			material->setStaticFriction(staticFriction);
+			material->setDynamicFriction(dynamicFriction);
+		}
+	}
+}
+
+MathLib::HReal PhysicsRigidDynamic::GetStaticFriction() const
+{
+	if (m_Material == nullptr)
+		return 0.0f;
+	
+	return m_Material->GetStaticFriction();
+}
+
+MathLib::HReal PhysicsRigidDynamic::GetDynamicFriction() const
+{
+	if (m_Material == nullptr)
+		return 0.0f;
+	
+	return m_Material->GetDynamicFriction();
+}
+
+void PhysicsRigidDynamic::SetRestitution(const MathLib::HReal& restitution)
+{
+	if (m_RigidDynamic == nullptr || m_Material == nullptr)
+		return;
+	
+	m_Material->SetRestitution(restitution);
+	
+	PxU32 numShapes = m_RigidDynamic->getNbShapes();
+	std::vector<PxShape*> shapes(numShapes);
+	m_RigidDynamic->getShapes(shapes.data(), numShapes);
+	
+	for (PxU32 i = 0; i < numShapes; i++)
+	{
+		PxMaterial* material = static_cast<PxMaterial*>(shapes[i]->getMaterialFromInternalFaceIndex(0));
+		if (material)
+		{
+			material->setRestitution(restitution);
+		}
+	}
+}
+
+MathLib::HReal PhysicsRigidDynamic::GetRestitution() const
+{
+	if (m_Material == nullptr)
+		return 0.0f;
+	
+	return m_Material->GetRestitution();
+}
+
+
+PhysicsObjectType PhysicsRigidDynamic::GetRigidBodyType() const
+{
+	return PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
+}
+
 
 /////////////////RigidStatic////////////////////////
 PhysicsRigidStatic::PhysicsRigidStatic(PhysicsPtr<IPhysicsMaterial> &material)
@@ -463,5 +595,126 @@ MathLib::HAABBox3D PhysicsRigidStatic::GetWorldBoundingBox() const
 {
 	if (m_RigidStatic == nullptr)
 		return MathLib::HAABBox3D();
-	return ConvertUtils::FromPx(m_RigidStatic->getWorldBounds());
+	MathLib::HAABBox3D box = m_BoundingBox;
+	box.transform(m_Transform);
+	return box;
+}
+
+void PhysicsRigidStatic::SetMassProperties(const MathLib::HReal& mass, const MathLib::HVector3& centerOfMass, const MathLib::HMatrix3& inertiaTensor)
+{
+}
+
+MathLib::HReal PhysicsRigidStatic::GetMass() const
+{
+	return 0.0f;
+}
+
+MathLib::HVector3 PhysicsRigidStatic::GetCenterOfMass() const
+{
+	return MathLib::HVector3::Zero();
+}
+
+MathLib::HMatrix3 PhysicsRigidStatic::GetInertiaTensor() const
+{
+	return MathLib::HMatrix3::Identity();
+}
+
+void PhysicsRigidStatic::SetGravityEnabled(bool enabled)
+{
+}
+
+bool PhysicsRigidStatic::IsGravityEnabled() const
+{
+	return false;
+}
+
+void PhysicsRigidStatic::SetSleepThreshold(const MathLib::HReal& threshold)
+{
+}
+
+MathLib::HReal PhysicsRigidStatic::GetSleepThreshold() const
+{
+	return 0.0f;
+}
+
+bool PhysicsRigidStatic::IsSleeping() const
+{
+	return true;
+}
+
+void PhysicsRigidStatic::WakeUp()
+{
+}
+
+void PhysicsRigidStatic::PutToSleep()
+{
+}
+
+void PhysicsRigidStatic::SetFriction(const MathLib::HReal& staticFriction, const MathLib::HReal& dynamicFriction)
+{
+	if (m_Material == nullptr)
+		return;
+	
+	m_Material->SetStaticFriction(staticFriction);
+	m_Material->SetDynamicFriction(dynamicFriction);
+}
+
+MathLib::HReal PhysicsRigidStatic::GetStaticFriction() const
+{
+	if (m_Material == nullptr)
+		return 0.0f;
+	
+	return m_Material->GetStaticFriction();
+}
+
+MathLib::HReal PhysicsRigidStatic::GetDynamicFriction() const
+{
+	if (m_Material == nullptr)
+		return 0.0f;
+	
+	return m_Material->GetDynamicFriction();
+}
+
+void PhysicsRigidStatic::SetRestitution(const MathLib::HReal& restitution)
+{
+	if (m_Material == nullptr)
+		return;
+	
+	m_Material->SetRestitution(restitution);
+}
+
+MathLib::HReal PhysicsRigidStatic::GetRestitution() const
+{
+	if (m_Material == nullptr)
+		return 0.0f;
+	
+	return m_Material->GetRestitution();
+}
+
+void PhysicsRigidStatic::SetLinearDamping(const MathLib::HReal& damping)
+{
+}
+
+MathLib::HReal PhysicsRigidStatic::GetLinearDamping() const
+{
+	return 0.0f;
+}
+
+void PhysicsRigidStatic::SetAngularDamping(const MathLib::HReal& damping)
+{
+}
+
+MathLib::HReal PhysicsRigidStatic::GetAngularDamping() const
+{
+	return 0.0f;
+}
+
+void* PhysicsRigidStatic::GetNativeActor() const
+{
+	return m_RigidStatic.get();
+}
+
+PhysicsObjectType PhysicsRigidStatic::GetRigidBodyType() const
+{
+	return PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
 }

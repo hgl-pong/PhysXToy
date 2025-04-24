@@ -28,8 +28,8 @@ struct ModelViewProjectionConstantBuffer
     DirectX::XMFLOAT4 viewPos;
     DirectX::XMFLOAT4 ambientColor;
     DirectX::XMFLOAT4 diffuseColor;
-    DirectX::XMFLOAT4 specularParams;  // x: 强度, y: 光泽度, z: 边缘光强度, w: 边缘光阈值
-    DirectX::XMFLOAT4 lightParams;     // x: 常量衰减, y: 线性衰减, z: 二次衰减, w: 最小光照阈值
+    DirectX::XMFLOAT4 specularParams; 
+    DirectX::XMFLOAT4 lightParams;    
     int isWireframe;
     DirectX::XMFLOAT3 padding;
 };
@@ -225,8 +225,8 @@ struct SimpleRenderUnit::Impl {
     MathLib::HVector3 scale{1, 1, 1};
     float ambientColor[4] = {0.5f, 0.5f, 0.5f, 1.0f};
     float diffuseColor[4] = {0.8f, 0.8f, 0.8f, 1.0f};
-    float specularParams[4] = {0.5f, 32.0f, 0.3f, 0.8f}; // 镜面反射强度，光泽度，边缘光强度，边缘光阈值
-    float lightParams[4] = {1.0f, 0.09f, 0.032f, 0.1f};  // 常量衰减，线性衰减，二次衰减，最小光照阈值
+    float specularParams[4] = {0.5f, 32.0f, 0.3f, 0.8f}; 
+    float lightParams[4] = {1.0f, 0.09f, 0.032f, 0.1f};  
     bool visible = true;
     bool wireframe = false;
     int indicesCount = 0;

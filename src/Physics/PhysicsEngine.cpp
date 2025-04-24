@@ -2,10 +2,11 @@
 #include "PxPhysicsAPI.h"
 #include "physx/cooking/PxCooking.h"
 #include "PhysicsScene.h"
-#include "PhysicsObject.h"
+#include "PhysicsRigid.h"
 #include "PhysicsMaterial.h"
 #include "ColliderGeometry.h"
 #include "Utility/PhysxUtils.h"
+#include "PhysicsJoint.h"
 #include <assert.h>
 
 #ifndef NDEBUG
@@ -175,7 +176,19 @@ PhysicsPtr<IPhysicsJoint> PhysicsEngine::CreateJoint(const JointCreateOptions &o
 	if (!m_bInitialized || !m_Physics)
 		return nullptr;
 	
-	return nullptr;
+	if (!options.objectA || !options.objectB)
+		return nullptr;
+
+	PhysicsPtr<IPhysicsJoint> joint = std::make_shared<PhysicsJoint>(
+		options.type,
+		options.objectA,
+		options.objectB,
+		options.localFrameA,
+		options.localFrameB,
+		options.collisionEnabled
+	);
+
+	return joint;
 }
 
 void PhysicsEngine::SetDebugRenderer(PhysicsPtr<IPhysicsDebugRenderer> renderer)

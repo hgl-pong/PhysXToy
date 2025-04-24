@@ -8,7 +8,7 @@ namespace physx
 	class PxHeightField;
 }
 
-class PhysicsRigidDynamic : public IPhysicsObject,virtual public IDynamicObject
+class PhysicsRigidDynamic : public IRigidDynamic
 {
 public:
 	PhysicsRigidDynamic(PhysicsPtr < IPhysicsMaterial >&material);
@@ -55,14 +55,25 @@ public:
 	MathLib::HReal GetAngularDamping() const override { return m_AngularDamping; };
 	MathLib::HReal GetLinearDamping() const override { return m_LinearDamping; };
 	MathLib::HVector3 GetAngularVelocity() const override { return m_AngularVelocity; };
-	MathLib::HMatrix3 GetInertiaTensor() const override;
 	bool IsSleeping() const override;
+	void WakeUp() override;
+	void PutToSleep() override;
+	
+	PhysicsObjectType GetRigidBodyType() const override;
+	void SetMassProperties(const MathLib::HReal& mass, const MathLib::HVector3& centerOfMass, const MathLib::HMatrix3& inertiaTensor) override;
+	MathLib::HMatrix3 GetInertiaTensor() const override;
 	void SetCenterOfMass(const MathLib::HVector3& centerOfMass) override { m_CenterOfMass = centerOfMass; }
 	MathLib::HVector3 GetCenterOfMass() const override { return m_CenterOfMass; }
-	void SetGravityEnabled(bool enabled) override { m_GravityEnabled = enabled; }
+	void SetGravityEnabled(bool enabled) override;
 	bool IsGravityEnabled() const override { return m_GravityEnabled; }
-	void SetSleepThreshold(const MathLib::HReal& threshold) override { m_SleepThreshold = threshold; }
+	void SetSleepThreshold(const MathLib::HReal& threshold) override;
 	MathLib::HReal GetSleepThreshold() const override { return m_SleepThreshold; }
+	void SetFriction(const MathLib::HReal& staticFriction, const MathLib::HReal& dynamicFriction) override;
+	MathLib::HReal GetStaticFriction() const override;
+	MathLib::HReal GetDynamicFriction() const override;
+	void SetRestitution(const MathLib::HReal& restitution) override;
+	MathLib::HReal GetRestitution() const override;
+	void* GetNativeActor() const override;
 
 private:
 	PhysicsObjectType m_Type;
@@ -86,7 +97,7 @@ private:
 	MathLib::HReal m_SleepThreshold = 0.05f;
 };
 
-class PhysicsRigidStatic : public IPhysicsObject
+class PhysicsRigidStatic : public IRigidStatic
 {
 public:
 	PhysicsRigidStatic(PhysicsPtr < IPhysicsMaterial>& material);
@@ -94,7 +105,7 @@ public:
 	void Release()override;
 	void Update() override {}
 	bool IsValid() const override { return m_RigidStatic != nullptr; };
-	void SetTransform(const MathLib::HTransform3 &trans);
+	void SetTransform(const MathLib::HTransform3 &trans) override;
 	const MathLib::HTransform3 &GetTransform() const override { return m_Transform; };
 	bool AddColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry, const MathLib::HTransform3 &localTrans) override;
 	bool RemoveColliderGeometry(PhysicsPtr < IColliderGeometry >&colliderGeometry) override;
@@ -114,6 +125,29 @@ public:
 	uint32_t GetCollisionLayer() const override { return m_CollisionLayer; }
 	void SetCollisionMask(uint32_t mask) override { m_CollisionMask = mask; }
 	uint32_t GetCollisionMask() const override { return m_CollisionMask; }
+
+	PhysicsObjectType GetRigidBodyType() const override;
+	void SetMassProperties(const MathLib::HReal& mass, const MathLib::HVector3& centerOfMass, const MathLib::HMatrix3& inertiaTensor) override;
+	MathLib::HReal GetMass() const override;
+	MathLib::HVector3 GetCenterOfMass() const override;
+	MathLib::HMatrix3 GetInertiaTensor() const override;
+	void SetGravityEnabled(bool enabled) override;
+	bool IsGravityEnabled() const override;
+	void SetSleepThreshold(const MathLib::HReal& threshold) override;
+	MathLib::HReal GetSleepThreshold() const override;
+	bool IsSleeping() const override;
+	void WakeUp() override;
+	void PutToSleep() override;
+	void SetFriction(const MathLib::HReal& staticFriction, const MathLib::HReal& dynamicFriction) override;
+	MathLib::HReal GetStaticFriction() const override;
+	MathLib::HReal GetDynamicFriction() const override;
+	void SetRestitution(const MathLib::HReal& restitution) override;
+	MathLib::HReal GetRestitution() const override;
+	void SetLinearDamping(const MathLib::HReal& damping) override;
+	MathLib::HReal GetLinearDamping() const override;
+	void SetAngularDamping(const MathLib::HReal& damping) override;
+	MathLib::HReal GetAngularDamping() const override;
+	void* GetNativeActor() const override;
 
 private:
 	PhysicsObjectType m_Type;

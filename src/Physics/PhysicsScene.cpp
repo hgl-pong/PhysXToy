@@ -1,6 +1,6 @@
 #include "PhysicsScene.h"
 #include "PxPhysicsAPI.h"
-#include "PhysicsObject.h"
+#include "PhysicsRigid.h"
 #include "Utility/PhysXUtils.h"
 #include "PhysicsEngine.h"
 #ifndef NDEBUG
@@ -53,7 +53,7 @@ bool PhysicsScene::AddPhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject)
     {
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC:
     {
-        PxRigidStatic *pRigidStatic = reinterpret_cast<PhysXPtr<PxRigidStatic> *>(reinterpret_cast<char *>(physicsObject.get()) + offset)->get();
+        PxRigidStatic *pRigidStatic = reinterpret_cast<PhysXPtr<PxRigidStatic>*>(reinterpret_cast<char *>(physicsObject.get()) + offset)->get();
         if (pRigidStatic->getNbShapes() == 0)
             return false;
         if (m_Scene->addActor(*pRigidStatic))
