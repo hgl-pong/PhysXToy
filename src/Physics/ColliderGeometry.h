@@ -409,3 +409,118 @@ private:
 	MathLib::HAABBox3D m_BoundingBox;
 	PhysicsPtr<IPhysicsMaterial> m_Material;
 };
+
+class HeightFieldColliderGeometry : public IColliderGeometry
+{
+public:
+	HeightFieldColliderGeometry(const std::vector<MathLib::HReal>& heightData, int rows, int columns, 
+		MathLib::HReal rowScale = 1.0f, MathLib::HReal columnScale = 1.0f, MathLib::HReal heightScale = 1.0f)
+		: m_HeightData(heightData), m_Rows(rows), m_Columns(columns), 
+		  m_RowScale(rowScale), m_ColumnScale(columnScale), m_HeightScale(heightScale)
+	{
+		float minHeight = std::numeric_limits<float>::max();
+		float maxHeight = -std::numeric_limits<float>::max();
+		
+		for (auto height : m_HeightData)
+		{
+			minHeight = MathLib::Min(minHeight, height);
+			maxHeight = MathLib::Max(maxHeight, height);
+		}
+		
+		MathLib::HVector3 min(-m_ColumnScale * m_Columns * 0.5f, minHeight * m_HeightScale, -m_RowScale * m_Rows * 0.5f);
+		MathLib::HVector3 max(m_ColumnScale * m_Columns * 0.5f, maxHeight * m_HeightScale, m_RowScale * m_Rows * 0.5f);
+		m_BoundingBox = MathLib::HAABBox3D(min, max);
+	}
+	
+	void Release() override {}
+	
+	CollierGeometryType GetType() const override { return CollierGeometryType::COLLIER_GEOMETRY_TYPE_HEIGHT_FIELD; }
+	
+	void SetScale(const MathLib::HVector3 &scale) override
+	{
+		m_Scale = scale;
+		
+		float minHeight = std::numeric_limits<float>::max();
+		float maxHeight = -std::numeric_limits<float>::max();
+		
+		for (auto height : m_HeightData)
+		{
+			minHeight = MathLib::Min(minHeight, height);
+			maxHeight = MathLib::Max(maxHeight, height);
+		}
+		
+		MathLib::HVector3 min(-m_ColumnScale * m_Columns * 0.5f * scale[0], 
+							  minHeight * m_HeightScale * scale[1], 
+							  -m_RowScale * m_Rows * 0.5f * scale[2]);
+		MathLib::HVector3 max(m_ColumnScale * m_Columns * 0.5f * scale[0], 
+							 maxHeight * m_HeightScale * scale[1], 
+							 m_RowScale * m_Rows * 0.5f * scale[2]);
+		m_BoundingBox = MathLib::HAABBox3D(min, max);
+	}
+	
+	void SetMaterial(PhysicsPtr<IPhysicsMaterial>& material) override { m_Material = material; }
+	
+	PhysicsPtr<IPhysicsMaterial> GetMaterial() const override { return m_Material; }
+	
+	bool RaycastTest(const MathLib::HRay3D& ray, const MathLib::HTransform3& worldTransform, MathLib::HReal& distance, MathLib::HVector3& normal) override
+	{
+		MathLib::HAABBox3D worldBox = GetBoundingBox();
+		worldBox.transform(worldTransform);
+		
+		MathLib::HVector3 invDir(
+			ray.GetDirection()[0] != 0 ? 1.0f / ray.GetDirection()[0] : 0,
+			ray.GetDirection()[1] != 0 ? 1.0f / ray.GetDirection()[1] : 0,
+			ray.GetDirection()[2] != 0 ? 1.0f / ray.GetDirection()[2] : 0
+		);
+		
+		MathLib::HVector3 t0 = MathLib::HadamardProduct<3>((worldBox.min() - ray.GetOrigin()), invDir);
+		MathLib::HVector3 t1 = MathLib::HadamardProduct<3>((worldBox.max() - ray.GetOrigin()), invDir);
+		
+		MathLib::HVector3 tmin = MathLib::Min(t0, t1);
+		MathLib::HVector3 tmax = MathLib::Max(t0, t1);
+		
+		MathLib::HReal distMin = MathLib::Max(tmin[0], MathLib::Max(tmin[1], tmin[2]));
+		MathLib::HReal distMax = MathLib::Min(tmax[0], MathLib::Min(tmax[1], tmax[2]));
+		
+		if (distMax < 0 || distMin > distMax)
+			return false;
+			
+		distance = distMin >= 0 ? distMin : distMax;
+		normal = MathLib::HVector3(0, 1, 0); 
+		
+		return true;
+	}
+	
+	const std::vector<MathLib::HReal>& GetHeightData() const { return m_HeightData; }
+	int GetRows() const { return m_Rows; }
+	int GetColumns() const { return m_Columns; }
+	MathLib::HReal GetRowScale() const { return m_RowScale; }
+	MathLib::HReal GetColumnScale() const { return m_ColumnScale; }
+	MathLib::HReal GetHeightScale() const { return m_HeightScale; }
+	MathLib::HVector3 GetScale() const { return m_Scale; }
+	
+	void GetParams(CollisionGeometryCreateOptions &options) override
+	{
+		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_HEIGHT_FIELD;
+		options.m_HeightFieldParams.m_HeightData = m_HeightData;
+		options.m_HeightFieldParams.m_Rows = m_Rows;
+		options.m_HeightFieldParams.m_Columns = m_Columns;
+		options.m_HeightFieldParams.m_RowScale = m_RowScale;
+		options.m_HeightFieldParams.m_ColumnScale = m_ColumnScale;
+		options.m_HeightFieldParams.m_HeightScale = m_HeightScale;
+		options.m_Scale = m_Scale;
+	}
+	
+	MathLib::HAABBox3D GetBoundingBox() const override { return m_BoundingBox; }
+
+private:
+	std::vector<MathLib::HReal> m_HeightData;
+	int m_Rows;
+	int m_Columns;
+	MathLib::HReal m_RowScale;
+	MathLib::HReal m_ColumnScale;
+	MathLib::HReal m_HeightScale;
+	MathLib::HVector3 m_Scale;
+	MathLib::HAABBox3D m_BoundingBox;
+	PhysicsPtr<IPhysicsMaterial> m_Material;
+};

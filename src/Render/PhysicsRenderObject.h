@@ -64,6 +64,48 @@ namespace MagnumRender
 					meshData.m_Indices = options.m_ConvexMeshParams.m_Indices;
 					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
 					break;
+				case CollierGeometryType::COLLIER_GEOMETRY_TYPE_HEIGHT_FIELD:
+				{
+					const auto& hfParams = options.m_HeightFieldParams;
+					const int rows = hfParams.m_Rows;
+					const int cols = hfParams.m_Columns;
+					const float rowScale = hfParams.m_RowScale;
+					const float colScale = hfParams.m_ColumnScale;
+					const float heightScale = hfParams.m_HeightScale;
+					
+					meshData.m_Vertices.resize(rows * cols);
+					meshData.m_Indices.reserve((rows-1) * (cols-1) * 6);
+					
+					for (int r = 0; r < rows; r++) {
+						for (int c = 0; c < cols; c++) {
+							float x = (c - cols/2.0f) * colScale;
+							float z = (r - rows/2.0f) * rowScale;
+							float y = hfParams.m_HeightData[r * cols + c] * heightScale;
+							
+							meshData.m_Vertices[r * cols + c] = MathLib::HVector3(x, y, z);
+						}
+					}
+					
+					for (int r = 0; r < rows-1; r++) {
+						for (int c = 0; c < cols-1; c++) {
+							uint32_t i00 = r * cols + c;
+							uint32_t i10 = r * cols + (c+1);
+							uint32_t i01 = (r+1) * cols + c;
+							uint32_t i11 = (r+1) * cols + (c+1);
+							
+							meshData.m_Indices.push_back(i00);
+							meshData.m_Indices.push_back(i01);
+							meshData.m_Indices.push_back(i10);
+							
+							meshData.m_Indices.push_back(i10);
+							meshData.m_Indices.push_back(i01);
+							meshData.m_Indices.push_back(i11);
+						}
+					}
+					
+					scalingMatrix = Magnum::Matrix4::scaling(ToMagnum(options.m_Scale));
+					break;
+				}
 				default:
 					continue;
 				}

@@ -47,7 +47,7 @@ public:
 			const MathLib::HReal &radius = capsule->GetRadius();
 			const MathLib::HReal &halfHeight = capsule->GetHalfHeight();
 			const MathLib::HVector3 &scale = capsule->GetScale();
-			PxCapsuleGeometry geometry(radius * scale[0], halfHeight * scale[0]);
+			PxCapsuleGeometry geometry(radius * scale[0], halfHeight * scale[1]);
 			shape = physics->createShape(geometry, *pxMaterial->get());
 			break;
 		}
@@ -72,6 +72,58 @@ public:
 			PxConvexMeshGeometry geometry(mesh, PxMeshScale(ConvertUtils::ToPx(scale)));
 			shape = physics->createShape(geometry, *pxMaterial->get());
 			PX_RELEASE(mesh);
+			break;
+		}
+		case CollierGeometryType::COLLIER_GEOMETRY_TYPE_HEIGHT_FIELD:
+		{
+			const HeightFieldColliderGeometry *heightField = static_cast<const HeightFieldColliderGeometry *>(cGeo);
+			const std::vector<MathLib::HReal> &heightData = heightField->GetHeightData();
+			const int rows = heightField->GetRows();
+			const int columns = heightField->GetColumns();
+			const MathLib::HReal rowScale = heightField->GetRowScale();
+			const MathLib::HReal columnScale = heightField->GetColumnScale();
+			const MathLib::HReal heightScale = heightField->GetHeightScale();
+			const MathLib::HVector3 &scale = heightField->GetScale();
+			
+			PxHeightFieldSample* samples = new PxHeightFieldSample[rows * columns];
+			for (int i = 0; i < rows; i++)
+			{
+				for (int j = 0; j < columns; j++)
+				{
+					PxHeightFieldSample& sample = samples[i * columns + j];
+					sample.height = static_cast<PxI16>(heightData[i * columns + j]);
+					sample.materialIndex0 = 0;
+					sample.materialIndex1 = 0;
+				}
+			}
+			
+			PxHeightFieldDesc hfDesc;
+			hfDesc.format = PxHeightFieldFormat::eS16_TM;
+			hfDesc.nbRows = rows;
+			hfDesc.nbColumns = columns;
+			hfDesc.samples.data = samples;
+			hfDesc.samples.stride = sizeof(PxHeightFieldSample);
+			
+			PxDefaultMemoryOutputStream writeBuffer;
+			bool status = PxCookHeightField(hfDesc, writeBuffer);
+			PxDefaultMemoryInputData readBuffer(writeBuffer.getData(), writeBuffer.getSize());
+			PxHeightField* heightFieldObject = physics->createHeightField(readBuffer);
+
+			delete[] samples;
+			
+			if (!heightFieldObject || !status)
+				return nullptr;
+				
+			PxHeightFieldGeometry hfGeom(
+				heightFieldObject, 
+				PxMeshGeometryFlags(), 
+				heightScale * scale[1], 
+				rowScale * scale[0], 
+				columnScale * scale[2]
+			);
+			
+			shape = physics->createShape(hfGeom, *pxMaterial->get(), true);
+			heightFieldObject->release();
 			break;
 		}
 		default:

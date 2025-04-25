@@ -105,6 +105,7 @@ enum class CollierGeometryType
 	COLLIER_GEOMETRY_TYPE_PLANE,
 	COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH,
 	COLLIER_GEOMETRY_TYPE_CONVEX_MESH,
+	COLLIER_GEOMETRY_TYPE_HEIGHT_FIELD,
 	COLLIER_GEOMETRY_TYPE_COUNT
 };
 
@@ -140,6 +141,15 @@ struct CollisionGeometryCreateOptions
 		std::vector<MathLib::HVector3> m_Vertices;
 		std::vector<uint32_t> m_Indices;
 	} m_ConvexMeshParams;
+	struct HeightFieldParams
+	{
+		std::vector<MathLib::HReal> m_HeightData;
+		int m_Rows = 0;
+		int m_Columns = 0;
+		MathLib::HReal m_RowScale = 1.0f;
+		MathLib::HReal m_ColumnScale = 1.0f;
+		MathLib::HReal m_HeightScale = 1.0f;
+	} m_HeightFieldParams;
 	MathLib::HVector3 m_Scale = {1, 1, 1};
 };
 

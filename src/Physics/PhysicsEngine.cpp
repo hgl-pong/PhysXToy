@@ -150,6 +150,18 @@ PhysicsPtr<IColliderGeometry> PhysicsEngine::CreateColliderGeometry(const Collis
 		geometry = new ConvexMeshColliderGeometry(options.m_ConvexMeshParams.m_Vertices, options.m_ConvexMeshParams.m_Indices);
 		break;
 	}
+	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_HEIGHT_FIELD:
+	{
+		geometry = new HeightFieldColliderGeometry(
+			options.m_HeightFieldParams.m_HeightData,
+			options.m_HeightFieldParams.m_Rows,
+			options.m_HeightFieldParams.m_Columns,
+			options.m_HeightFieldParams.m_RowScale,
+			options.m_HeightFieldParams.m_ColumnScale,
+			options.m_HeightFieldParams.m_HeightScale
+		);
+		break;
+	}
 	default:
 		break;
 	}
