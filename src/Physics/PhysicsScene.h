@@ -18,10 +18,12 @@ public:
 public:
 	void Release() override;
 	void Tick(MathLib::HReal deltaTime) override;
-	bool AddPhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject) override;
-	void RemovePhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject) override;
-	bool AddJoint(PhysicsPtr<IPhysicsJoint> &joint) override;
-	void RemoveJoint(PhysicsPtr<IPhysicsJoint> &joint) override;
+	bool AddPhysicsObject(PhysicsPtr<IPhysicsObject>& physicsObject) override;
+	void RemovePhysicsObject(PhysicsPtr<IPhysicsObject>& physicsObject) override;
+	bool AddJoint(PhysicsPtr<IPhysicsJoint>& joint) override;
+	void RemoveJoint(PhysicsPtr<IPhysicsJoint>& joint) override;
+	bool AddSoftBody(PhysicsPtr<ISoftBody>& softBody);
+	void RemoveSoftBody(PhysicsPtr<ISoftBody>& softBody);
 	uint32_t GetPhysicsObjectCount() const override;
 	uint32_t GetPhysicsRigidDynamicCount() const override;
 	uint32_t GetPhysicsRigidStaticCount() const override;
@@ -35,8 +37,11 @@ public:
 
 private:
 	PhysXPtr<physx::PxScene> m_Scene;
-	std::unordered_set<PhysicsPtr<IPhysicsObject>> m_RigidStatic;
-	std::unordered_set<PhysicsPtr<IPhysicsObject>> m_RigidDynamic;
-	std::unordered_set<PhysicsPtr<IPhysicsJoint>> m_Joints;
+	PhysicsPtr<IPhysicsObject> m_GroundPlane;
+	std::vector<PhysicsPtr<IPhysicsObject>> m_PhysicsObjects;
+	std::vector<PhysicsPtr<IRigidDynamic>> m_PhysicsRigidDynamics;
+	std::vector<PhysicsPtr<IRigidStatic>> m_PhysicsRigidStatics;
+	std::vector<PhysicsPtr<ISoftBody>> m_PhysicsSoftBodies;
+	std::vector<PhysicsPtr<IPhysicsJoint>> m_PhysicsJoints;
 	MathLib::HVector3 m_Gravity;
 };

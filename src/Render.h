@@ -12,7 +12,7 @@ using namespace physx;
 extern void initPhysics(bool interactive);
 extern void stepPhysics(bool interactive);
 extern void cleanupPhysics(bool interactive);
-extern void keyPress(unsigned char key, MathLib::HTransform3 &camera);
+extern void keyPress(unsigned char key, const MathLib::HTransform3 &camera);
 
 namespace
 {
@@ -50,13 +50,18 @@ namespace
 		delete sCamera;
 		cleanupPhysics(true);
 	}
+
+	void keyPressWrapper(unsigned char key, const MathLib::HTransform3& camera)
+	{
+		keyPress(key, camera);
+	}
 }
 
 void renderLoop()
 {
 	sCamera = new MathLib::GraphicUtils::Camera(MathLib::HVector3(50.0f, 50.0f, 50.0f), MathLib::HVector3(-0.6f, -0.2f, -0.7f), MathLib::HReal(INITIAL_SCREEN_WIDTH) / INITIAL_SCREEN_HEIGHT);
 
-	Snippets::setupDefault("Test Physics Engine", sCamera, keyPress, renderCallback, exitCallback);
+	Snippets::setupDefault("Test Physics Engine", sCamera, keyPressWrapper, renderCallback, exitCallback);
 
 	initPhysics(true);
 	Snippets::initFPS();

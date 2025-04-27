@@ -7,6 +7,7 @@
 #include "ColliderGeometry.h"
 #include "Utility/PhysxUtils.h"
 #include "PhysicsJoint.h"
+#include "PhysicsSoftBody.h"
 #include <assert.h>
 
 #ifndef NDEBUG
@@ -14,6 +15,8 @@
 #endif
 
 #define PHYSX_PVD_HOST "127.0.0.1"
+#define PHYSX_PRINT_WARNING(msg) PxGetFoundation().error(physx::PxErrorCode::eDEBUG_WARNING, __FILE__, __LINE__, msg)
+
 using namespace physx;
 
 PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
@@ -47,10 +50,16 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
 			m_Pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
 		}
 		PxTolerancesScale toleranceScale;
-		PxCookingParams cookingParams(toleranceScale);
-
-		m_Physics = make_physx_ptr(PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, toleranceScale, true, m_Pvd.get()));
-		m_CpuDispatcher = std::unique_ptr<PxCpuDispatcher>(PxDefaultCpuDispatcherCreate(options.m_NumThreads == 0 ? DEFAULT_CPU_DISPATCHER_NUM_THREADS : options.m_NumThreads));
+		m_Physics = make_physx_ptr(PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, toleranceScale, false, m_Pvd.get()));
+		m_CpuDispatcher = std::unique_ptr<physx::PxCpuDispatcher>(PxDefaultCpuDispatcherCreate(m_Options.m_NumThreads));
+	
+		physx::PxCudaContextManagerDesc cudaContextManagerDesc;
+		m_CudaContextManager = make_physx_ptr(PxCreateCudaContextManager(*m_Foundation, cudaContextManagerDesc, PxGetProfilerCallback()));
+		
+		if (!m_CudaContextManager || !m_CudaContextManager->contextIsValid())
+		{
+			PHYSX_PRINT_WARNING("CUDA initialization failed. SoftBody features will be unavailable.");
+		}
 	}
 
 	m_bInitialized = true;
@@ -233,4 +242,28 @@ PhysicsPtr<IPhysicsScene> PhysicsEngine::GetActiveScene() const
 void PhysicsEngine::SetActiveScene(PhysicsPtr<IPhysicsScene> scene)
 {
 	m_ActiveScene = scene;
+}
+
+PhysicsPtr<ISoftBody> PhysicsEngine::CreateSoftBody(const SoftBodyCreateOptions &options)
+{
+	if (!m_bInitialized)
+	{
+		return nullptr;
+	}
+	
+	PhysicsPtr<IPhysicsMaterial> material = CreateMaterial(options.m_MaterialOptions);
+	if (!material)
+	{
+		return nullptr;
+	}
+	
+	PhysicsSoftBody* softBody = new PhysicsSoftBody(material);
+	
+	if (!softBody->CreateFromMesh(options))
+	{
+		delete softBody;
+		return nullptr;
+	}
+	
+	return make_physics_ptr(softBody);
 }

@@ -58,6 +58,11 @@ PhysicsPtr<IPhysicsJoint> PhysicsEngineUtils::CreateJoint(const JointCreateOptio
 	return gPhysicsEngine->CreateJoint(options);
 }
 
+PhysicsPtr<ISoftBody> PhysicsEngineUtils::CreateSoftBody(const SoftBodyCreateOptions& options)
+{
+	return gPhysicsEngine->CreateSoftBody(options);
+}
+
 bool PhysicsEngineUtils::ConvexDecomposition(const PhysicsMeshData& meshData, const ConvexDecomposeOptions& params, std::vector<PhysicsMeshData>& convexMeshesData)
 {
 	if (!gConvexMeshDecomposer)

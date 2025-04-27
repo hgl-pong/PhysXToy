@@ -3,9 +3,13 @@
 #include "PhysicsRigid.h"
 #include "Utility/PhysXUtils.h"
 #include "PhysicsEngine.h"
+#include "PhysicsJoint.h"
+#include "PhysicsSoftBody.h"
+#include "physx/common/PxRenderBuffer.h"
 #ifndef NDEBUG
 #define ENABLE_PVD
 #endif
+#define PHYSX_PVD_HOST "127.0.0.1"
 using namespace physx;
 
 PhysicsScene::PhysicsScene(const PhysicsSceneCreateOptions &options, physx::PxCpuDispatcher *cpuDispatch)
@@ -39,9 +43,14 @@ void PhysicsScene::Tick(MathLib::HReal deltaTime)
     m_Scene->simulate(deltaTime);
     m_Scene->fetchResults(true);
 
-    for (auto &dynamicObject : m_RigidDynamic)
+    for (auto &dynamicObject : m_PhysicsRigidDynamics)
     {
         dynamicObject->Update();
+    }
+
+    for (auto &softBody : m_PhysicsSoftBodies)
+    {
+        softBody->Update();
     }
 }
 
@@ -56,8 +65,10 @@ bool PhysicsScene::AddPhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject)
         PxRigidStatic *pRigidStatic = reinterpret_cast<PhysXPtr<PxRigidStatic>*>(reinterpret_cast<char *>(physicsObject.get()) + offset)->get();
         if (pRigidStatic->getNbShapes() == 0)
             return false;
-        if (m_Scene->addActor(*pRigidStatic))
-            result = m_RigidStatic.emplace(physicsObject).second;
+        if (m_Scene->addActor(*pRigidStatic)) {
+            m_PhysicsRigidStatics.push_back(std::static_pointer_cast<IRigidStatic>(physicsObject));
+            result = true;
+        }
         if (!result)
             m_Scene->removeActor(*pRigidStatic);
         break;
@@ -67,11 +78,18 @@ bool PhysicsScene::AddPhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject)
         PxRigidDynamic *pRigidDynamic = reinterpret_cast<PhysXPtr<PxRigidDynamic> *>(reinterpret_cast<char *>(physicsObject.get()) + offset)->get();
         if (pRigidDynamic->getNbShapes() == 0)
             return false;
-        if (m_Scene->addActor(*pRigidDynamic))
-            result = m_RigidDynamic.emplace(physicsObject).second;
+        if (m_Scene->addActor(*pRigidDynamic)) {
+            m_PhysicsRigidDynamics.push_back(std::static_pointer_cast<IRigidDynamic>(physicsObject));
+            result = true;
+        }
         if (!result)
             m_Scene->removeActor(*pRigidDynamic);
         break;
+    }
+    case PhysicsObjectType::PHYSICS_OBJECT_TYPE_SOFT_BODY:
+    {
+        PhysicsPtr<ISoftBody> softBody = std::static_pointer_cast<ISoftBody>(physicsObject);
+        return AddSoftBody(softBody);
     }
     default:
         break;
@@ -85,11 +103,29 @@ void PhysicsScene::RemovePhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject
     switch (physicsObject->GetType())
     {
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC:
-        m_RigidStatic.erase(physicsObject);
+    {
+        auto staticObj = std::static_pointer_cast<IRigidStatic>(physicsObject);
+        auto it = std::find(m_PhysicsRigidStatics.begin(), m_PhysicsRigidStatics.end(), staticObj);
+        if (it != m_PhysicsRigidStatics.end()) {
+            m_PhysicsRigidStatics.erase(it);
+        }
         break;
+    }
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC:
-        m_RigidDynamic.erase(physicsObject);
+    {
+        auto dynamicObj = std::static_pointer_cast<IRigidDynamic>(physicsObject);
+        auto it = std::find(m_PhysicsRigidDynamics.begin(), m_PhysicsRigidDynamics.end(), dynamicObj);
+        if (it != m_PhysicsRigidDynamics.end()) {
+            m_PhysicsRigidDynamics.erase(it);
+        }
         break;
+    }
+    case PhysicsObjectType::PHYSICS_OBJECT_TYPE_SOFT_BODY:
+    {
+        auto softBody = std::static_pointer_cast<ISoftBody>(physicsObject);
+        RemoveSoftBody(softBody);
+        return;
+    }
     default:
         break;
     }
@@ -99,8 +135,8 @@ bool PhysicsScene::AddJoint(PhysicsPtr<IPhysicsJoint> &joint)
 {
     if (joint)
     {
-
-        return m_Joints.emplace(joint).second;
+        m_PhysicsJoints.push_back(joint);
+        return true;
     }
     return false;
 }
@@ -109,31 +145,82 @@ void PhysicsScene::RemoveJoint(PhysicsPtr<IPhysicsJoint> &joint)
 {
     if (joint)
     {
+        auto it = std::find(m_PhysicsJoints.begin(), m_PhysicsJoints.end(), joint);
+        if (it != m_PhysicsJoints.end()) {
+            m_PhysicsJoints.erase(it);
+        }
+    }
+}
 
-        m_Joints.erase(joint);
-        
- 
+bool PhysicsScene::AddSoftBody(PhysicsPtr<ISoftBody>& softBody)
+{
+    if (!m_Scene || !softBody || !softBody->IsValid())
+    {
+        return false;
+    }
+    
+    PhysicsSoftBody* sb = static_cast<PhysicsSoftBody*>(softBody.get());
+    physx::PxSoftBody* pxSoftBody = static_cast<physx::PxSoftBody*>(sb->GetSoftBodyData());
+    
+    if (!pxSoftBody)
+    {
+        return false;
+    }
+    
+    m_Scene->addActor(*pxSoftBody);
+    m_PhysicsSoftBodies.push_back(softBody);
+    m_PhysicsObjects.push_back(softBody);
+    
+    return true;
+}
+
+void PhysicsScene::RemoveSoftBody(PhysicsPtr<ISoftBody>& softBody)
+{
+    if (!m_Scene || !softBody || !softBody->IsValid())
+    {
+        return;
+    }
+    
+    PhysicsSoftBody* sb = static_cast<PhysicsSoftBody*>(softBody.get());
+    physx::PxSoftBody* pxSoftBody = static_cast<physx::PxSoftBody*>(sb->GetSoftBodyData());
+    
+    if (pxSoftBody)
+    {
+        m_Scene->removeActor(*pxSoftBody);
+    }
+    
+    // 从列表中移除
+    auto it = std::find(m_PhysicsSoftBodies.begin(), m_PhysicsSoftBodies.end(), softBody);
+    if (it != m_PhysicsSoftBodies.end())
+    {
+        m_PhysicsSoftBodies.erase(it);
+    }
+    
+    auto itObj = std::find(m_PhysicsObjects.begin(), m_PhysicsObjects.end(), softBody);
+    if (itObj != m_PhysicsObjects.end())
+    {
+        m_PhysicsObjects.erase(itObj);
     }
 }
 
 uint32_t PhysicsScene::GetPhysicsObjectCount() const
 {
-    return m_RigidDynamic.size() + m_RigidStatic.size();
+    return m_PhysicsObjects.size();
 }
 
 uint32_t PhysicsScene::GetPhysicsRigidDynamicCount() const
 {
-    return m_RigidDynamic.size();
+    return m_PhysicsRigidDynamics.size();
 }
 
 uint32_t PhysicsScene::GetPhysicsRigidStaticCount() const
 {
-    return m_RigidStatic.size();
+    return m_PhysicsRigidStatics.size();
 }
 
 uint32_t PhysicsScene::GetJointCount() const
 {
-    return m_Joints.size();
+    return m_PhysicsJoints.size();
 }
 
 void PhysicsScene::RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, RaycastHit& hit)
@@ -165,7 +252,7 @@ void PhysicsScene::RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxD
         {
             void* userData = closest.actor->userData;
             
-            for (auto& object : m_RigidStatic)
+            for (auto& object : m_PhysicsRigidStatics)
             {
                 if (object->GetUserData() == userData)
                 {
@@ -176,7 +263,7 @@ void PhysicsScene::RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxD
             
             if (!hit.object)
             {
-                for (auto& object : m_RigidDynamic)
+                for (auto& object : m_PhysicsRigidDynamics)
                 {
                     if (object->GetUserData() == userData)
                     {
@@ -225,7 +312,7 @@ void PhysicsScene::RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDist
         {
             void* userData = closest.actor->userData;
             
-            for (auto& object : m_RigidStatic)
+            for (auto& object : m_PhysicsRigidStatics)
             {
                 if (object->GetUserData() == userData)
                 {
@@ -236,7 +323,7 @@ void PhysicsScene::RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDist
             
             if (!hit.object)
             {
-                for (auto& object : m_RigidDynamic)
+                for (auto& object : m_PhysicsRigidDynamics)
                 {
                     if (object->GetUserData() == userData)
                     {
@@ -286,7 +373,7 @@ void PhysicsScene::DebugDraw()
         return;
         
     
-    for (auto& staticObj : m_RigidStatic)
+    for (auto& staticObj : m_PhysicsRigidStatics)
     {
         if (staticObj->IsValid())
         {
@@ -300,7 +387,7 @@ void PhysicsScene::DebugDraw()
         }
     }
     
-    for (auto& dynamicObj : m_RigidDynamic)
+    for (auto& dynamicObj : m_PhysicsRigidDynamics)
     {
         if (dynamicObj->IsValid())
         {
@@ -314,7 +401,7 @@ void PhysicsScene::DebugDraw()
         }
     }
     
-    for (auto& joint : m_Joints)
+    for (auto& joint : m_PhysicsJoints)
     {
         if (joint)
         {

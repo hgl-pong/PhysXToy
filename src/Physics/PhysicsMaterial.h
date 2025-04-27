@@ -19,6 +19,8 @@ public:
 	MathLib::HReal GetDensity() const override;
 	MathLib::HReal SetDensity(const MathLib::HReal &value) override;
 	size_t GetOffset() const override;
+	
+	physx::PxMaterial* GetMaterial() const { return m_Material.get(); }
 
 private:
 	PhysXPtr<physx::PxMaterial> m_Material;

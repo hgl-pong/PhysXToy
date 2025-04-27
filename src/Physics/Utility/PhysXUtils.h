@@ -1,6 +1,7 @@
 #pragma once
 #include <PxPhysicsAPI.h>
 #include "Physics/PhysicsTypes.h"
+#include <memory>
 
 inline physx::PxSimulationFilterShader GetFilterShader(const PhysicsSceneFilterShaderType& type)
 {

@@ -157,6 +157,7 @@ enum class PhysicsObjectType
 {
 	PHYSICS_OBJECT_TYPE_RIGID_STATIC,
 	PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC,
+	PHYSICS_OBJECT_TYPE_SOFT_BODY,
 	PHYSICS_OBJECT_TYPE_COUNT
 };
 
@@ -231,4 +232,38 @@ struct JointLimitOptions
     AngularLimit m_Twist;                            
     AngularLimit m_Swing1;                           
     AngularLimit m_Swing2;                           
+};
+
+struct SoftBodyParams
+{
+    MathLib::HReal m_YoungModulus = 1e+9f;      
+    MathLib::HReal m_PoissonRatio = 0.45f;      
+    MathLib::HReal m_Damping = 0.5f;            
+    MathLib::HReal m_MaxInvMassRatio = 10.0f;    
+    MathLib::HReal m_Mass = 1.0f;                
+    MathLib::HReal m_Density = 10.0f;            
+    uint32_t m_SolverIterations = 10;            
+    bool m_EnableCCD = false;                   
+};
+
+struct SoftBodyMeshDesc
+{
+    std::vector<MathLib::HVector3> m_Vertices;           
+    std::vector<uint32_t> m_Indices;                     
+    std::vector<uint32_t> m_FixedVertices;               
+    bool m_IsTetrahedronMesh = true;                     
+};
+
+struct SoftBodyCreateOptions
+{
+    SoftBodyMeshDesc m_MeshDesc;                   
+    MathLib::HTransform3 m_Transform;              
+    SoftBodyParams m_Params;                       
+    bool m_CreateCollisionMesh = true;             
+    bool m_CreateSimulationMesh = true;            
+    uint32_t m_VoxelResolution = 20;               
+    PhysicsMaterialCreateOptions m_MaterialOptions;
+    uint32_t m_CollisionLayer = 1;                 
+    uint32_t m_CollisionMask = 0xFFFFFFFF;         
+    void* m_UserData = nullptr;                    
 };

@@ -1,6 +1,8 @@
 #pragma once
 #include "Physics/PhysicsCommon.h"
-#include "physx/extensions/PxDefaultCpuDispatcher.h"
+#include "Utility/PhysxUtils.h"
+#include <set>
+
 namespace physx
 {
 	class PxAllocatorCallback;
@@ -11,6 +13,7 @@ namespace physx
 	class PxCpuDispatcher;
 	class PxGeometry;
 	class PxMaterial;
+	class PxCudaContextManager;
 };
 
 class PhysicsAllocator;
@@ -28,6 +31,7 @@ public:
 	PhysicsPtr<IPhysicsScene> CreateScene(const PhysicsSceneCreateOptions &options) override;
 	PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions &options) override;
 	PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options) override;
+	PhysicsPtr<ISoftBody> CreateSoftBody(const SoftBodyCreateOptions &options) override;
 	void SetSolverIterationCount(uint32_t count) override;
 	uint32_t GetSolverIterationCount() const override;
 	void SetDebugRenderer(PhysicsPtr<IPhysicsDebugRenderer> renderer) override;
@@ -39,6 +43,7 @@ public:
 
 private:
 	friend class PhysicsEngineUtils;
+	friend class PhysicsSoftBody;
 	PhysicsEngineOptions m_Options;
 	std::unique_ptr<physx::PxAllocatorCallback> m_AllocatorCallback;
 	std::unique_ptr<physx::PxErrorCallback> m_ErrorCallback;
@@ -46,6 +51,7 @@ private:
 	PhysXPtr<physx::PxFoundation> m_Foundation;
 	PhysXPtr<physx::PxPhysics> m_Physics;
 	std::unique_ptr<physx::PxCpuDispatcher> m_CpuDispatcher;
+	PhysXPtr<physx::PxCudaContextManager> m_CudaContextManager;
 	PhysicsPtr<IPhysicsScene> m_ActiveScene;
 	PhysicsPtr<IPhysicsDebugRenderer> m_DebugRenderer;
 	std::unordered_set<ICollisionCallback*> m_CollisionCallbacks;

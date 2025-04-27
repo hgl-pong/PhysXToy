@@ -1,6 +1,7 @@
 #pragma once
 #include "Physics/PhysicsCommon.h"
 #include "TestMeshGenerator.h"
+#include "Physics/TestSoftBody.h"
 #include <filesystem>
 static PhysicsPtr < IPhysicsMaterial>gMaterial;
 static PhysicsPtr < IPhysicsScene>gScene;
@@ -243,66 +244,62 @@ void initPhysics(bool interactive)
 {
 	PhysicsEngineOptions options;
 	options.m_NumThreads = 10;
+	options.m_EnableCCD = true;
+	options.m_bEnablePVD = true;
+	options.m_EnableDebugVisualization = true;
 	IPhysicsEngine *engine = PhysicsEngineUtils::CreatePhysicsEngine(options);
 
 	PhysicsSceneCreateOptions sceneOptions;
 	sceneOptions.m_FilterShaderType = PhysicsSceneFilterShaderType::eDEFAULT;
 	sceneOptions.m_Gravity = MathLib::HVector3(0.0f, -9.81f, 0.0f);
-
+	
 	gScene = PhysicsEngineUtils::CreateScene(sceneOptions);
-
+	if(engine)
+		engine->SetActiveScene(gScene);
+	
 	PhysicsMaterialCreateOptions materialOptions;
 	materialOptions.m_StaticFriction = 0.5f;
 	materialOptions.m_DynamicFriction = 0.5f;
-	materialOptions.m_Restitution = 0.6f;
-	materialOptions.m_Density = 10.0f;
+	materialOptions.m_Restitution = 0.5f;
 	gMaterial = PhysicsEngineUtils::CreateMaterial(materialOptions);
-
-	CollisionGeometryCreateOptions groundPlaneOptions;
-	groundPlaneOptions.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE;
-	groundPlaneOptions.m_PlaneParams.m_Normal = MathLib::HVector3(0, 1, 0);
-	groundPlaneOptions.m_PlaneParams.m_Distance = 0.0f;
-	PhysicsPtr<IColliderGeometry> groundPlane = PhysicsEngineUtils::CreateColliderGeometry(groundPlaneOptions);
-
-	PhysicsObjectCreateOptions groundPlaneObjectOptions;
-	groundPlaneObjectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
-	groundPlaneObjectOptions.m_Transform = MathLib::HTransform3::Identity();
-	PhysicsPtr < IPhysicsObject> groundPlaneObject = PhysicsEngineUtils::CreateObject(groundPlaneObjectOptions);
-	groundPlaneObject->AddColliderGeometry(groundPlane, MathLib::HTransform3::Identity());
-	if (gScene)
-		gScene->AddPhysicsObject(groundPlaneObject);
-
-	TestRigidBody::CreateTestingMeshData();//Bunny
-	//TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\teapot.obj", 0.2);
-	//TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\banana.obj", 1);
-	//TestRigidBody::CreateTestingMeshData("..\\..\\asset\\models\\armadillo.obj",0.4);
+	{
+		PhysicsObjectCreateOptions options;
+		options.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
+		options.m_Transform = MathLib::HTransform3::Identity();
+		options.m_Transform.translate(MathLib::HVector3(0, -10, 0));
+		
+		PhysicsPtr<IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(options);
+		
+		CollisionGeometryCreateOptions boxOptions;
+		boxOptions.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX;
+		boxOptions.m_BoxParams.m_HalfExtents = MathLib::HVector3(50, 0.5, 50);
+		
+		PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(boxOptions);
+		physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
+		
+		gScene->AddPhysicsObject(physicsObject);
+	}
+	
+	{
+		static bool testSoftBody = false;
+		if (testSoftBody)
+		{
+			CreateSoftBodyTestScene();
+			return;
+		}
+	}
+	
 	auto physicsObjects= TestRigidBody::TestRigidBodyCreate();
-	if (gScene)
+	
 	for (auto& physicsObject : physicsObjects)
 	{
 		gScene->AddPhysicsObject(physicsObject);
 	}
-
-	CreateJointTests();
 	
-	CreateJointChain(5, MathLib::HVector3(0.0f, 20.0f, 0.0f), MathLib::HVector3(0.5f, 0.5f, 0.5f));
-
-	if (!interactive)
-	{
-		CollisionGeometryCreateOptions options;
-		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
-		options.m_SphereParams.m_Radius = 10.0f;
-		options.m_Scale = MathLib::HVector3(1.0f, 1.0f, 1.0f);
-
-		PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
-
-		MathLib::HVector3 translation(0, 40, 100);
-		MathLib::HTransform3 transform = MathLib::HTransform3::Identity();
-		transform.translate(translation);
-		auto dynamic = TestRigidBody::CreateDynamic(transform, geometry, MathLib::HVector3(0, -50, -100));
-		if (gScene)
-			gScene->AddPhysicsObject(dynamic);
-	}
+	float dist = 20.0f;
+	
+	CreateJointChain(7, MathLib::HVector3(0, 10, 0), MathLib::HVector3(0.5f, 1.0f, 0.5f));
+	// CreateJointTests();
 }
 
 void stepPhysics(bool /*interactive*/)

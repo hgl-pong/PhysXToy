@@ -14,6 +14,7 @@ class IRigidStatic;
 class IRigidDynamic;
 class IPhysicsMaterial;
 class IPhysicsJoint;
+class ISoftBody;
 class IPhysicsDebugRenderer;
 
 enum class ForceMode
@@ -79,6 +80,7 @@ public:
 	virtual PhysicsPtr<IPhysicsScene> CreateScene(const PhysicsSceneCreateOptions &options) = 0;
 	virtual PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions &options) = 0;
 	virtual PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options) = 0;
+	virtual PhysicsPtr<ISoftBody> CreateSoftBody(const SoftBodyCreateOptions &options) = 0;
 	
 	virtual void SetSolverIterationCount(uint32_t count) = 0;
 	virtual uint32_t GetSolverIterationCount() const = 0;
@@ -215,6 +217,30 @@ class IRigidStatic : public IRigidBody
 public:
 };
 
+class ISoftBody : public IPhysicsObject
+{
+public:
+	virtual ~ISoftBody() = default;
+	virtual void SetParameter(const SoftBodyParams& params) = 0;
+	virtual SoftBodyParams GetParameter() const = 0;
+	virtual uint32_t GetVertexCount() const = 0;
+	virtual uint32_t GetTetrahedronCount() const = 0;
+	virtual void GetDeformedVertexPositions(std::vector<MathLib::HVector3>& positions) const = 0;
+	virtual void GetTetrahedronIndices(std::vector<uint32_t>& indices) const = 0;
+	virtual void SetVertexFixed(uint32_t vertexIndex, bool fixed) = 0;
+	virtual bool IsVertexFixed(uint32_t vertexIndex) const = 0;
+	virtual void ApplyForceToVertex(uint32_t vertexIndex, const MathLib::HVector3& force) = 0;
+	virtual void SetMass(MathLib::HReal mass) = 0;
+	virtual MathLib::HReal GetMass() const = 0;
+	virtual void UpdateMass(MathLib::HReal density) = 0;
+	virtual void Transform(const MathLib::HTransform3& transform, const MathLib::HVector3& scale = MathLib::HVector3(1.0f, 1.f, 1.f)) = 0;
+	virtual void GetOriginalVertexPositions(std::vector<MathLib::HVector3>& positions) const = 0;
+	virtual void* GetTetrahedronMesh() const = 0;
+	virtual void* GetSoftBodyData() const = 0;
+	virtual void Commit() = 0;
+	virtual void GetRenderMesh(std::vector<MathLib::HVector3>& vertices, std::vector<uint32_t>& indices) const = 0;
+};
+
 class IPhysicsMaterial
 {
 public:
@@ -272,8 +298,8 @@ public:
 	static PhysicsPtr<IPhysicsScene> CreateScene(const PhysicsSceneCreateOptions &options);
 	static PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions &options);
 	static PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options);
+	static PhysicsPtr<ISoftBody> CreateSoftBody(const SoftBodyCreateOptions &options);
 	
-	// 刚体创建工具方法
 	static PhysicsPtr<IRigidStatic> CreateRigidStatic(const PhysicsObjectCreateOptions &options);
 	static PhysicsPtr<IRigidDynamic> CreateRigidDynamic(const PhysicsObjectCreateOptions &options);
 	
