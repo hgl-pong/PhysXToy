@@ -158,6 +158,7 @@ enum class PhysicsObjectType
 	PHYSICS_OBJECT_TYPE_RIGID_STATIC,
 	PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC,
 	PHYSICS_OBJECT_TYPE_SOFT_BODY,
+	PHYSICS_OBJECT_TYPE_CLOTH,
 	PHYSICS_OBJECT_TYPE_COUNT
 };
 
@@ -246,6 +247,20 @@ struct SoftBodyParams
     bool m_EnableCCD = false;                   
 };
 
+struct ClothParams
+{
+    MathLib::HReal m_Stiffness = 1.0f;           
+    MathLib::HReal m_BendingStiffness = 0.5f;    
+    MathLib::HReal m_Damping = 0.1f;             
+    MathLib::HReal m_Mass = 1.0f;                
+    MathLib::HReal m_WindStrength = 0.0f;        
+    MathLib::HVector3 m_WindDirection = {0.0f, 0.0f, 1.0f};
+    uint32_t m_SolverIterations = 5;             
+    MathLib::HReal m_Friction = 0.5f;            
+    bool m_EnableSelfCollision = false;          
+    bool m_EnableCCD = false;                    
+};
+
 struct SoftBodyMeshDesc
 {
     std::vector<MathLib::HVector3> m_Vertices;           
@@ -266,4 +281,25 @@ struct SoftBodyCreateOptions
     uint32_t m_CollisionLayer = 1;                 
     uint32_t m_CollisionMask = 0xFFFFFFFF;         
     void* m_UserData = nullptr;                    
+};
+
+struct ClothMeshDesc
+{
+    std::vector<MathLib::HVector3> m_Vertices;     
+    std::vector<uint32_t> m_Indices;              
+    std::vector<uint32_t> m_FixedVertices;         
+    int m_Width = 0;                               
+    int m_Height = 0;                              
+    MathLib::HReal m_ParticleSpacing = 1.0f;       
+};
+
+struct ClothCreateOptions
+{
+    ClothMeshDesc m_MeshDesc;                     
+    MathLib::HTransform3 m_Transform;             
+    ClothParams m_Params;                         
+    PhysicsMaterialCreateOptions m_MaterialOptions;
+    uint32_t m_CollisionLayer = 1;                
+    uint32_t m_CollisionMask = 0xFFFFFFFF;        
+    void* m_UserData = nullptr;                   
 };

@@ -8,6 +8,7 @@
 #include "Utility/PhysxUtils.h"
 #include "PhysicsJoint.h"
 #include "PhysicsSoftBody.h"
+#include "PhysicsCloth.h"
 #include <assert.h>
 
 #ifndef NDEBUG
@@ -266,4 +267,28 @@ PhysicsPtr<ISoftBody> PhysicsEngine::CreateSoftBody(const SoftBodyCreateOptions 
 	}
 	
 	return make_physics_ptr(softBody);
+}
+
+PhysicsPtr<ICloth> PhysicsEngine::CreateCloth(const ClothCreateOptions &options)
+{
+	if (!m_bInitialized)
+	{
+		return nullptr;
+	}
+	
+	PhysicsPtr<IPhysicsMaterial> material = CreateMaterial(options.m_MaterialOptions);
+	if (!material)
+	{
+		return nullptr;
+	}
+	
+	PhysicsCloth* cloth = new PhysicsCloth(material);
+	
+	if (!cloth->CreateFromMesh(options))
+	{
+		delete cloth;
+		return nullptr;
+	}
+	
+	return make_physics_ptr(cloth);
 }

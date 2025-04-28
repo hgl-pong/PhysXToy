@@ -15,6 +15,7 @@ class IRigidDynamic;
 class IPhysicsMaterial;
 class IPhysicsJoint;
 class ISoftBody;
+class ICloth;
 class IPhysicsDebugRenderer;
 
 enum class ForceMode
@@ -81,6 +82,7 @@ public:
 	virtual PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions &options) = 0;
 	virtual PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options) = 0;
 	virtual PhysicsPtr<ISoftBody> CreateSoftBody(const SoftBodyCreateOptions &options) = 0;
+	virtual PhysicsPtr<ICloth> CreateCloth(const ClothCreateOptions &options) = 0;
 	
 	virtual void SetSolverIterationCount(uint32_t count) = 0;
 	virtual uint32_t GetSolverIterationCount() const = 0;
@@ -88,6 +90,8 @@ public:
 	virtual PhysicsPtr<IPhysicsDebugRenderer> GetDebugRenderer() const = 0;
 	virtual void RegisterCollisionCallback(ICollisionCallback* callback) = 0;
 	virtual void UnregisterCollisionCallback(ICollisionCallback* callback) = 0;
+	virtual PhysicsPtr<IPhysicsScene> GetActiveScene() const = 0;
+	virtual void SetActiveScene(PhysicsPtr<IPhysicsScene> scene) = 0;
 };
 
 class IPhysicsScene
@@ -109,6 +113,7 @@ public:
 	virtual MathLib::HVector3 GetGravity() const = 0;
 	virtual void DebugDraw() = 0;
 	virtual size_t GetOffset() const = 0;
+	virtual void* GetNativeScene() const = 0;
 };
 
 class IColliderGeometry
@@ -237,6 +242,28 @@ public:
 	virtual void GetOriginalVertexPositions(std::vector<MathLib::HVector3>& positions) const = 0;
 	virtual void* GetTetrahedronMesh() const = 0;
 	virtual void* GetSoftBodyData() const = 0;
+	virtual void Commit() = 0;
+	virtual void GetRenderMesh(std::vector<MathLib::HVector3>& vertices, std::vector<uint32_t>& indices) const = 0;
+};
+
+class ICloth : public IPhysicsObject
+{
+public:
+	virtual ~ICloth() = default;
+	virtual void SetParameter(const ClothParams& params) = 0;
+	virtual ClothParams GetParameter() const = 0;
+	virtual uint32_t GetVertexCount() const = 0;
+	virtual uint32_t GetTriangleCount() const = 0;
+	virtual void GetDeformedVertexPositions(std::vector<MathLib::HVector3>& positions) const = 0;
+	virtual void GetTriangleIndices(std::vector<uint32_t>& indices) const = 0;
+	virtual void SetVertexFixed(uint32_t vertexIndex, bool fixed) = 0;
+	virtual bool IsVertexFixed(uint32_t vertexIndex) const = 0;
+	virtual void ApplyForceToVertex(uint32_t vertexIndex, const MathLib::HVector3& force) = 0;
+	virtual void ApplyWindForce(const MathLib::HVector3& windDirection, MathLib::HReal strength) = 0;
+	virtual void SetMass(MathLib::HReal mass) = 0;
+	virtual MathLib::HReal GetMass() const = 0;
+	virtual void GetOriginalVertexPositions(std::vector<MathLib::HVector3>& positions) const = 0;
+	virtual void* GetClothData() const = 0;
 	virtual void Commit() = 0;
 	virtual void GetRenderMesh(std::vector<MathLib::HVector3>& vertices, std::vector<uint32_t>& indices) const = 0;
 };

@@ -32,14 +32,15 @@ public:
 	PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions &options) override;
 	PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options) override;
 	PhysicsPtr<ISoftBody> CreateSoftBody(const SoftBodyCreateOptions &options) override;
+	PhysicsPtr<ICloth> CreateCloth(const ClothCreateOptions &options) override;
 	void SetSolverIterationCount(uint32_t count) override;
 	uint32_t GetSolverIterationCount() const override;
 	void SetDebugRenderer(PhysicsPtr<IPhysicsDebugRenderer> renderer) override;
 	PhysicsPtr<IPhysicsDebugRenderer> GetDebugRenderer() const override;
 	void RegisterCollisionCallback(ICollisionCallback* callback) override;
 	void UnregisterCollisionCallback(ICollisionCallback* callback) override;
-	PhysicsPtr<IPhysicsScene> GetActiveScene() const;
-	void SetActiveScene(PhysicsPtr<IPhysicsScene> scene);
+	PhysicsPtr<IPhysicsScene> GetActiveScene() const override;
+	void SetActiveScene(PhysicsPtr<IPhysicsScene> scene) override;
 
 private:
 	friend class PhysicsEngineUtils;

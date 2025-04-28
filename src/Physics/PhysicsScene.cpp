@@ -52,70 +52,99 @@ void PhysicsScene::Tick(MathLib::HReal deltaTime)
     {
         softBody->Update();
     }
+    
+    for (auto &cloth : m_PhysicsClothes)
+    {
+        cloth->Update();
+    }
 }
 
 bool PhysicsScene::AddPhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject)
 {
-    const size_t offset = physicsObject->GetOffset();
-    bool result = false;
+    if (!physicsObject || !physicsObject->IsValid())
+    {
+        return false;
+    }
+
+    m_PhysicsObjects.insert(physicsObject);
+
+    PxActor* actor = nullptr;
     switch (physicsObject->GetType())
     {
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC:
     {
-        PxRigidStatic *pRigidStatic = reinterpret_cast<PhysXPtr<PxRigidStatic>*>(reinterpret_cast<char *>(physicsObject.get()) + offset)->get();
-        if (pRigidStatic->getNbShapes() == 0)
-            return false;
-        if (m_Scene->addActor(*pRigidStatic)) {
-            m_PhysicsRigidStatics.push_back(std::static_pointer_cast<IRigidStatic>(physicsObject));
-            result = true;
-        }
-        if (!result)
-            m_Scene->removeActor(*pRigidStatic);
+        auto rigidStatic = static_cast<PhysicsRigidStatic*>(physicsObject.get());
+        actor = static_cast<PxActor*>(rigidStatic->GetNativeActor());
+        m_PhysicsRigidStatics.push_back(physicsObject);
         break;
     }
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC:
     {
-        PxRigidDynamic *pRigidDynamic = reinterpret_cast<PhysXPtr<PxRigidDynamic> *>(reinterpret_cast<char *>(physicsObject.get()) + offset)->get();
-        if (pRigidDynamic->getNbShapes() == 0)
-            return false;
-        if (m_Scene->addActor(*pRigidDynamic)) {
-            m_PhysicsRigidDynamics.push_back(std::static_pointer_cast<IRigidDynamic>(physicsObject));
-            result = true;
-        }
-        if (!result)
-            m_Scene->removeActor(*pRigidDynamic);
+        auto rigidDynamic = static_cast<PhysicsRigidDynamic*>(physicsObject.get());
+        actor = static_cast<PxActor*>(rigidDynamic->GetNativeActor());
+        m_PhysicsRigidDynamics.push_back(physicsObject);
         break;
     }
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_SOFT_BODY:
     {
-        PhysicsPtr<ISoftBody> softBody = std::static_pointer_cast<ISoftBody>(physicsObject);
-        return AddSoftBody(softBody);
-    }
-    default:
+        auto softBody = std::static_pointer_cast<ISoftBody>(physicsObject);
+        actor = reinterpret_cast<PxActor*>(softBody->GetOffset());
+        m_PhysicsSoftBodies.push_back(softBody);
         break;
     }
-    return result;
+    case PhysicsObjectType::PHYSICS_OBJECT_TYPE_CLOTH:
+    {
+        auto cloth = std::static_pointer_cast<ICloth>(physicsObject);
+        actor = reinterpret_cast<PxActor*>(cloth->GetOffset());
+        m_PhysicsClothes.push_back(physicsObject);
+        break;
+    }
+    default:
+        return false;
+    }
+
+    if (actor)
+    {
+        m_Scene->addActor(*actor);
+        return true;
+    }
+
+    return false;
 }
 
 void PhysicsScene::RemovePhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject)
 {
-    // m_Scene->removeActor(physicsObject->GetPhysicsObject());
+    if (!physicsObject || !physicsObject->IsValid())
+    {
+        return;
+    }
+
+    if (m_PhysicsObjects.find(physicsObject) == m_PhysicsObjects.end())
+    {
+        return;
+    }
+
+    PxActor* actor = nullptr;
     switch (physicsObject->GetType())
     {
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC:
     {
-        auto staticObj = std::static_pointer_cast<IRigidStatic>(physicsObject);
-        auto it = std::find(m_PhysicsRigidStatics.begin(), m_PhysicsRigidStatics.end(), staticObj);
-        if (it != m_PhysicsRigidStatics.end()) {
+        auto rigidStatic = static_cast<PhysicsRigidStatic*>(physicsObject.get());
+        actor = static_cast<PxActor*>(rigidStatic->GetNativeActor());
+        auto it = std::find(m_PhysicsRigidStatics.begin(), m_PhysicsRigidStatics.end(), physicsObject);
+        if (it != m_PhysicsRigidStatics.end())
+        {
             m_PhysicsRigidStatics.erase(it);
         }
         break;
     }
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC:
     {
-        auto dynamicObj = std::static_pointer_cast<IRigidDynamic>(physicsObject);
-        auto it = std::find(m_PhysicsRigidDynamics.begin(), m_PhysicsRigidDynamics.end(), dynamicObj);
-        if (it != m_PhysicsRigidDynamics.end()) {
+        auto rigidDynamic = static_cast<PhysicsRigidDynamic*>(physicsObject.get());
+        actor = static_cast<PxActor*>(rigidDynamic->GetNativeActor());
+        auto it = std::find(m_PhysicsRigidDynamics.begin(), m_PhysicsRigidDynamics.end(), physicsObject);
+        if (it != m_PhysicsRigidDynamics.end())
+        {
             m_PhysicsRigidDynamics.erase(it);
         }
         break;
@@ -123,19 +152,42 @@ void PhysicsScene::RemovePhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject
     case PhysicsObjectType::PHYSICS_OBJECT_TYPE_SOFT_BODY:
     {
         auto softBody = std::static_pointer_cast<ISoftBody>(physicsObject);
-        RemoveSoftBody(softBody);
-        return;
+        actor = reinterpret_cast<PxActor*>(softBody->GetOffset());
+        auto it = std::find(m_PhysicsSoftBodies.begin(), m_PhysicsSoftBodies.end(), softBody);
+        if (it != m_PhysicsSoftBodies.end())
+        {
+            m_PhysicsSoftBodies.erase(it);
+        }
+        break;
+    }
+    case PhysicsObjectType::PHYSICS_OBJECT_TYPE_CLOTH:
+    {
+        auto cloth = std::static_pointer_cast<ICloth>(physicsObject);
+        actor = reinterpret_cast<PxActor*>(cloth->GetOffset());
+        auto it = std::find(m_PhysicsClothes.begin(), m_PhysicsClothes.end(), physicsObject);
+        if (it != m_PhysicsClothes.end())
+        {
+            m_PhysicsClothes.erase(it);
+        }
+        break;
     }
     default:
         break;
     }
+
+    if (actor)
+    {
+        m_Scene->removeActor(*actor);
+    }
+
+    m_PhysicsObjects.erase(physicsObject);
 }
 
 bool PhysicsScene::AddJoint(PhysicsPtr<IPhysicsJoint> &joint)
 {
     if (joint)
     {
-        m_PhysicsJoints.push_back(joint);
+        m_Joints.push_back(joint);
         return true;
     }
     return false;
@@ -145,9 +197,9 @@ void PhysicsScene::RemoveJoint(PhysicsPtr<IPhysicsJoint> &joint)
 {
     if (joint)
     {
-        auto it = std::find(m_PhysicsJoints.begin(), m_PhysicsJoints.end(), joint);
-        if (it != m_PhysicsJoints.end()) {
-            m_PhysicsJoints.erase(it);
+        auto it = std::find(m_Joints.begin(), m_Joints.end(), joint);
+        if (it != m_Joints.end()) {
+            m_Joints.erase(it);
         }
     }
 }
@@ -169,7 +221,7 @@ bool PhysicsScene::AddSoftBody(PhysicsPtr<ISoftBody>& softBody)
     
     m_Scene->addActor(*pxSoftBody);
     m_PhysicsSoftBodies.push_back(softBody);
-    m_PhysicsObjects.push_back(softBody);
+    m_PhysicsObjects.insert(softBody);
     
     return true;
 }
@@ -196,11 +248,7 @@ void PhysicsScene::RemoveSoftBody(PhysicsPtr<ISoftBody>& softBody)
         m_PhysicsSoftBodies.erase(it);
     }
     
-    auto itObj = std::find(m_PhysicsObjects.begin(), m_PhysicsObjects.end(), softBody);
-    if (itObj != m_PhysicsObjects.end())
-    {
-        m_PhysicsObjects.erase(itObj);
-    }
+    m_PhysicsObjects.erase(softBody);
 }
 
 uint32_t PhysicsScene::GetPhysicsObjectCount() const
@@ -220,7 +268,7 @@ uint32_t PhysicsScene::GetPhysicsRigidStaticCount() const
 
 uint32_t PhysicsScene::GetJointCount() const
 {
-    return m_PhysicsJoints.size();
+    return m_Joints.size();
 }
 
 void PhysicsScene::RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, RaycastHit& hit)
@@ -401,7 +449,7 @@ void PhysicsScene::DebugDraw()
         }
     }
     
-    for (auto& joint : m_PhysicsJoints)
+    for (auto& joint : m_Joints)
     {
         if (joint)
         {
@@ -418,10 +466,15 @@ void PhysicsScene::DebugDraw()
         }
     }
     
-        debugRenderer->Flush();
+    debugRenderer->Flush();
 }
 
 size_t PhysicsScene::GetOffset() const
 {
-    return offsetof(PhysicsScene, m_Scene);
+    return reinterpret_cast<size_t>(m_Scene.get());
+}
+
+void* PhysicsScene::GetNativeScene() const
+{
+    return m_Scene.get();
 }

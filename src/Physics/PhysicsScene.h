@@ -7,21 +7,22 @@ namespace physx
 	class PxScene;
 	class PxCpuDispatcher;
 }
+
 class PhysicsEngine;
 class PhysicsRigidDynamic;
 class PhysicsRigidStatic;
+
 class PhysicsScene : public IPhysicsScene
 {
 public:
-	PhysicsScene(const PhysicsSceneCreateOptions &options, physx::PxCpuDispatcher *);
+	PhysicsScene(const PhysicsSceneCreateOptions &options, physx::PxCpuDispatcher *cpuDispatch);
 
-public:
 	void Release() override;
 	void Tick(MathLib::HReal deltaTime) override;
-	bool AddPhysicsObject(PhysicsPtr<IPhysicsObject>& physicsObject) override;
-	void RemovePhysicsObject(PhysicsPtr<IPhysicsObject>& physicsObject) override;
-	bool AddJoint(PhysicsPtr<IPhysicsJoint>& joint) override;
-	void RemoveJoint(PhysicsPtr<IPhysicsJoint>& joint) override;
+	bool AddPhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject) override;
+	void RemovePhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject) override;
+	bool AddJoint(PhysicsPtr<IPhysicsJoint> &joint) override;
+	void RemoveJoint(PhysicsPtr<IPhysicsJoint> &joint) override;
 	bool AddSoftBody(PhysicsPtr<ISoftBody>& softBody);
 	void RemoveSoftBody(PhysicsPtr<ISoftBody>& softBody);
 	uint32_t GetPhysicsObjectCount() const override;
@@ -34,14 +35,15 @@ public:
 	MathLib::HVector3 GetGravity() const override;
 	void DebugDraw() override;
 	size_t GetOffset() const override;
-
+	void* GetNativeScene() const override;
 private:
 	PhysXPtr<physx::PxScene> m_Scene;
 	PhysicsPtr<IPhysicsObject> m_GroundPlane;
-	std::vector<PhysicsPtr<IPhysicsObject>> m_PhysicsObjects;
-	std::vector<PhysicsPtr<IRigidDynamic>> m_PhysicsRigidDynamics;
-	std::vector<PhysicsPtr<IRigidStatic>> m_PhysicsRigidStatics;
+	std::set<PhysicsPtr<IPhysicsObject>> m_PhysicsObjects;
+	std::vector<PhysicsPtr<IPhysicsObject>> m_PhysicsRigidDynamics;
+	std::vector<PhysicsPtr<IPhysicsObject>> m_PhysicsRigidStatics;
 	std::vector<PhysicsPtr<ISoftBody>> m_PhysicsSoftBodies;
-	std::vector<PhysicsPtr<IPhysicsJoint>> m_PhysicsJoints;
+	std::vector<PhysicsPtr<IPhysicsObject>> m_PhysicsClothes;
+	std::vector<PhysicsPtr<IPhysicsJoint>> m_Joints;
 	MathLib::HVector3 m_Gravity;
 };
