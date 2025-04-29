@@ -1,0 +1,27 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# PhysX Toy 项目概述
+
+这是一个基于PhysX的物理引擎玩具项目，用于学习和演示物理引擎的基本概念。该项目使用Magnum库进行渲染。
+
+## 主要文件
+
+- 入口点: [src/main.cpp](mdc:src/main.cpp)
+- 物理引擎: [src/Physics/PhysicsEngine.h](mdc:src/Physics/PhysicsEngine.h) 和 [src/Physics/PhysicsEngine.cpp](mdc:src/Physics/PhysicsEngine.cpp)
+- 物理场景: [src/Physics/PhysicsScene.h](mdc:src/Physics/PhysicsScene.h) 和 [src/Physics/PhysicsScene.cpp](mdc:src/Physics/PhysicsScene.cpp)
+- 物理对象: [src/Physics/PhysicsRigid.h](mdc:src/Physics/PhysicsRigid.h) 和 [src/Physics/PhysicsRigid.cpp](mdc:src/Physics/PhysicsRigid.cpp)
+
+## 项目结构
+
+- `include/`: 头文件目录
+  - `Physics/`: 物理相关头文件
+  - `Renderer/`: 渲染相关头文件
+- `src/`: 源代码目录
+  - `Physics/`: 物理引擎实现
+  - `Render/`: 渲染器实现
+- `asset/`: 资产文件目录
+- `ThirdParty/`: 第三方库
+

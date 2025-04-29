@@ -1,0 +1,49 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 物理引擎模块
+
+物理引擎模块是项目的核心部分，负责模拟物理行为。它基于PhysX库实现，支持刚体、软体、关节和布料等物理对象。
+
+## 主要组件
+
+### 物理引擎
+
+- [src/Physics/PhysicsEngine.h](mdc:src/Physics/PhysicsEngine.h): 物理引擎类定义
+- [src/Physics/PhysicsEngine.cpp](mdc:src/Physics/PhysicsEngine.cpp): 物理引擎实现
+
+### 物理场景
+
+- [src/Physics/PhysicsScene.h](mdc:src/Physics/PhysicsScene.h): 物理场景类定义
+- [src/Physics/PhysicsScene.cpp](mdc:src/Physics/PhysicsScene.cpp): 物理场景实现
+
+### 物理对象
+
+- [src/Physics/PhysicsRigid.h](mdc:src/Physics/PhysicsRigid.h): 刚体物理对象
+- [src/Physics/PhysicsRigid.cpp](mdc:src/Physics/PhysicsRigid.cpp): 刚体物理对象实现
+- [src/Physics/PhysicsSoftBody.h](mdc:src/Physics/PhysicsSoftBody.h): 软体物理对象
+- [src/Physics/PhysicsSoftBody.cpp](mdc:src/Physics/PhysicsSoftBody.cpp): 软体物理对象实现
+- [src/Physics/PhysicsCloth.h](mdc:src/Physics/PhysicsCloth.h): 布料物理对象
+- [src/Physics/PhysicsCloth.cpp](mdc:src/Physics/PhysicsCloth.cpp): 布料物理对象实现
+
+### 物理连接
+
+- [src/Physics/PhysicsJoint.h](mdc:src/Physics/PhysicsJoint.h): 物理关节
+- [src/Physics/PhysicsJoint.cpp](mdc:src/Physics/PhysicsJoint.cpp): 物理关节实现
+
+### 物理材质
+
+- [src/Physics/PhysicsMaterial.h](mdc:src/Physics/PhysicsMaterial.h): 物理材质
+- [src/Physics/PhysicsMaterial.cpp](mdc:src/Physics/PhysicsMaterial.cpp): 物理材质实现
+
+### 碰撞几何体
+
+- [src/Physics/ColliderGeometry.h](mdc:src/Physics/ColliderGeometry.h): 碰撞几何体定义
+
+### GPU加速
+
+- [src/Physics/OCLAcceleration.h](mdc:src/Physics/OCLAcceleration.h): OpenCL加速
+- [src/Physics/OCLAcceleration.cpp](mdc:src/Physics/OCLAcceleration.cpp): OpenCL加速实现
+

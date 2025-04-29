@@ -1,0 +1,31 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 工具和通用组件
+
+本项目包含一系列工具类和通用组件，用于支持物理引擎和渲染器的功能实现。
+
+## 物理引擎工具
+
+- [src/Physics/Utility/PhysXUtils.h](mdc:src/Physics/Utility/PhysXUtils.h): PhysX库相关工具函数
+- [src/Physics/Utility/PhysicsUtils.h](mdc:src/Physics/Utility/PhysicsUtils.h): 物理计算工具函数
+- [src/Physics/Utility/PhysicsConvexUtils.h](mdc:src/Physics/Utility/PhysicsConvexUtils.h): 凸包计算工具函数
+
+## 物理类型和公共定义
+
+- [include/Physics/PhysicsTypes.h](mdc:include/Physics/PhysicsTypes.h): 物理引擎类型定义
+- [include/Physics/PhysicsCommon.h](mdc:include/Physics/PhysicsCommon.h): 物理引擎公共定义
+
+## 网格处理工具
+
+- [include/MeshDataLoader.h](mdc:include/MeshDataLoader.h): 网格数据加载器
+- [include/TestMeshGenerator.h](mdc:include/TestMeshGenerator.h): 测试网格生成器
+
+## 测试和示例
+
+- [include/TestRigidBodyCreate.h](mdc:include/TestRigidBodyCreate.h): 刚体创建测试
+- [src/Physics/TestSoftBody.h](mdc:src/Physics/TestSoftBody.h): 软体测试
+- [src/TestPhysicsEngine.h](mdc:src/TestPhysicsEngine.h): 物理引擎测试
+

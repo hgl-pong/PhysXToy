@@ -1,0 +1,37 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 渲染器模块
+
+渲染器模块负责图形显示，使用Magnum库实现。它将物理引擎模拟的对象可视化展示。
+
+## 主要组件
+
+### 渲染器
+
+- [include/Renderer/Renderer.h](mdc:include/Renderer/Renderer.h): 渲染器接口
+- [src/Render/Renderer.cpp](mdc:src/Render/Renderer.cpp): 渲染器实现
+
+### 渲染单元
+
+- [include/Renderer/RenderUnit.h](mdc:include/Renderer/RenderUnit.h): 渲染单元接口
+- [src/Render/RenderUnit.cpp](mdc:src/Render/RenderUnit.cpp): 渲染单元实现
+
+### 物理对象渲染
+
+- [include/Renderer/PhysicsRenderObject.h](mdc:include/Renderer/PhysicsRenderObject.h): 物理对象渲染接口
+- [src/Render/PhysicsRenderObject.h](mdc:src/Render/PhysicsRenderObject.h): 物理对象渲染实现
+- [src/Render/PhysicsRenderObject.cpp](mdc:src/Render/PhysicsRenderObject.cpp): 物理对象渲染方法
+
+### 渲染对象适配器
+
+- [src/Render/RenderObjectAdapter.h](mdc:src/Render/RenderObjectAdapter.h): 渲染对象适配器接口
+- [src/Render/RenderObjectAdapter.cpp](mdc:src/Render/RenderObjectAdapter.cpp): 渲染对象适配器实现
+
+### 应用程序
+
+- [src/Render/Application.h](mdc:src/Render/Application.h): 应用程序接口
+- [src/Render/Application.cpp](mdc:src/Render/Application.cpp): 应用程序实现
+

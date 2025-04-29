@@ -1,0 +1,39 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 构建系统
+
+PhysX Toy项目使用CMake作为构建系统，支持跨平台编译。
+
+## 主要构建文件
+
+- [CMakeLists.txt](mdc:CMakeLists.txt): 主CMake配置文件
+- [CMakeSettings.json](mdc:CMakeSettings.json): Visual Studio CMake设置
+
+## 依赖项
+
+项目依赖以下第三方库：
+
+- PhysX: 物理引擎库
+- Magnum: 图形渲染库
+- GLM: 数学库
+- GLEW: OpenGL扩展库
+- freeglut: OpenGL实用工具包
+- Eigen3: 线性代数库
+- OpenCL: 并行计算库
+- tinyobjloader: OBJ格式模型加载器
+
+可以通过vcpkg包管理器安装这些依赖项：
+
+```bash
+vcpkg install glm glew freeglut physx Eigen3 OpenCL tinyobjloader Magnum
+```
+
+## 构建步骤
+
+1. 确保已安装依赖项
+2. 使用CMake生成构建文件
+3. 使用生成的构建文件编译项目
+
