@@ -18,6 +18,7 @@ namespace physx
 
 class PhysicsAllocator;
 class PhysicsErrorCallback;
+class PhysicsProfiler;
 
 class PhysicsEngine : public IPhysicsEngine
 {
@@ -48,13 +49,13 @@ private:
 	PhysicsEngineOptions m_Options;
 	std::unique_ptr<physx::PxAllocatorCallback> m_AllocatorCallback;
 	std::unique_ptr<physx::PxErrorCallback> m_ErrorCallback;
-	PhysXPtr<physx::PxPvd> m_Pvd;
 	PhysXPtr<physx::PxFoundation> m_Foundation;
 	PhysXPtr<physx::PxPhysics> m_Physics;
 	std::unique_ptr<physx::PxCpuDispatcher> m_CpuDispatcher;
 	PhysXPtr<physx::PxCudaContextManager> m_CudaContextManager;
 	PhysicsPtr<IPhysicsScene> m_ActiveScene;
 	PhysicsPtr<IPhysicsDebugRenderer> m_DebugRenderer;
+	std::unique_ptr<PhysicsProfiler> m_Profiler;
 	std::unordered_set<ICollisionCallback*> m_CollisionCallbacks;
 	bool m_bInitialized;
 };

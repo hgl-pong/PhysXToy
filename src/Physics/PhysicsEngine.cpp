@@ -9,13 +9,13 @@
 #include "PhysicsJoint.h"
 #include "PhysicsSoftBody.h"
 #include "PhysicsCloth.h"
+#include "PhysicsProfiler.h"
 #include <assert.h>
 
 #ifndef NDEBUG
 #define ENABLE_PVD
 #endif
 
-#define PHYSX_PVD_HOST "127.0.0.1"
 #define PHYSX_PRINT_WARNING(msg) PxGetFoundation().error(physx::PxErrorCode::eDEBUG_WARNING, __FILE__, __LINE__, msg)
 
 using namespace physx;
@@ -26,7 +26,6 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
 	m_ErrorCallback = nullptr;
 	m_Foundation = nullptr;
 	m_Physics = nullptr;
-	m_Pvd = nullptr;
 	m_CpuDispatcher = nullptr;
 	m_bInitialized = false;
 
@@ -44,14 +43,9 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
 
 		m_Foundation = make_physx_ptr(PxCreateFoundation(PX_PHYSICS_VERSION, *m_AllocatorCallback, *m_ErrorCallback));
 
-		if (m_Options.m_bEnablePVD)
-		{
-			m_Pvd = make_physx_ptr(PxCreatePvd(*m_Foundation));
-			PxPvdTransport *transport = PxDefaultPvdSocketTransportCreate(PHYSX_PVD_HOST, 5425, 10);
-			m_Pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
-		}
+		m_Profiler = std::make_unique<PhysicsProfiler>(m_Options.m_bEnablePVD);
 		PxTolerancesScale toleranceScale;
-		m_Physics = make_physx_ptr(PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, toleranceScale, false, m_Pvd.get()));
+		m_Physics = make_physx_ptr(PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, toleranceScale, false, m_Profiler->GetPVD()));
 		m_CpuDispatcher = std::unique_ptr<physx::PxCpuDispatcher>(PxDefaultCpuDispatcherCreate(m_Options.m_NumThreads));
 	
 		physx::PxCudaContextManagerDesc cudaContextManagerDesc;
@@ -70,13 +64,7 @@ PhysicsEngine::~PhysicsEngine()
 {
 	m_CpuDispatcher.reset();
 	m_Physics.reset();
-	if (m_Pvd)
-	{
-		PxPvdTransport *transport = m_Pvd->getTransport();
-		m_Pvd->disconnect();
-		m_Pvd.reset();
-		PX_RELEASE(transport);
-	}
+	m_Profiler.reset();
 	m_Foundation.reset();
 	m_bInitialized = false;
 }

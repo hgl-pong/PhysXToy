@@ -74,6 +74,7 @@ struct PhysicsEngineOptions
 	uint32_t m_SolverIterationCount = DEFAULT_SOLVER_ITERATION_COUNT;
     bool m_EnableCCD = false;               
     bool m_EnableDebugVisualization = false;
+    bool m_EnableProfiler = false;
 };
 
 enum class PhysicsSceneFilterShaderType
