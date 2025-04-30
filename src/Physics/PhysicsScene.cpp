@@ -5,7 +5,8 @@
 #include "PhysicsEngine.h"
 #include "PhysicsJoint.h"
 #include "PhysicsSoftBody.h"
-#include "physx/common/PxRenderBuffer.h"
+#include "common/PxRenderBuffer.h"
+#include "PhysicsProfiler.h"
 #ifndef NDEBUG
 #define ENABLE_PVD
 #endif
@@ -40,6 +41,7 @@ void PhysicsScene::Release()
 
 void PhysicsScene::Tick(MathLib::HReal deltaTime)
 {
+    PHYSICS_PROFILE_FRAME("Scene", this);
     m_Scene->simulate(deltaTime);
     m_Scene->fetchResults(true);
 

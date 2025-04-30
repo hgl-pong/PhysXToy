@@ -10,6 +10,7 @@
 #include "PhysicsSoftBody.h"
 #include "PhysicsCloth.h"
 #include "PhysicsProfiler.h"
+
 #include <assert.h>
 
 #ifndef NDEBUG
