@@ -63,6 +63,11 @@ PhysicsPtr<ISoftBody> PhysicsEngineUtils::CreateSoftBody(const SoftBodyCreateOpt
 	return gPhysicsEngine->CreateSoftBody(options);
 }
 
+IPhysicsProfiler* PhysicsEngineUtils::GetProfiler()
+{
+	return gPhysicsEngine->GetProfiler();
+}
+
 bool PhysicsEngineUtils::ConvexDecomposition(const PhysicsMeshData& meshData, const ConvexDecomposeOptions& params, std::vector<PhysicsMeshData>& convexMeshesData)
 {
 	if (!gConvexMeshDecomposer)

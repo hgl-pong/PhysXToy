@@ -40,7 +40,7 @@ struct EventStats {
 	uint64_t minTime = UINT64_MAX;
 };
 
-class PhysicsProfiler : public physx::PxProfilerCallback
+class PhysicsProfiler : public physx::PxProfilerCallback, virtual public IPhysicsProfiler
 {
 public:
 	PhysicsProfiler(bool bEnablePVD = true, bool bEnableCustomProfiler = true)
@@ -66,6 +66,27 @@ public:
 			m_Pvd.reset();
 			PX_RELEASE(transport);
 		}
+	}
+
+	virtual void* ZoneStart(const char* eventName, bool detached, uint64_t contextId) override
+	{
+		return zoneStart(eventName, detached, contextId);
+	}
+	virtual void ZoneEnd(void* profilerData, const char* eventName, bool detached, uint64_t contextId) override
+	{
+		return zoneEnd(profilerData, eventName, detached, contextId);
+	}
+	virtual void RecordData(int32_t value, const char* valueName, uint64_t contextId) override
+	{
+		return recordData(value, valueName, contextId);
+	}
+	virtual void RecordData(float value, const char* valueName, uint64_t contextId) override
+	{
+		return recordData(value, valueName, contextId);
+	}
+	virtual void RecordFrame(const char* name, uint64_t contextId) override
+	{
+		return recordFrame(name, contextId);
 	}
 
 	virtual void* zoneStart(const char* eventName, bool detached, uint64_t contextId) override
@@ -178,7 +199,7 @@ public:
 		}
 	}
 
-	void printStatistics() const
+	void PrintStatistics() const
 	{
 		if (!m_bEnableCustomProfiler) 
 			return;
@@ -200,7 +221,7 @@ public:
 		printf("==================================\n");
 	}
 
-	void resetStatistics()
+	void ResetStatistics()
 	{
 		std::lock_guard<std::mutex> lock(m_Mutex);
 		m_EventStats.clear();
@@ -208,17 +229,17 @@ public:
 		m_DataRecords.clear();
 	}
 
-	void setVerboseOutput(bool enable) 
+	void SetVerboseOutput(bool enable) 
 	{ 
 		m_bVerboseOutput = enable; 
 	}
 
-	void enableCustomProfiler(bool enable) 
+	void EnableCustomProfiler(bool enable) 
 	{ 
 		m_bEnableCustomProfiler = enable; 
 	}
 
-	void enablePVDProfiler(bool enable) 
+	void EnablePVDProfiler(bool enable) 
 	{ 
 		m_bCallPVDProfilingFunctions = enable && m_bEnablePVD; 
 	}
@@ -228,17 +249,17 @@ public:
 		return m_Pvd.get();
 	}
 
-	const std::unordered_map<std::string, EventStats>& getEventStats() const
+	const std::unordered_map<std::string, EventStats>& GetEventStats() const
 	{
 		return m_EventStats;
 	}
 
-	const std::vector<ProfileTimingEvent>& getCompletedEvents() const
+	const std::vector<ProfileTimingEvent>& GetCompletedEvents() const
 	{
 		return m_CompletedEvents;
 	}
 
-	const std::vector<ProfileDataRecord>& getDataRecords() const
+	const std::vector<ProfileDataRecord>& GetDataRecords() const
 	{
 		return m_DataRecords;
 	}
@@ -264,24 +285,22 @@ private:
 	std::unordered_map<std::string, EventStats> m_EventStats;
 };
 
-
-
 #if _DEBUG
 	#define PHYSICS_CONCAT(X, Y) X##Y
 	#define PHYSICS_PROFILE_ZONE(x, y)										\
-		PhysicsProfilerScope PHYSICS_CONCAT(_scoped, __LINE__)(g_PhysicsProfiler, x, false, (size_t)y)
+		PhysicsProfilerScope PHYSICS_CONCAT(_scoped, __LINE__)(PhysicsEngineUtils::GetProfiler(), x, false, (size_t)y)
 	#define PHYSICS_PROFILE_START_CROSSTHREAD(x, y)							\
-		if(g_PhysicsProfiler)										\
-			g_PhysicsProfiler->zoneStart(x, true, (size_t)y)
+		if(PhysicsEngineUtils::GetProfiler())										\
+			PhysicsEngineUtils::GetProfiler()->ZoneStart(x, true, (size_t)y)
 	#define PHYSICS_PROFILE_STOP_CROSSTHREAD(x, y)							\
-		if(g_PhysicsProfiler)										\
-			g_PhysicsProfiler->zoneEnd(NULL, x, true, (size_t)y)
+		if(PhysicsEngineUtils::GetProfiler())										\
+			PhysicsEngineUtils::GetProfiler()->ZoneEnd(NULL, x, true, (size_t)y)
 	#define PHYSICS_PROFILE_VALUE(x, y, z)									\
-		if(g_PhysicsProfiler)										\
-			g_PhysicsProfiler->recordData(x, y, (size_t)z)
+		if(PhysicsEngineUtils::GetProfiler())										\
+			PhysicsEngineUtils::GetProfiler()->RecordData(x, y, (size_t)z)
 	#define PHYSICS_PROFILE_FRAME(x, y)                                                                                                         \
-		if(g_PhysicsProfiler)                                                                                                        \
-			g_PhysicsProfiler->recordFrame(x, (size_t)y)
+		if(PhysicsEngineUtils::GetProfiler())                                                                                                        \
+			PhysicsEngineUtils::GetProfiler()->RecordFrame(x, (size_t)y)
 #else
 	#define PHYSICS_PROFILE_ZONE(x, y)
 	#define PHYSICS_PROFILE_START_CROSSTHREAD(x, y)

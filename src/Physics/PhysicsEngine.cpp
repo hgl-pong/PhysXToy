@@ -281,3 +281,9 @@ PhysicsPtr<ICloth> PhysicsEngine::CreateCloth(const ClothCreateOptions &options)
 	
 	return make_physics_ptr(cloth);
 }
+
+IPhysicsProfiler* PhysicsEngine::GetProfiler()
+{
+	return m_Profiler.get();
+}
+

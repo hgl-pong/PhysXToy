@@ -34,6 +34,7 @@ public:
 	PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options) override;
 	PhysicsPtr<ISoftBody> CreateSoftBody(const SoftBodyCreateOptions &options) override;
 	PhysicsPtr<ICloth> CreateCloth(const ClothCreateOptions &options) override;
+	IPhysicsProfiler* GetProfiler() override;
 	void SetSolverIterationCount(uint32_t count) override;
 	uint32_t GetSolverIterationCount() const override;
 	void SetDebugRenderer(PhysicsPtr<IPhysicsDebugRenderer> renderer) override;

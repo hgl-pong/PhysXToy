@@ -17,6 +17,7 @@ class IPhysicsJoint;
 class ISoftBody;
 class ICloth;
 class IPhysicsDebugRenderer;
+class IPhysicsProfiler;
 
 enum class ForceMode
 {
@@ -73,6 +74,16 @@ struct JointCreateOptions
 	bool collisionEnabled = false;
 };
 
+class IPhysicsProfiler
+{
+public:
+	virtual void* ZoneStart(const char* eventName, bool detached, uint64_t contextId) = 0;
+	virtual void ZoneEnd(void* profilerData, const char* eventName, bool detached, uint64_t contextId) = 0;
+	virtual void RecordData(int32_t value, const char* valueName, uint64_t contextId) = 0;
+	virtual void RecordData(float value, const char* valueName, uint64_t contextId) = 0;
+	virtual void RecordFrame(const char* name, uint64_t contextId) = 0;
+};
+
 class IPhysicsEngine
 {
 public:
@@ -83,7 +94,8 @@ public:
 	virtual PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options) = 0;
 	virtual PhysicsPtr<ISoftBody> CreateSoftBody(const SoftBodyCreateOptions &options) = 0;
 	virtual PhysicsPtr<ICloth> CreateCloth(const ClothCreateOptions &options) = 0;
-	
+	virtual IPhysicsProfiler* GetProfiler() = 0;
+
 	virtual void SetSolverIterationCount(uint32_t count) = 0;
 	virtual uint32_t GetSolverIterationCount() const = 0;
 	virtual void SetDebugRenderer(PhysicsPtr<IPhysicsDebugRenderer> renderer) = 0;
@@ -329,6 +341,8 @@ public:
 	
 	static PhysicsPtr<IRigidStatic> CreateRigidStatic(const PhysicsObjectCreateOptions &options);
 	static PhysicsPtr<IRigidDynamic> CreateRigidDynamic(const PhysicsObjectCreateOptions &options);
+
+	static IPhysicsProfiler* GetProfiler();
 	
 	static void BuildConvexMesh(const std::vector<MathLib::HVector3> &vertices, const std::vector<uint32_t> &indices, PhysicsMeshData &meshdata);
 	static bool ConvexDecomposition(const PhysicsMeshData &meshData, const ConvexDecomposeOptions &params, std::vector<PhysicsMeshData> &convexMeshesData);
