@@ -57,7 +57,7 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
 			PHYSX_PRINT_WARNING("CUDA initialization failed. SoftBody features will be unavailable.");
 		}
 	}
-
+	
 	m_bInitialized = true;
 }
 

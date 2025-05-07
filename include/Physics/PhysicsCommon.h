@@ -39,20 +39,14 @@ struct CollisionEventData
 class ICollisionCallback
 {
 public:
+
 	virtual ~ICollisionCallback() = default;
+	virtual	bool	BufferContacts()		const												= 0;
+	virtual	size_t	GetContactFlags()		const												= 0;
+	virtual	float	GetContactThreshold()	const												= 0;
 	virtual void OnCollisionEnter(const CollisionEventData& eventData) = 0;
 	virtual void OnCollisionStay(const CollisionEventData& eventData) = 0;
 	virtual void OnCollisionExit(const CollisionEventData& eventData) = 0;
-};
-
-enum class JointType
-{
-	FIXED,
-	DISTANCE,
-	SPHERICAL,
-	REVOLUTE,
-	PRISMATIC,
-	D6
 };
 
 struct RaycastHit

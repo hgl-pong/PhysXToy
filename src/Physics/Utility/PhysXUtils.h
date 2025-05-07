@@ -181,7 +181,7 @@ namespace PhysXConstructTools
 	}
 }
 
-inline physx::PxBounds3 CalculateBoundingBox(physx::PxRigidActor* actor) {
+PHYSICS_INLINE physx::PxBounds3 CalculateBoundingBox(physx::PxRigidActor* actor) {
 	physx::PxU32 numShapes = actor->getNbShapes();
 	std::vector<physx::PxShape*>shapes(numShapes);
 	actor->getShapes(shapes.data(), numShapes);
@@ -203,4 +203,42 @@ inline physx::PxBounds3 CalculateBoundingBox(physx::PxRigidActor* actor) {
 	}
 
 	return bounds;
+}
+
+PHYSICS_INLINE void NormalToTangents(const physx::PxVec3& n, physx::PxVec3& t1, physx::PxVec3& t2)
+{
+	const physx::PxReal m_sqrt1_2 = physx::PxReal(0.7071067811865475244008443621048490);
+	if(fabsf(n.z) > m_sqrt1_2)
+	{
+		const physx::PxReal a = n.y*n.y + n.z*n.z;
+		const physx::PxReal k = physx::PxReal(1.0)/physx::PxSqrt(a);
+		t1 = physx::PxVec3(0,-n.z*k,n.y*k);
+		t2 = physx::PxVec3(a*k,-n.x*t1.z,n.x*t1.y);
+	}
+	else 
+	{
+		const physx::PxReal a = n.x*n.x + n.y*n.y;
+		const physx::PxReal k = physx::PxReal(1.0)/physx::PxSqrt(a);
+		t1 = physx::PxVec3(-n.y*k,n.x*k,0);
+		t2 = physx::PxVec3(-n.z*t1.y,n.z*t1.x,a*k);
+	}
+	t1.normalize();
+	t2.normalize();
+}
+
+PHYSICS_INLINE physx::PxQuat ComputeJointQuat(const physx::PxTransform* pose, const physx::PxVec3& localAxis)
+{
+	physx::PxVec3 axisw = pose ? pose->rotate(localAxis) : localAxis;
+	axisw.normalize();
+
+	physx::PxVec3 normalw, binormalw;
+	NormalToTangents(axisw, binormalw, normalw);
+
+	const physx::PxVec3 localNormal = pose ? pose->rotateInv(normalw) : normalw;
+
+	const physx::PxMat33 rot(localAxis, localNormal, localAxis.cross(localNormal));
+	physx::PxQuat q(rot);
+	q.normalize();
+
+	return q;
 }

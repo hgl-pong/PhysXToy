@@ -4,6 +4,9 @@
 #define DEFAULT_CPU_DISPATCHER_NUM_THREADS 2
 #define DEFAULT_SOLVER_ITERATION_COUNT 6
 
+#define PHYSICS_INLINE inline
+#define PHYSICS_FORCE_INLINE __forceinline
+
 template <typename T>
 struct PhysicsDeleter
 {
@@ -304,3 +307,88 @@ struct ClothCreateOptions
     uint32_t m_CollisionMask = 0xFFFFFFFF;        
     void* m_UserData = nullptr;                   
 };
+
+enum class JointType
+{
+	FIXED,
+	DISTANCE,
+	SPHERICAL,
+	REVOLUTE,
+	PRISMATIC,
+	D6,
+    HINGE,
+    GEAR,
+    RACK_AND_PINION,
+    CHAIN,
+    PORTAL,
+    COUNT
+};
+
+class IPhysicsObject;
+
+struct PhysicsContactData
+{
+    IPhysicsObject* m_ObjectA;
+    IPhysicsObject* m_ObjectB;
+    MathLib::HVector3 m_ContactPoint;
+    MathLib::HVector3 m_ContactNormal;
+    MathLib::HVector3 m_Impulse;
+    size_t m_InternalFaceIndexA;
+    size_t m_InternalFaceIndexB;
+    MathLib::HReal m_Separation;
+};
+
+enum PhysicsContactFlags
+{
+    CONTACT_FOUND	= (1<<0),
+    CONTACT_PERSIST	= (1<<1),
+    CONTACT_LOST	= (1<<2),
+    CONTACT_ALL		= CONTACT_FOUND|CONTACT_PERSIST|CONTACT_LOST
+};
+
+struct PhysicsLimits
+{
+    PhysicsLimits(MathLib::HReal m=0.0f, MathLib::HReal M=0.0f) : m_MinValue(m), m_MaxValue(M)								{}
+    PhysicsLimits(const PhysicsLimits& limits) : m_MinValue(limits.m_MinValue), m_MaxValue(limits.m_MaxValue)	{}
+
+    void Set(MathLib::HReal m, MathLib::HReal M)
+    {
+        m_MinValue = m;
+        m_MaxValue = M;
+    }
+
+    MathLib::HReal	m_MinValue;
+    MathLib::HReal	m_MaxValue;
+};
+
+struct PhysicsSpring
+{
+	PhysicsSpring(MathLib::HReal s=0.0f, MathLib::HReal d=0.0f) : m_Stiffness(s), m_Damping(d)	{}
+
+	MathLib::HReal	m_Stiffness;
+	MathLib::HReal	m_Damping;
+};
+
+struct PhysicsHingeDynamicData
+{
+	MathLib::HReal	m_TwistAngle;
+};
+
+struct PhysicsD6DynamicData
+{
+	MathLib::HReal	m_TwistAngle;
+	MathLib::HReal	m_SwingYAngle;
+	MathLib::HReal	m_SwingZAngle;
+};
+
+enum class PhysicsVehicleDifferential
+{
+    DIFFERENTIAL_LS_4WD,		
+    DIFFERENTIAL_LS_FRONTWD,	
+    DIFFERENTIAL_LS_REARWD,	
+    DIFFERENTIAL_OPEN_4WD,		
+    DIFFERENTIAL_OPEN_FRONTWD,	
+    DIFFERENTIAL_OPEN_REARWD,	
+    DIFFERENTIAL_UNDEFINED
+};
+
