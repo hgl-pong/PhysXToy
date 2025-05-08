@@ -33,8 +33,8 @@ namespace ConvertUtils
 	inline physx::PxTransform ToPx(const MathLib::HTransform3& transform)
 	{
 		MathLib::HVector3 translation = transform.translation();
-
 		MathLib::HMatrix3 rotationMatrix = transform.rotation();
+
 		MathLib::HQuaternion rotationQuaternion(rotationMatrix);
 
 		physx::PxVec3 pxTranslation(translation.x(), translation.y(), translation.z());

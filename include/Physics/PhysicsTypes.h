@@ -95,10 +95,10 @@ struct PhysicsSceneCreateOptions
 
 struct PhysicsMaterialCreateOptions
 {
-	MathLib::HReal m_StaticFriction = 0.5;
-	MathLib::HReal m_DynamicFriction = 0.5;
-	MathLib::HReal m_Restitution = 0.6;
-	MathLib::HReal m_Density = 10;
+	MathLib::HReal m_StaticFriction = 0.5f;
+	MathLib::HReal m_DynamicFriction = 0.5f;
+	MathLib::HReal m_Restitution = 0.6f;
+	MathLib::HReal m_Density = 10.f;
 };
 
 enum class CollierGeometryType
@@ -192,7 +192,7 @@ struct ConvexDecomposeOptions
 	MathLib::HReal m_Concavity = 0.0025f;			// Value between 0 and 1
 };
 
-enum class QueryFilterFlag
+enum class QueryFilterFlag : size_t
 {
     STATIC = (1 << 0),      
     DYNAMIC = (1 << 1),     
@@ -203,13 +203,13 @@ enum class QueryFilterFlag
     ALL = 0xFFFFFFFF        
 };
 
-struct RaycastOptions
-{
-    uint32_t m_FilterMask = static_cast<uint32_t>(QueryFilterFlag::ALL); 
-    bool m_HitBackFaces = false;                      
-    bool m_HitTriggers = false;                       
-    MathLib::HReal m_MaxDistance = FLT_MAX;           
-};
+//struct RaycastOptions
+//{
+//    uint32_t m_FilterMask = static_cast<uint32_t>(QueryFilterFlag::ALL); 
+//    bool m_HitBackFaces = false;                      
+//    bool m_HitTriggers = false;                       
+//    MathLib::HReal m_MaxDistance = FLT_MAX;           
+//};
 
 struct JointLimitOptions
 {
