@@ -94,6 +94,9 @@ private:
 	bool m_imguiInitialized = false;
 	bool m_showDemoWindow = false;
 	bool m_showStatsWindow = true;
+	
+	// Track if dockspace layout has been initialized
+	bool m_dockspaceInitialized = false;
 
 	std::vector<std::shared_ptr<GUIPanel>> m_guiPanels;
 };
@@ -605,7 +608,6 @@ void Renderer::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset
 	}
 }
 
-
 void Renderer::InitializeImGui() {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -613,9 +615,18 @@ void Renderer::InitializeImGui() {
 	(void)io;
 
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;    // Enable Docking
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;  // Enable Multi-Viewport / Platform Windows
 
+	// Setup ImGui style
 	ImGui::StyleColorsDark();
+
+	// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones
+	ImGuiStyle& style = ImGui::GetStyle();
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+		style.WindowRounding = 0.0f;
+		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+	}
 
 	ImGui_ImplGlfw_InitForOther(m_window, true);
 	ImGui_ImplDX11_Init(m_device.Get(), m_deviceContext.Get());
@@ -630,6 +641,64 @@ void Renderer::RenderImGui() {
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+
+	// Create a fullscreen window for the dockspace
+	static bool dockspaceOpen = true;
+	static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+
+	// We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
+	// because it would be confusing to have two docking targets within each other.
+	ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+	
+	// Make the parent window background fully transparent
+	ImGuiViewport* viewport = ImGui::GetMainViewport();
+	ImGui::SetNextWindowPos(viewport->Pos);
+	ImGui::SetNextWindowSize(viewport->Size);
+	ImGui::SetNextWindowViewport(viewport->ID);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+	window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+	window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+	
+	// When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background
+	// and handle the pass-thru hole, so we ask Begin() to not render a background.
+	if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+		window_flags |= ImGuiWindowFlags_NoBackground;
+
+	// Important: note that we proceed even if Begin() returns false (aka window is collapsed).
+	// This is because we want to keep our DockSpace() active. If a DockSpace() is inactive,
+	// all active windows docked into it will lose their parent and become undocked.
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+	ImGui::Begin(m_appName.c_str(), &dockspaceOpen, window_flags);
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar(2);
+
+	// DockSpace
+	ImGuiIO& io = ImGui::GetIO();
+	ImGuiID dockspace_id = ImGui::GetID("MainDockSpace");
+	if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
+		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+	}
+
+	// Menu Bar
+	if (ImGui::BeginMenuBar()) {
+		if (ImGui::BeginMenu("File")) {
+			if (ImGui::MenuItem("Exit", "Alt+F4")) {
+				glfwSetWindowShouldClose(m_window, GLFW_TRUE);
+			}
+			ImGui::EndMenu();
+		}
+        
+		if (ImGui::BeginMenu("View")) {
+			ImGui::MenuItem("Stats Window", nullptr, &m_showStatsWindow);
+			ImGui::MenuItem("Demo Window", nullptr, &m_showDemoWindow);
+			ImGui::EndMenu();
+		}
+		
+		ImGui::EndMenuBar();
+	}
+
+	ImGui::End(); // End of DockSpace window
 
 	if (m_showDemoWindow)
 		ImGui::ShowDemoWindow(&m_showDemoWindow);
@@ -674,6 +743,16 @@ void Renderer::RenderImGui() {
 
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	
+	// Update and Render additional Platform Windows
+	// (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
+	//  For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
+	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+		// Restore the DX11 render target
+		//m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
+	}
 }
 
 IRenderer* CreateRenderer(int argc, char** argv) {
