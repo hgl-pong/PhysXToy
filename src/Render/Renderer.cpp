@@ -42,6 +42,8 @@ public:
 	) override;
 	void AddRenderObject(std::shared_ptr<RenderObject> renderable) override;
 	void RemoveRenderObject(std::shared_ptr<RenderObject> renderable) override;
+	void AddGUIPanel(std::shared_ptr<GUIPanel> panel) override;
+	void RemoveGUIPanel(std::shared_ptr<GUIPanel> panel) override;
 	bool Tick() override;
 	MathLib::GraphicUtils::Camera* GetActiveCamera() override;
 
@@ -92,6 +94,8 @@ private:
 	bool m_imguiInitialized = false;
 	bool m_showDemoWindow = false;
 	bool m_showStatsWindow = true;
+
+	std::vector<std::shared_ptr<GUIPanel>> m_guiPanels;
 };
 
 Renderer::Renderer(int argc, char** argv) {
@@ -315,6 +319,17 @@ void Renderer::RemoveRenderObject(std::shared_ptr<RenderObject> renderable) {
 	auto it = std::find(m_renderObjects.begin(), m_renderObjects.end(), renderable);
 	if (it != m_renderObjects.end()) {
 		m_renderObjects.erase(it);
+	}
+}
+
+void Renderer::AddGUIPanel(std::shared_ptr<GUIPanel> panel) {
+	m_guiPanels.push_back(panel);
+}
+
+void Renderer::RemoveGUIPanel(std::shared_ptr<GUIPanel> panel) {
+	auto it = std::find(m_guiPanels.begin(), m_guiPanels.end(), panel);
+	if (it != m_guiPanels.end()) {
+		m_guiPanels.erase(it);
 	}
 }
 
@@ -649,6 +664,12 @@ void Renderer::RenderImGui() {
 		ImGui::Checkbox("Show ImGui Demo Window", &m_showDemoWindow);
 
 		ImGui::End();
+	}
+
+	for (auto& panel : m_guiPanels) {
+		if (panel) {
+			panel->Render();
+		}
 	}
 
 	ImGui::Render();

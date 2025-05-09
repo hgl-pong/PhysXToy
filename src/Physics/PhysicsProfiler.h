@@ -4,49 +4,263 @@
 #include "pvd/PxPvd.h"
 #include "pvd/PxPvdTransport.h"
 #include "Physics/PhysicsTypes.h"
+#include "Physics/PhysicsCommon.h"
 #include "common/PxProfileZone.h"
 #include <chrono>
 #include <unordered_map>
 #include <string>
 #include <vector>
 #include <mutex>
+#include <numeric>
+#include <fstream>
 
 #define PHYSX_PVD_HOST "127.0.0.1"
 
-struct ProfileTimingEvent
+class PhysicsProfiler;
+extern bool ExportPhysicsProfilerData(PhysicsProfiler* profiler,
+    const std::string& prefix = "physics_profile",
+    ProfileChartExportFormat format = ProfileChartExportFormat::HTML);
+
+// Export physics engine statistics data
+extern bool ExportPhysicsStatisticsData(PhysicsProfiler* profiler,
+    const std::string& prefix = "physics_statistics",
+    ProfileChartExportFormat format = ProfileChartExportFormat::HTML);
+
+class PhysicsProfilerChart;
+
+// Physics engine statistics class for recording and analyzing performance and other data
+class PhysicsStatistic
 {
-	std::string name;
-	uint64_t startTime;
-	uint64_t endTime;
-	uint64_t duration;
-	uint64_t contextId;
+public:
+    // Moving average window size
+    static constexpr size_t DEFAULT_WINDOW_SIZE = 120;
+    
+    PhysicsStatistic(size_t windowSize = DEFAULT_WINDOW_SIZE)
+        : m_WindowSize(windowSize)
+    {
+        m_FrameHistory.reserve(windowSize);
+    }
+    
+    // Start a new frame
+    void BeginFrame()
+    {
+        m_CurrentFrame.frameStartTime = GetTimeMicroseconds();
+    }
+    
+    // End current frame and record statistics
+    void EndFrame()
+    {
+        uint64_t currentTime = GetTimeMicroseconds();
+        m_CurrentFrame.frameEndTime = currentTime;
+        m_CurrentFrame.frameDuration = m_CurrentFrame.frameEndTime - m_CurrentFrame.frameStartTime;
+        
+        // Add current frame to history
+        m_FrameHistory.push_back(m_CurrentFrame);
+        
+        // If history exceeds window size, remove oldest frame
+        if (m_FrameHistory.size() > m_WindowSize)
+        {
+            m_FrameHistory.erase(m_FrameHistory.begin());
+        }
+        
+        // Reset current frame data for next frame
+        m_CurrentFrame = PhysicsStatisticsData::FrameStats();
+    }
+    
+    // Record the start of a physics engine stage
+    void BeginPhysicsStage(const std::string& stageName)
+    {
+        m_StageStartTimes[stageName] = GetTimeMicroseconds();
+    }
+    
+    // Record the end of a physics engine stage and update corresponding statistics
+    void EndPhysicsStage(const std::string& stageName)
+    {
+        auto it = m_StageStartTimes.find(stageName);
+        if (it != m_StageStartTimes.end())
+        {
+            uint64_t startTime = it->second;
+            uint64_t endTime = GetTimeMicroseconds();
+            uint64_t duration = endTime - startTime;
+            
+            // Update timer based on stage name
+            if (stageName == "PhysicsStep")
+            {
+                m_CurrentFrame.physicsStepTime = duration;
+            }
+            else if (stageName == "CollisionDetection")
+            {
+                m_CurrentFrame.collisionDetectionTime = duration;
+            }
+            else if (stageName == "Solver")
+            {
+                m_CurrentFrame.solverTime = duration;
+            }
+            else if (stageName == "Integrate")
+            {
+                m_CurrentFrame.integrateTime = duration;
+            }
+            
+            m_StageStartTimes.erase(it);
+        }
+    }
+    
+    // Set object count statistics for current frame
+    void SetObjectCounts(uint32_t total, uint32_t dynamic, uint32_t staticObj, uint32_t softBodies, uint32_t joints)
+    {
+        m_CurrentFrame.activeObjects = total;
+        m_CurrentFrame.activeDynamicObjects = dynamic;
+        m_CurrentFrame.activeStaticObjects = staticObj;
+        m_CurrentFrame.activeSoftBodies = softBodies;
+        m_CurrentFrame.activeJoints = joints;
+    }
+    
+    // Set collision statistics for current frame
+    void SetCollisionStats(uint32_t contactPoints, uint32_t collisionPairs)
+    {
+        m_CurrentFrame.contactPoints = contactPoints;
+        m_CurrentFrame.collisionPairs = collisionPairs;
+    }
+    
+    // Set memory usage for current frame
+    void SetMemoryUsage(uint64_t bytes)
+    {
+        m_CurrentFrame.memoryUsage = bytes;
+    }
+    
+    // Get the latest frame statistics
+    const PhysicsStatisticsData::FrameStats& GetLatestFrameStats() const
+    {
+        return m_FrameHistory.empty() ? m_CurrentFrame : m_FrameHistory.back();
+    }
+    
+    // Get all frame history statistics
+    const std::vector<PhysicsStatisticsData::FrameStats>& GetFrameHistory() const
+    {
+        return m_FrameHistory;
+    }
+    
+    // Get average frame time (microseconds)
+    uint64_t GetAverageFrameTime() const
+    {
+        if (m_FrameHistory.empty()) return 0;
+        
+        uint64_t sum = 0;
+        for (const auto& frame : m_FrameHistory)
+        {
+            sum += frame.frameDuration;
+        }
+        return sum / m_FrameHistory.size();
+    }
+    
+    // Get average physics step time (microseconds)
+    uint64_t GetAveragePhysicsStepTime() const
+    {
+        if (m_FrameHistory.empty()) return 0;
+        
+        uint64_t sum = 0;
+        for (const auto& frame : m_FrameHistory)
+        {
+            sum += frame.physicsStepTime;
+        }
+        return sum / m_FrameHistory.size();
+    }
+    
+    // Get peak frame time (microseconds)
+    uint64_t GetPeakFrameTime() const
+    {
+        uint64_t peak = 0;
+        for (const auto& frame : m_FrameHistory)
+        {
+            peak = std::max(peak, frame.frameDuration);
+        }
+        return peak;
+    }
+    
+    // Get percentage of frame time spent in physics processing
+    float GetPhysicsTimePercentage() const
+    {
+        if (m_FrameHistory.empty()) return 0.0f;
+        
+        uint64_t totalFrameTime = 0;
+        uint64_t totalPhysicsTime = 0;
+        
+        for (const auto& frame : m_FrameHistory)
+        {
+            totalFrameTime += frame.frameDuration;
+            totalPhysicsTime += frame.physicsStepTime;
+        }
+        
+        if (totalFrameTime == 0) return 0.0f;
+        return (float)totalPhysicsTime / totalFrameTime * 100.0f;
+    }
+    
+    // Print detailed statistics
+    void PrintDetailedStats() const
+    {
+        printf("\n==== Physics Engine Detailed Statistics ====\n");
+        
+        // Frame time statistics
+        const auto& latest = GetLatestFrameStats();
+        printf("Frame Time: %.2f ms\n", latest.frameDuration / 1000.0);
+        printf("Average Frame Time: %.2f ms\n", GetAverageFrameTime() / 1000.0);
+        printf("Peak Frame Time: %.2f ms\n", GetPeakFrameTime() / 1000.0);
+        
+        printf("\nPhysics Time: %.2f ms (%.1f%% of frame)\n", 
+            latest.physicsStepTime / 1000.0, 
+            GetPhysicsTimePercentage());
+        
+        printf("  Collision Detection: %.2f ms\n", latest.collisionDetectionTime / 1000.0);
+        printf("  Solver: %.2f ms\n", latest.solverTime / 1000.0);
+        printf("  Integration: %.2f ms\n", latest.integrateTime / 1000.0);
+        
+        printf("\nObject Counts:\n");
+        printf("  Total Objects: %u\n", latest.activeObjects);
+        printf("  Dynamic Objects: %u\n", latest.activeDynamicObjects);
+        printf("  Static Objects: %u\n", latest.activeStaticObjects);
+        printf("  Soft Bodies: %u\n", latest.activeSoftBodies);
+        printf("  Joints: %u\n", latest.activeJoints);
+        
+        printf("\nCollision Statistics:\n");
+        printf("  Contact Points: %u\n", latest.contactPoints);
+        printf("  Collision Pairs: %u\n", latest.collisionPairs);
+        
+        printf("\nMemory Usage: %.2f MB\n", latest.memoryUsage / (1024.0 * 1024.0));
+        
+        printf("==========================================\n");
+    }
+    
+    // Reset all statistics
+    void Reset()
+    {
+        m_FrameHistory.clear();
+        m_CurrentFrame = PhysicsStatisticsData::FrameStats();
+        m_StageStartTimes.clear();
+    }
+    
+private:
+    // Get current time (microseconds)
+    uint64_t GetTimeMicroseconds() const 
+    {
+        auto now = std::chrono::high_resolution_clock::now();
+        return std::chrono::duration_cast<std::chrono::microseconds>(
+            now.time_since_epoch()).count();
+    }
+    
+    size_t m_WindowSize;                                  // History window size
+    PhysicsStatisticsData::FrameStats m_CurrentFrame;                            // Current frame statistics
+    std::vector<PhysicsStatisticsData::FrameStats> m_FrameHistory;               // Frame history
+    std::unordered_map<std::string, uint64_t> m_StageStartTimes; // Stage start times
 };
 
-struct ProfileDataRecord
-{
-	std::string name;
-	union {
-		int32_t intValue;
-		float floatValue;
-	};
-	uint64_t contextId;
-	bool isFloat;
-};
-
-struct EventStats {
-	uint32_t count = 0;
-	uint64_t totalTime = 0;
-	uint64_t maxTime = 0;
-	uint64_t minTime = UINT64_MAX;
-};
-
-class PhysicsProfiler : public physx::PxProfilerCallback, virtual public IPhysicsProfiler
+class PhysicsProfiler : public physx::PxProfilerCallback, public IPhysicsProfiler
 {
 public:
 	PhysicsProfiler(bool bEnablePVD = true, bool bEnableCustomProfiler = true)
 		: m_bEnablePVD(bEnablePVD), 
 		  m_bEnableCustomProfiler(bEnableCustomProfiler),
-		  m_bCallPVDProfilingFunctions(bEnablePVD)
+		  m_bCallPVDProfilingFunctions(bEnablePVD),
+          m_Statistic(120) // Default 120 frames history
 	{
 		if (m_bEnablePVD)
 		{
@@ -76,17 +290,140 @@ public:
 	{
 		return zoneEnd(profilerData, eventName, detached, contextId);
 	}
-	virtual void RecordData(int32_t value, const char* valueName, uint64_t contextId) override
+	virtual void RecordData(const char* name, float value, uint64_t contextId) override
 	{
-		return recordData(value, valueName, contextId);
+		if (m_bEnableCustomProfiler)
+		{
+			std::lock_guard<std::mutex> lock(m_Mutex);
+			
+			ProfileDataRecord record;
+			record.name = name;
+			record.floatValue = value;
+			record.contextId = contextId;
+			record.isFloat = true;
+			
+			m_DataRecords.push_back(record);
+			
+			if (m_bVerboseOutput)
+				printf("Data: %s = %f (context ID %llu)\n", name, value, contextId);
+            
+            // Update statistics based on data records
+            if (strcmp(name, "ActiveObjects") == 0)
+            {
+                m_LastActiveObjects = static_cast<int32_t>(value);
+                UpdateObjectCounts();
+            }
+            else if (strcmp(name, "ActiveDynamicObjects") == 0)
+            {
+                m_LastActiveDynamicObjects = static_cast<int32_t>(value);
+                UpdateObjectCounts();
+            }
+            else if (strcmp(name, "ActiveStaticObjects") == 0)
+            {
+                m_LastActiveStaticObjects = static_cast<int32_t>(value);
+                UpdateObjectCounts();
+            }
+            else if (strcmp(name, "ActiveSoftBodies") == 0)
+            {
+                m_LastActiveSoftBodies = static_cast<int32_t>(value);
+                UpdateObjectCounts();
+            }
+            else if (strcmp(name, "ActiveJoints") == 0)
+            {
+                m_LastActiveJoints = static_cast<int32_t>(value);
+                UpdateObjectCounts();
+            }
+            else if (strcmp(name, "ContactPoints") == 0)
+            {
+                m_LastContactPoints = static_cast<int32_t>(value);
+                UpdateCollisionStats();
+            }
+            else if (strcmp(name, "CollisionPairs") == 0)
+            {
+                m_LastCollisionPairs = static_cast<int32_t>(value);
+                UpdateCollisionStats();
+            }
+            else if (strcmp(name, "MemoryUsage") == 0)
+            {
+                m_Statistic.SetMemoryUsage(static_cast<uint64_t>(value));
+            }
+		}
+
+        //return recordData(name, value, contextId);
 	}
-	virtual void RecordData(float value, const char* valueName, uint64_t contextId) override
+
+	virtual void RecordData(const char* name, int32_t value, uint64_t contextId) override
 	{
-		return recordData(value, valueName, contextId);
+		if (m_bEnableCustomProfiler)
+		{
+			std::lock_guard<std::mutex> lock(m_Mutex);
+			
+			ProfileDataRecord record;
+			record.name = name;
+			record.intValue = value;
+			record.contextId = contextId;
+			record.isFloat = false;
+			
+			m_DataRecords.push_back(record);
+			
+			if (m_bVerboseOutput)
+				printf("Data: %s = %d (context ID %llu)\n", name, value, contextId);
+            
+            // Update statistics based on data records
+            if (strcmp(name, "ActiveObjects") == 0)
+            {
+                m_LastActiveObjects = value;
+                UpdateObjectCounts();
+            }
+            else if (strcmp(name, "ActiveDynamicObjects") == 0)
+            {
+                m_LastActiveDynamicObjects = value;
+                UpdateObjectCounts();
+            }
+            else if (strcmp(name, "ActiveStaticObjects") == 0)
+            {
+                m_LastActiveStaticObjects = value;
+                UpdateObjectCounts();
+            }
+            else if (strcmp(name, "ActiveSoftBodies") == 0)
+            {
+                m_LastActiveSoftBodies = value;
+                UpdateObjectCounts();
+            }
+            else if (strcmp(name, "ActiveJoints") == 0)
+            {
+                m_LastActiveJoints = value;
+                UpdateObjectCounts();
+            }
+            else if (strcmp(name, "ContactPoints") == 0)
+            {
+                m_LastContactPoints = value;
+                UpdateCollisionStats();
+            }
+            else if (strcmp(name, "CollisionPairs") == 0)
+            {
+                m_LastCollisionPairs = value;
+                UpdateCollisionStats();
+            }
+            else if (strcmp(name, "MemoryUsage") == 0)
+            {
+                m_Statistic.SetMemoryUsage(static_cast<uint64_t>(value));
+            }
+		}
 	}
+
 	virtual void RecordFrame(const char* name, uint64_t contextId) override
 	{
-		return recordFrame(name, contextId);
+		if (m_bEnableCustomProfiler)
+		{
+			std::lock_guard<std::mutex> lock(m_Mutex);
+			
+			if (m_bVerboseOutput)
+				printf("Frame: %s (context ID %llu)\n", name, contextId);
+            
+            // Begin a new frame in the statistics object
+            m_Statistic.BeginFrame();
+		}
 	}
 
 	virtual void* zoneStart(const char* eventName, bool detached, uint64_t contextId) override
@@ -105,6 +442,20 @@ public:
 			
 			if (m_bVerboseOutput)
 				printf("Start: %s (context ID %llu) @ %llu us\n", eventName, contextId, currentTime);
+            
+            // Record physics engine stage start
+            if (strcmp(eventName, "PhysicsStep") == 0) {
+                m_Statistic.BeginPhysicsStage("PhysicsStep");
+            }
+            else if (strcmp(eventName, "CollisionDetection") == 0) {
+                m_Statistic.BeginPhysicsStage("CollisionDetection");
+            }
+            else if (strcmp(eventName, "Solver") == 0) {
+                m_Statistic.BeginPhysicsStage("Solver");
+            }
+            else if (strcmp(eventName, "Integrate") == 0) {
+                m_Statistic.BeginPhysicsStage("Integrate");
+            }
 		}
 
 		return m_bCallPVDProfilingFunctions ? m_Pvd->zoneStart(eventName, detached, contextId) : nullptr;
@@ -136,7 +487,7 @@ public:
 					statIt->second.maxTime = std::max(statIt->second.maxTime, event.duration);
 					statIt->second.minTime = std::min(statIt->second.minTime, event.duration);
 				} else {
-					EventStats stats;
+                    ProfileEventStats stats;
 					stats.totalTime = event.duration;
 					stats.count = 1;
 					stats.maxTime = event.duration;
@@ -149,53 +500,21 @@ public:
 				if (m_bVerboseOutput)
 					printf("End: %s (context ID %llu) @ %llu us, duration: %llu us\n", 
 						eventName, contextId, currentTime, event.duration);
+                
+                // Record physics engine stage end
+                if (strcmp(eventName, "PhysicsStep") == 0) {
+                    m_Statistic.EndPhysicsStage("PhysicsStep");
+                }
+                else if (strcmp(eventName, "CollisionDetection") == 0) {
+                    m_Statistic.EndPhysicsStage("CollisionDetection");
+                }
+                else if (strcmp(eventName, "Solver") == 0) {
+                    m_Statistic.EndPhysicsStage("Solver");
+                }
+                else if (strcmp(eventName, "Integrate") == 0) {
+                    m_Statistic.EndPhysicsStage("Integrate");
+                }
 			}
-		}
-	}
-
-	virtual void recordData(int32_t value, const char* valueName, uint64_t contextId)
-	{
-		if (m_bEnableCustomProfiler)
-		{
-			std::lock_guard<std::mutex> lock(m_Mutex);
-			
-			ProfileDataRecord record;
-			record.name = valueName;
-			record.intValue = value;
-			record.contextId = contextId;
-			record.isFloat = false;
-			
-			m_DataRecords.push_back(record);
-			
-			if (m_bVerboseOutput)
-				printf("Data: %s (context ID %llu) = %d\n", valueName, contextId, value);
-		}
-	}
-
-	virtual void recordData(float value, const char* valueName, uint64_t contextId)
-	{
-		if (m_bEnableCustomProfiler)
-		{
-			std::lock_guard<std::mutex> lock(m_Mutex);
-			
-			ProfileDataRecord record;
-			record.name = valueName;
-			record.floatValue = value;
-			record.contextId = contextId;
-			record.isFloat = true;
-			
-			m_DataRecords.push_back(record);
-			
-			if (m_bVerboseOutput)
-				printf("Data: %s (context ID %llu) = %f\n", valueName, contextId, (double)value);
-		}
-	}
-
-	virtual void recordFrame(const char* name, uint64_t contextId)
-	{
-		if (m_bEnableCustomProfiler && m_bVerboseOutput)
-		{
-			printf("Frame: %s (context ID %llu)\n", name, contextId);
 		}
 	}
 
@@ -204,14 +523,17 @@ public:
 		if (!m_bEnableCustomProfiler) 
 			return;
 			
-		printf("\n==== Physics Profiler Statistics ====\n");
-		printf("Event                      | Count |  Total(us)  |   Avg(us)   |   Min(us)   |   Max(us)   |\n");
-		printf("---------------------------+-------+-------------+-------------+-------------+-------------+\n");
+		printf("==================================\n");
+		printf("Physics Profiler Statistics\n");
+		printf("==================================\n");
+		printf("%-26s | %5s | %11s | %11s | %11s | %11s |\n",
+			"Event Name", "Count", "Total Time", "Avg Time", "Min Time", "Max Time");
+		printf("---------------------------------+-------+-------------+-------------+-------------+-------------|\n");
 		
 		for (const auto& pair : m_EventStats)
 		{
 			const std::string& name = pair.first;
-			const EventStats& stats = pair.second;
+			const ProfileEventStats& stats = pair.second;
 			double avgTime = stats.count > 0 ? static_cast<double>(stats.totalTime) / stats.count : 0.0;
 			
 			printf("%-26s | %5u | %11llu | %11.2f | %11llu | %11llu |\n",
@@ -220,6 +542,16 @@ public:
 		
 		printf("==================================\n");
 	}
+    
+    // Print detailed physics engine statistics
+    void PrintDetailedStatistics() const
+    {
+        if (!m_bEnableCustomProfiler) 
+            return;
+            
+        // Call statistics object's print method
+        m_Statistic.PrintDetailedStats();
+	}
 
 	void ResetStatistics()
 	{
@@ -227,6 +559,18 @@ public:
 		m_EventStats.clear();
 		m_CompletedEvents.clear();
 		m_DataRecords.clear();
+        
+        // Reset detailed statistics
+        m_Statistic.Reset();
+        
+        // Reset temporary counter cache
+        m_LastActiveObjects = 0;
+        m_LastActiveDynamicObjects = 0;
+        m_LastActiveStaticObjects = 0;
+        m_LastActiveSoftBodies = 0;
+        m_LastActiveJoints = 0;
+        m_LastContactPoints = 0;
+        m_LastCollisionPairs = 0;
 	}
 
 	void SetVerboseOutput(bool enable) 
@@ -249,19 +593,82 @@ public:
 		return m_Pvd.get();
 	}
 
-	const std::unordered_map<std::string, EventStats>& GetEventStats() const
+	const std::unordered_map<std::string, ProfileEventStats>& getEventStats() const
 	{
 		return m_EventStats;
 	}
 
-	const std::vector<ProfileTimingEvent>& GetCompletedEvents() const
+	const std::vector<ProfileTimingEvent>& getCompletedEvents() const
 	{
 		return m_CompletedEvents;
 	}
 
-	const std::vector<ProfileDataRecord>& GetDataRecords() const
+	const std::vector<ProfileDataRecord>& getDataRecords() const
 	{
 		return m_DataRecords;
+	}
+    
+    // Get reference to statistics object
+    PhysicsStatistic& GetStatistic()
+    {
+        return m_Statistic;
+    }
+    
+    // Get const reference to statistics object
+    const PhysicsStatistic& GetStatistic() const
+    {
+        return m_Statistic;
+	}
+
+	// IPhysicsProfiler interface implementation
+	virtual const PhysicsStatisticsData::FrameStats& GetLatestFrameStats() const override
+	{
+		return m_Statistic.GetLatestFrameStats();
+	}
+	
+	virtual const std::vector<PhysicsStatisticsData::FrameStats>& GetFrameHistory() const override
+	{
+		return m_Statistic.GetFrameHistory();
+	}
+	
+	virtual uint64_t GetAverageFrameTime() const override
+	{
+		return m_Statistic.GetAverageFrameTime();
+	}
+	
+	virtual uint64_t GetAveragePhysicsStepTime() const override
+	{
+		return m_Statistic.GetAveragePhysicsStepTime();
+	}
+	
+	virtual uint64_t GetPeakFrameTime() const override
+	{
+		return m_Statistic.GetPeakFrameTime();
+	}
+	
+	virtual float GetPhysicsTimePercentage() const override
+	{
+		return m_Statistic.GetPhysicsTimePercentage();
+	}
+	
+	virtual const std::unordered_map<std::string, ProfileEventStats>& GetEventStats() const override
+	{
+		return reinterpret_cast<const std::unordered_map<std::string, ProfileEventStats>&>(m_EventStats);
+	}
+	
+	virtual bool ExportStatisticsToCSV(const std::string& filename) override
+	{
+		return ExportPhysicsStatisticsData(this, filename, ProfileChartExportFormat::CSV);
+	}
+	
+	virtual bool ExportStatisticsToJSON(const std::string& filename) override
+	{
+		return ExportPhysicsStatisticsData(this, filename, ProfileChartExportFormat::JSON);
+	}
+	
+	virtual bool ExportStatisticsToHTML(const std::string& filename) override
+	{
+		return ExportPhysicsStatisticsData(this, filename, ProfileChartExportFormat::HTML);
 	}
 
 private:
@@ -270,6 +677,27 @@ private:
 		auto now = std::chrono::high_resolution_clock::now();
 		return std::chrono::duration_cast<std::chrono::microseconds>(
 			now.time_since_epoch()).count();
+	}
+    
+    // Update object count statistics
+    void UpdateObjectCounts()
+    {
+        m_Statistic.SetObjectCounts(
+            m_LastActiveObjects,
+            m_LastActiveDynamicObjects,
+            m_LastActiveStaticObjects,
+            m_LastActiveSoftBodies,
+            m_LastActiveJoints
+        );
+    }
+    
+    // Update collision statistics
+    void UpdateCollisionStats()
+    {
+        m_Statistic.SetCollisionStats(
+            m_LastContactPoints,
+            m_LastCollisionPairs
+        );
 	}
 
 	bool m_bEnablePVD = true;
@@ -282,7 +710,19 @@ private:
 	std::unordered_map<uint64_t, ProfileTimingEvent> m_ActiveEvents;
 	std::vector<ProfileTimingEvent> m_CompletedEvents;
 	std::vector<ProfileDataRecord> m_DataRecords;
-	std::unordered_map<std::string, EventStats> m_EventStats;
+	std::unordered_map<std::string, ProfileEventStats> m_EventStats;
+    
+    // Detailed statistics object
+    PhysicsStatistic m_Statistic;
+    
+    // Temporary counter cache
+    int32_t m_LastActiveObjects = 0;
+    int32_t m_LastActiveDynamicObjects = 0;
+    int32_t m_LastActiveStaticObjects = 0;
+    int32_t m_LastActiveSoftBodies = 0;
+    int32_t m_LastActiveJoints = 0;
+    int32_t m_LastContactPoints = 0;
+    int32_t m_LastCollisionPairs = 0;
 };
 
 #if _DEBUG
@@ -308,3 +748,5 @@ private:
 	#define PHYSICS_PROFILE_VALUE(x, y, z)
 	#define PHYSICS_PROFILE_FRAME(x, y)
 #endif
+
+#include "PhysicsProfilerChart.h"

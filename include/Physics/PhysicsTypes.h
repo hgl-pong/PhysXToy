@@ -392,3 +392,67 @@ enum class PhysicsVehicleDifferential
     DIFFERENTIAL_UNDEFINED
 };
 
+struct PhysicsStatisticsData
+{
+    struct FrameStats 
+    {
+        // Time related
+        uint64_t frameStartTime = 0;        // Frame start time (microseconds)
+        uint64_t frameEndTime = 0;          // Frame end time (microseconds)
+        uint64_t frameDuration = 0;         // Frame duration (microseconds)
+        
+        // Physics processing
+        uint64_t physicsStepTime = 0;       // Physics simulation step time
+        uint64_t collisionDetectionTime = 0; // Collision detection time
+        uint64_t solverTime = 0;            // Solver time
+        uint64_t integrateTime = 0;         // Integration time
+        
+        // Object statistics
+        uint32_t activeObjects = 0;         // Active physics objects count
+        uint32_t activeDynamicObjects = 0;  // Active dynamic objects count
+        uint32_t activeStaticObjects = 0;   // Active static objects count
+        uint32_t activeSoftBodies = 0;      // Active soft bodies count
+        uint32_t activeJoints = 0;          // Active joints count
+        
+        // Collision statistics
+        uint32_t contactPoints = 0;         // Contact points count
+        uint32_t collisionPairs = 0;        // Collision pairs count
+        
+        // Memory statistics
+        uint64_t memoryUsage = 0;           // Physics engine memory usage (bytes)
+    };
+};
+
+struct ProfileTimingEvent
+{
+    std::string name;
+    uint64_t startTime;
+    uint64_t endTime;
+    uint64_t duration;
+    uint64_t contextId;
+};
+
+struct ProfileDataRecord
+{
+    std::string name;
+    union {
+        int32_t intValue;
+        float floatValue;
+    };
+    uint64_t contextId;
+    bool isFloat;
+};
+
+struct ProfileEventStats {
+    uint32_t count = 0;
+    uint64_t totalTime = 0;
+    uint64_t maxTime = 0;
+    uint64_t minTime = UINT64_MAX;
+};
+
+enum class ProfileChartExportFormat
+{
+    CSV,
+    JSON,
+    HTML
+};

@@ -4,6 +4,7 @@
 #include <Math/GraphicUtils/Camara.h>
 #include "TestRigidBodyCreate.h"
 #include "RenderObjectAdapter.h"
+#include "PhysicsProfilerImGui.h"
 
 using namespace physx;
 PhysicsEngineTestingApplication *pApp = nullptr;
@@ -54,6 +55,7 @@ private:
 	PhysicsPtr<IRenderer> m_Renderer;
 	PhysicsPtr<IPhysicsMaterial> m_Material;
 	PhysicsPtr<IPhysicsScene> m_Scene;
+	std::shared_ptr<PhysicsProfilerImGui> m_ProfilerImGui;
 };
 
 TestingApplication::TestingApplication(int argc, char **argv)
@@ -69,6 +71,8 @@ TestingApplication::TestingApplication(int argc, char **argv)
 		std::bind(&TestingApplication::_KeyReleaseEvent, this, std::placeholders::_1)
 	);
 	_InitPhysics(true);
+	m_ProfilerImGui = std::make_shared<PhysicsProfilerImGui>(PhysicsEngineUtils::GetProfiler());
+	m_Renderer->AddGUIPanel(m_ProfilerImGui);
 }
 
 void TestingApplication::_KeyPressEvent(void* eventData)

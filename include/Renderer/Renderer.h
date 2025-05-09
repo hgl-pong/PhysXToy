@@ -13,7 +13,7 @@ namespace MathLib {
 }
 
 class RenderObject;
-
+class GUIPanel;
 class IRenderer {
 public:
     virtual ~IRenderer() = default;
@@ -34,6 +34,10 @@ public:
     virtual void AddRenderObject(std::shared_ptr<RenderObject> renderable) = 0;
     
     virtual void RemoveRenderObject(std::shared_ptr<RenderObject> renderable) = 0;
+
+    virtual void AddGUIPanel(std::shared_ptr<GUIPanel> panel) = 0;
+
+    virtual void RemoveGUIPanel(std::shared_ptr<GUIPanel> panel) = 0;
     
     virtual bool Tick() = 0;
     
@@ -53,6 +57,14 @@ public:
     virtual void Show(bool show) = 0;
     
     virtual void Render(MathLib::GraphicUtils::Camera& camera) = 0;
+};
+
+class GUIPanel
+{
+public:
+    virtual void Render() = 0;
+    virtual void SetVisible(bool visible) = 0;
+    virtual bool IsVisible() const = 0;
 };
 
 IRenderer* CreateRenderer(int argc, char** argv); 

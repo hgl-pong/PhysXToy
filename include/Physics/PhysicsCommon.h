@@ -71,12 +71,35 @@ struct JointCreateOptions
 class IPhysicsProfiler
 {
 public:
-	virtual void* ZoneStart(const char* eventName, bool detached, uint64_t contextId) = 0;
-	virtual void ZoneEnd(void* profilerData, const char* eventName, bool detached, uint64_t contextId) = 0;
-	virtual void RecordData(int32_t value, const char* valueName, uint64_t contextId) = 0;
-	virtual void RecordData(float value, const char* valueName, uint64_t contextId) = 0;
-	virtual void RecordFrame(const char* name, uint64_t contextId) = 0;
-};
+    virtual ~IPhysicsProfiler() = default;
+    
+    // Basic profiler control
+    virtual void* ZoneStart(const char* eventName, bool detached, uint64_t contextId) = 0;
+    virtual void ZoneEnd(void* profilerData, const char* eventName, bool detached, uint64_t contextId) = 0;
+    virtual void RecordData(const char* name, float value, uint64_t contextId) = 0;
+    virtual void RecordData(const char* name, int32_t value, uint64_t contextId) = 0;
+    virtual void RecordFrame(const char* name, uint64_t contextId) = 0;
+    
+    // Statistics management
+    virtual const PhysicsStatisticsData::FrameStats& GetLatestFrameStats() const = 0;
+    virtual const std::vector<PhysicsStatisticsData::FrameStats>& GetFrameHistory() const = 0;
+    virtual uint64_t GetAverageFrameTime() const = 0;
+    virtual uint64_t GetAveragePhysicsStepTime() const = 0;
+    virtual uint64_t GetPeakFrameTime() const = 0;
+    virtual float GetPhysicsTimePercentage() const = 0;
+    
+    // Detailed event stats access
+    virtual const std::unordered_map<std::string, ProfileEventStats>& GetEventStats() const = 0;
+    
+    // Control methods
+    virtual void ResetStatistics() = 0;
+    virtual void SetVerboseOutput(bool enable) = 0;
+    
+    // Export functionality
+    virtual bool ExportStatisticsToCSV(const std::string& filename) = 0;
+    virtual bool ExportStatisticsToJSON(const std::string& filename) = 0;
+    virtual bool ExportStatisticsToHTML(const std::string& filename) = 0;
+}; 
 
 class IPhysicsEngine
 {
