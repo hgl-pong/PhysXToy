@@ -10,7 +10,8 @@
 #include "PhysicsSoftBody.h"
 #include "PhysicsCloth.h"
 #include "PhysicsProfiler.h"
-
+#include "PhysicsCache.h"
+#include "Utility/PhysicsUtils.h"
 #include <assert.h>
 
 #ifndef NDEBUG
@@ -115,57 +116,10 @@ PhysicsPtr<IColliderGeometry> PhysicsEngine::CreateColliderGeometry(const Collis
 {
 	if (!m_bInitialized)
 		return nullptr;
-	IColliderGeometry *geometry = nullptr;
-	switch (options.m_GeometryType)
-	{
-	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX:
-	{
-		geometry = new BoxColliderGeometry(options.m_BoxParams.m_HalfExtents);
-		geometry->SetScale(options.m_Scale);
-		break;
-	}
-	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE:
-	{
-		geometry = new SphereColliderGeometry(options.m_SphereParams.m_Radius);
-		break;
-	}
-	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE:
-	{
-		geometry = new PlaneColliderGeometry(options.m_PlaneParams.m_Normal, options.m_PlaneParams.m_Distance);
-		break;
-	}
-	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CAPSULE:
-	{
-		geometry = new CapsuleColliderGeometry(options.m_CapsuleParams.m_Radius, options.m_CapsuleParams.m_HalfHeight);
-		break;
-	}
-	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_TRIANGLE_MESH:
-	{
-		geometry = new TriangleMeshColliderGeometry(options.m_TriangleMeshParams.m_Vertices, options.m_TriangleMeshParams.m_Indices);
-		break;
-	}
-	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_CONVEX_MESH:
-	{
-		geometry = new ConvexMeshColliderGeometry(options.m_ConvexMeshParams.m_Vertices, options.m_ConvexMeshParams.m_Indices);
-		break;
-	}
-	case CollierGeometryType::COLLIER_GEOMETRY_TYPE_HEIGHT_FIELD:
-	{
-		geometry = new HeightFieldColliderGeometry(
-			options.m_HeightFieldParams.m_HeightData,
-			options.m_HeightFieldParams.m_Rows,
-			options.m_HeightFieldParams.m_Columns,
-			options.m_HeightFieldParams.m_RowScale,
-			options.m_HeightFieldParams.m_ColumnScale,
-			options.m_HeightFieldParams.m_HeightScale
-		);
-		break;
-	}
-	default:
-		break;
-	}
-	geometry->SetScale(options.m_Scale);
-	return make_physics_ptr(geometry);
+		
+	return ColliderGeometryCache::GetInstance().GetOrCreate(
+		options
+	);
 }
 
 void PhysicsEngine::SetSolverIterationCount(uint32_t count)

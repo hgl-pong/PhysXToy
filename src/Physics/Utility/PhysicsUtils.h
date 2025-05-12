@@ -33,3 +33,15 @@ PHYSICS_INLINE void SetMaxDistanceLimitDisabled(PhysicsLimits& limits)		{ limits
 
 PHYSICS_INLINE bool IsD6LinearLimitEnabled(const PhysicsLimits& limits)	{ return limits.m_MinValue<=limits.m_MaxValue;	}
 PHYSICS_INLINE void SetD6LinearLimitDisabled(PhysicsLimits& limits)		{ limits.Set(1.0f, -1.0f);						}
+
+
+namespace PhysicsCacheUtils
+{
+    PhysicsPtr<IColliderGeometry> CreateColliderGeometry(const CollisionGeometryCreateOptions& options);
+
+	void CleanupUnusedGeometries();
+
+	size_t GetGeometryCacheSize();
+
+	void ClearGeometryCache();
+}

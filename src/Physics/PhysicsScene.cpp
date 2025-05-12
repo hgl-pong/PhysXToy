@@ -2,6 +2,7 @@
 #include "PxPhysicsAPI.h"
 #include "PhysicsRigid.h"
 #include "Utility/PhysXUtils.h"
+#include "Utility/PhysicsUtils.h"
 #include "PhysicsEngine.h"
 #include "PhysicsJoint.h"
 #include "PhysicsSoftBody.h"
@@ -58,6 +59,16 @@ void PhysicsScene::Tick(MathLib::HReal deltaTime)
     for (auto &cloth : m_PhysicsClothes)
     {
         cloth->Update();
+    }
+    
+    // 每秒钟清理一次未使用的几何体
+    // 这里使用静态变量来跟踪累积时间
+    static float accumulatedTime = 0.0f;
+    accumulatedTime += deltaTime;
+    if (accumulatedTime >= 1.0f)
+    {
+        PhysicsCacheUtils::CleanupUnusedGeometries();
+        accumulatedTime = 0.0f;
     }
 }
 
