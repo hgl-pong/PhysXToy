@@ -44,4 +44,10 @@ namespace PhysicsCacheUtils
 	size_t GetGeometryCacheSize();
 
 	void ClearGeometryCache();
+	
+	void CleanupUnusedMaterials();
+	
+	size_t GetMaterialCacheSize();
+	
+	void ClearMaterialCache();
 }

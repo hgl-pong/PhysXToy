@@ -2,8 +2,9 @@
 #include "PhysicsEngine.h"
 #include "ConvexMeshDecomposer.h"
 #include "Utility/PhysicsConvexUtils.h"
-#include "PhysicsCache.h"
 #include "Utility/PhysicsUtils.h"
+#include "PhysicsMaterial.h"
+#include "ColliderGeometry.h"
 static PhysicsEngine* gPhysicsEngine = nullptr;
 static ConvexMeshDecomposer* gConvexMeshDecomposer = nullptr;
 static bool gDebugDrawingEnabled = false;

@@ -10,7 +10,6 @@
 #include "PhysicsSoftBody.h"
 #include "PhysicsCloth.h"
 #include "PhysicsProfiler.h"
-#include "PhysicsCache.h"
 #include "Utility/PhysicsUtils.h"
 #include <assert.h>
 
@@ -101,7 +100,7 @@ PhysicsPtr<IPhysicsMaterial> PhysicsEngine::CreateMaterial(const PhysicsMaterial
 {
 	if (!m_bInitialized)
 		return nullptr;
-	return make_physics_ptr(new PhysicsMaterial(options));
+	return PhysicsMaterialCache::GetInstance().GetOrCreate(options);
 }
 
 PhysicsPtr<IPhysicsScene> PhysicsEngine::CreateScene(const PhysicsSceneCreateOptions &options)

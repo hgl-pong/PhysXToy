@@ -1,7 +1,8 @@
 #include "PhysicsUtils.h"
 #include "../ColliderGeometry.h"
 #include "../Base/ObjectCache.h"
-#include "../PhysicsCache.h"
+#include "../PhysicsMaterial.h"
+#include "../ColliderGeometry.h"
 
 namespace PhysicsCacheUtils
 {
@@ -76,4 +77,19 @@ namespace PhysicsCacheUtils
     {
         ColliderGeometryCache::GetInstance().Clear();
     }
-}
+
+    inline void CleanupUnusedMaterials()
+    {
+        PhysicsMaterialCache::GetInstance().CleanupUnused();
+    }
+
+    inline size_t GetMaterialCacheSize()
+    {
+        return PhysicsMaterialCache::GetInstance().Size();
+    }
+
+    inline void ClearMaterialCache()
+    {
+        PhysicsMaterialCache::GetInstance().Clear();
+    }
+} 

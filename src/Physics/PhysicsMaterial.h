@@ -1,5 +1,6 @@
 #pragma once
 #include "Physics/PhysicsCommon.h"
+#include "Base/ObjectCache.h"
 namespace physx
 {
 	class PxMaterial;
@@ -26,3 +27,44 @@ private:
 	PhysXPtr<physx::PxMaterial> m_Material;
 	MathLib::HReal m_Density;
 };
+
+namespace PhysicsBase
+{
+    template<>
+    struct Creator<PhysicsMaterialCreateOptions, IPhysicsMaterial>
+    {
+        PhysicsPtr<IPhysicsMaterial> Create(const PhysicsMaterialCreateOptions& options)
+        {
+            return make_physics_ptr(new PhysicsMaterial(options));
+        }
+    };
+}
+
+namespace std
+{
+    template <>
+    struct hash<PhysicsMaterialCreateOptions>
+    {
+        size_t operator()(const PhysicsMaterialCreateOptions& material) const
+        {
+            return hash<MathLib::HReal>()(material.m_Restitution) ^ 
+                   hash<MathLib::HReal>()(material.m_StaticFriction) ^ 
+                   hash<MathLib::HReal>()(material.m_DynamicFriction) ^ 
+                   hash<MathLib::HReal>()(material.m_Density);
+        }
+    };
+
+    template <>
+    struct equal_to<PhysicsMaterialCreateOptions>
+    {
+        bool operator()(const PhysicsMaterialCreateOptions& lhs, const PhysicsMaterialCreateOptions& rhs) const
+        {
+            return lhs.m_Restitution == rhs.m_Restitution && 
+                   lhs.m_StaticFriction == rhs.m_StaticFriction && 
+                   lhs.m_DynamicFriction == rhs.m_DynamicFriction && 
+                   lhs.m_Density == rhs.m_Density;
+        }
+    };
+}
+
+using PhysicsMaterialCache = ObjectCache<IPhysicsMaterial, PhysicsMaterialCreateOptions>;
