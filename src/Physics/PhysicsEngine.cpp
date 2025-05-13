@@ -11,6 +11,8 @@
 #include "PhysicsCloth.h"
 #include "PhysicsProfiler.h"
 #include "Utility/PhysicsUtils.h"
+#include "Utility/PhysX/ErrorCallback.h"
+
 #include <assert.h>
 
 #ifndef NDEBUG
@@ -40,7 +42,7 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
 	// Init Physx
 	{
 		m_AllocatorCallback = std::make_unique<PxDefaultAllocator>();
-		m_ErrorCallback = std::make_unique<PxDefaultErrorCallback>();
+		m_ErrorCallback = std::make_unique<PhysXErrorCallback>();
 
 		m_Foundation = make_physx_ptr(PxCreateFoundation(PX_PHYSICS_VERSION, *m_AllocatorCallback, *m_ErrorCallback));
 
@@ -65,6 +67,7 @@ PhysicsEngine::~PhysicsEngine()
 {
 	m_CpuDispatcher.reset();
 	m_Physics.reset();
+	m_CudaContextManager.reset();
 	m_Profiler.reset();
 	m_Foundation.reset();
 	m_bInitialized = false;

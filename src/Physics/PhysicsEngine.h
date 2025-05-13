@@ -17,7 +17,7 @@ namespace physx
 };
 
 class PhysicsAllocator;
-class PhysicsErrorCallback;
+class PhysXErrorCallback;
 class PhysicsProfiler;
 
 class PhysicsEngine : public IPhysicsEngine
@@ -49,7 +49,7 @@ private:
 	friend class PhysicsSoftBody;
 	PhysicsEngineOptions m_Options;
 	std::unique_ptr<physx::PxAllocatorCallback> m_AllocatorCallback;
-	std::unique_ptr<physx::PxErrorCallback> m_ErrorCallback;
+	std::unique_ptr<PhysXErrorCallback> m_ErrorCallback;
 	PhysXPtr<physx::PxFoundation> m_Foundation;
 	PhysXPtr<physx::PxPhysics> m_Physics;
 	std::unique_ptr<physx::PxCpuDispatcher> m_CpuDispatcher;
