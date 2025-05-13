@@ -37,9 +37,6 @@ public:
     // Set current scene by index
     void SetCurrentScene(size_t index);
     
-    // Set current scene by name
-    void SetCurrentScene(const std::string& sceneName);
-    
     // Reload current scene
     void ReloadCurrentScene();
 

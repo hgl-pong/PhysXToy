@@ -4,12 +4,14 @@
 
 enum TestSceneType : uint32_t
 {
+    DEFAULT_SCENE,
     PHYSX_HELLO_WORLD,
     TEST_SCENE_COUNT
 };
 
 static std::string testSceneName[] =
 {
+    "Default Scene",
     "PhysX Hello World",
 };
 

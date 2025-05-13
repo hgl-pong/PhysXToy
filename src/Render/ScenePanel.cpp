@@ -109,27 +109,9 @@ void ScenePanel::SetCurrentScene(size_t index)
     if (index != (size_t)-1 && index != m_CurrentSceneIndex && index < m_SceneManager.GetSceneCount())
     {
         m_CurrentSceneIndex = index;
-        
-        // 使用SceneManager切换场景
-        auto sceneNames = m_SceneManager.GetSceneNames();
-        if (index < sceneNames.size()) {
-            m_SceneManager.SwitchToScene(index);
-        }
-    }
-}
 
-void ScenePanel::SetCurrentScene(const std::string& sceneName)
-{
-    if (m_SceneManager.SceneExists(sceneName)) {
-        m_SceneManager.SwitchToScene(sceneName);
-        
-        // 更新当前索引
-        auto sceneNames = m_SceneManager.GetSceneNames();
-        for (size_t i = 0; i < sceneNames.size(); i++) {
-            if (sceneNames[i] == sceneName) {
-                m_CurrentSceneIndex = i;
-                break;
-            }
+        if (index < TestSceneType::TEST_SCENE_COUNT) {
+            m_SceneManager.SwitchToScene((TestSceneType)index);
         }
     }
 }
@@ -206,7 +188,7 @@ void ScenePanel::RenderSceneSelection()
         // 直接调用SceneManager切换到当前选择的场景
         if (m_CurrentSceneIndex != (size_t)-1 && m_CurrentSceneIndex < TestSceneType::TEST_SCENE_COUNT)
         {
-            m_SceneManager.SwitchToScene(m_CurrentSceneIndex);
+            m_SceneManager.SwitchToScene((TestSceneType)m_CurrentSceneIndex);
         }
     }
     ImGui::EndDisabled();

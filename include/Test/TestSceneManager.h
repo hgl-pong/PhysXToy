@@ -27,30 +27,8 @@ public:
      */
     static TestSceneManager& GetInstance();
 
-    /**
-     * Register a test scene factory function
-     * @param name Scene name for display and reference
-     * @param factory Factory function to create the scene
-     * @param description Optional description of the scene
-     * @return True if scene was registered successfully, false if name already exists
-     */
-    bool RegisterScene(const std::string& name, 
-                      std::function<std::shared_ptr<TestSceneBase>()> factory,
-                      const std::string& description = "");
 
-    /**
-     * Switch to a different scene by name
-     * @param sceneName Name of the scene to switch to
-     * @return True if scene switch was successful, false if scene not found
-     */
-    bool SwitchToScene(const std::string& sceneName);
-
-    /**
-     * Switch to a different scene by index
-     * @param sceneIndex Index of the scene to switch to
-     * @return True if scene switch was successful, false if index is invalid
-     */
-    bool SwitchToScene(size_t sceneIndex);
+    bool SwitchToScene(TestSceneType type);
     
     /**
      * Get currently active scene
@@ -91,13 +69,7 @@ public:
      * @return Number of scenes
      */
     size_t GetSceneCount() const;
-    
-    /**
-     * Get scene names of all registered scenes
-     * @return Vector of scene names
-     */
-    std::vector<std::string> GetSceneNames() const;
-    
+
     /**
      * Get scene description by name
      * @param sceneName Name of the scene
@@ -105,26 +77,6 @@ public:
      */
     std::string GetSceneDescription() const;
     
-    /**
-     * Register a callback function to be called when scene changes
-     * @param callback Function to call when scene changes
-     * @return ID that can be used to unregister the callback
-     */
-    size_t RegisterSceneChangeCallback(std::function<void(const std::string&)> callback);
-    
-    /**
-     * Unregister a scene change callback
-     * @param callbackId ID of the callback to unregister
-     */
-    void UnregisterSceneChangeCallback(size_t callbackId);
-    
-    /**
-     * Check if a scene with the given name exists
-     * @param sceneName Name of the scene to check
-     * @return True if scene exists, false otherwise
-     */
-    bool SceneExists(const std::string& sceneName) const;
-
 private:
     // Private constructor to enforce singleton pattern
     TestSceneManager() = default;
@@ -139,24 +91,9 @@ private:
     // Helper method to cleanup current scene and trigger callbacks
     void CleanupCurrentScene();
     
-    // Scene registry information
-    struct SceneInfo
-    {
-        std::string name;
-        std::string description;
-        std::function<std::shared_ptr<TestSceneBase>()> factory;
-    };
-    
-    std::vector<SceneInfo> m_SceneRegistry;
-    std::unordered_map<std::string, size_t> m_SceneNameToIndex;
-    
     // Current scene state
     std::shared_ptr<TestSceneBase> m_CurrentScene = nullptr;
-    size_t m_CurrentSceneIndex = (size_t)-1;
-    
-    // Scene change callbacks
-    std::unordered_map<size_t, std::function<void(const std::string&)>> m_SceneChangeCallbacks;
-    size_t m_NextCallbackId = 0;
+    TestSceneType m_CurrentSceneType = TestSceneType::DEFAULT_SCENE;
     
     // Thread safety
     mutable std::mutex m_SceneMutex;

@@ -1,0 +1,22 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# PhysX Toy 项目规则索引
+
+本索引列出了所有项目相关规则和指南文件。
+
+## 项目规则
+
+- [项目概述](mdc:.cursor/rules/00-project-overview.mdc)
+- [物理引擎模块](mdc:.cursor/rules/01-physics-engine.mdc)
+- [渲染器模块](mdc:.cursor/rules/02-renderer.mdc)
+- [工具和通用组件](mdc:.cursor/rules/03-utilities.mdc)
+- [构建系统](mdc:.cursor/rules/04-build-system.mdc)
+- [编码标准与规范](mdc:.cursor/rules/05-coding-standards.mdc)
+
+## 如何使用这些规则
+
+这些规则文件提供了项目的整体结构、模块组织和编码规范指南。在开发时，请参考相应的规则文件以确保代码质量和一致性。
+
