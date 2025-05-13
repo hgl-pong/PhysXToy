@@ -8,7 +8,7 @@ ScenePanel::ScenePanel()
     , m_Visible(true)
     , m_ConfirmSceneChange(false)
     , m_PendingSceneIndex((size_t)-1)
-    , m_ShowAdvancedOptions(false)
+    , m_ShowAdvancedOptions(true)
 {
     m_SearchFilter[0] = '\0';
     
@@ -45,9 +45,7 @@ void ScenePanel::Render()
         ImGui::Separator();
         RenderSceneDetails();
         
-        // 如果当前场景已加载，显示自定义参数
-        auto currentScene = m_SceneManager.GetCurrentScene();
-        if (currentScene && m_ShowAdvancedOptions)
+        if (m_ShowAdvancedOptions)
         {
             ImGui::Separator();
             RenderCustomParameters();
@@ -157,15 +155,15 @@ void ScenePanel::RenderSceneSelection()
     ImGui::Text("Available Scenes:");
     
     // 获取所有场景名称
-    auto sceneNames = m_SceneManager.GetSceneNames();
+    auto& sceneNames = testSceneName;
     
     // Display scene list with filtering
     if (ImGui::BeginListBox("##ScenesList", ImVec2(-1, 200)))
     {
-        for (size_t i = 0; i < sceneNames.size(); i++)
+        for (size_t i = 0; i < TestSceneType::TEST_SCENE_COUNT; i++)
         {
             const auto& sceneName = sceneNames[i];
-            const auto& sceneDesc = m_SceneManager.GetSceneDescription(sceneName);
+            const auto& sceneDesc = m_SceneManager.GetSceneDescription();
             
             // Apply filter if any
             if (m_SearchFilter[0] != '\0')
@@ -206,7 +204,7 @@ void ScenePanel::RenderSceneSelection()
     if (ImGui::Button("Load Selected Scene", ImVec2(-1, 0)))
     {
         // 直接调用SceneManager切换到当前选择的场景
-        if (m_CurrentSceneIndex != (size_t)-1 && m_CurrentSceneIndex < sceneNames.size())
+        if (m_CurrentSceneIndex != (size_t)-1 && m_CurrentSceneIndex < TestSceneType::TEST_SCENE_COUNT)
         {
             m_SceneManager.SwitchToScene(m_CurrentSceneIndex);
         }
@@ -224,12 +222,11 @@ void ScenePanel::RenderSceneSelection()
 
 void ScenePanel::RenderSceneDetails()
 {
-    auto sceneNames = m_SceneManager.GetSceneNames();
-    if (m_CurrentSceneIndex == (size_t)-1 || m_CurrentSceneIndex >= sceneNames.size())
+    if (m_CurrentSceneIndex == (size_t)-1 || m_CurrentSceneIndex >= TestSceneType::TEST_SCENE_COUNT)
         return;
         
-    const auto& sceneName = sceneNames[m_CurrentSceneIndex];
-    const auto& sceneDesc = m_SceneManager.GetSceneDescription(sceneName);
+    const auto& sceneName = testSceneName[m_CurrentSceneIndex];
+    const auto& sceneDesc = m_SceneManager.GetSceneDescription();
     
     ImGui::Text("Selected Scene: %s", sceneName.c_str());
     
@@ -243,11 +240,7 @@ void ScenePanel::RenderSceneDetails()
 }
 
 void ScenePanel::RenderCustomParameters()
-{
-    auto currentScene = m_SceneManager.GetCurrentScene();
-    if (!currentScene)
-        return;
-        
+{       
     ImGui::Text("Scene Parameters:");
     
     // Example parameters that might be adjusted for different scenes
@@ -264,17 +257,15 @@ void ScenePanel::RenderCustomParameters()
     // Apply button for parameter changes
     if (ImGui::Button("Apply Parameters", ImVec2(-1, 0)))
     {
-        // 这里应该应用参数变更到物理模拟中
-        // 具体实现可能需要基于应用程序的特定需求
+
     }
     
-    // 添加场景控制按钮
     ImGui::Separator();
     ImGui::Text("Scene Controls:");
     
     if (ImGui::Button("Pause/Resume", ImVec2(120, 0)))
     {
-        if (currentScene->IsPaused()) {
+        if (m_SceneManager.IsCurrentScenePause()) {
             m_SceneManager.ResumeCurrentScene();
         } else {
             m_SceneManager.PauseCurrentScene();

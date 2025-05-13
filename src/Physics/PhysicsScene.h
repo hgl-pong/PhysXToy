@@ -36,6 +36,7 @@ public:
 	void DebugDraw() override;
 	size_t GetOffset() const override;
 	void* GetNativeScene() const override;
+	void Clear() override;
 private:
 	PhysXPtr<physx::PxScene> m_Scene;
 	PhysicsPtr<IPhysicsObject> m_GroundPlane;

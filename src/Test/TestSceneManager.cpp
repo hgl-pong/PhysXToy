@@ -1,4 +1,7 @@
 #include "Test/TestSceneManager.h"
+
+#include "Test/PhysXHelloWorldScene.h"
+
 #include <algorithm>
 
 // Singleton instance
@@ -144,6 +147,16 @@ void TestSceneManager::ResumeCurrentScene()
     }
 }
 
+bool TestSceneManager::IsCurrentScenePause() const
+{
+    std::lock_guard<std::mutex> lock(m_SceneMutex);
+    if(m_CurrentScene)
+    {
+        return m_CurrentScene->IsPaused();
+    }
+    return true;
+}
+
 size_t TestSceneManager::GetSceneCount() const
 {
     std::lock_guard<std::mutex> lock(m_SceneMutex);
@@ -165,17 +178,14 @@ std::vector<std::string> TestSceneManager::GetSceneNames() const
     return names;
 }
 
-std::string TestSceneManager::GetSceneDescription(const std::string& sceneName) const
+std::string TestSceneManager::GetSceneDescription() const
 {
     std::lock_guard<std::mutex> lock(m_SceneMutex);
-    
-    auto it = m_SceneNameToIndex.find(sceneName);
-    if (it == m_SceneNameToIndex.end())
+    if(m_CurrentScene)
     {
-        return "";
+        return m_CurrentScene->GetDescription();
     }
-    
-    return m_SceneRegistry[it->second].description;
+    return "";
 }
 
 size_t TestSceneManager::RegisterSceneChangeCallback(std::function<void(const std::string&)> callback)
@@ -211,4 +221,15 @@ void TestSceneManager::CleanupCurrentScene()
     }
     
     m_CurrentSceneIndex = (size_t)-1;
+}
+
+std::shared_ptr<TestSceneBase> CreateTestScene(TestSceneType type)
+{
+    switch (type)
+    {
+    case TestSceneType::PHYSX_HELLO_WORLD:
+        return std::make_shared<PhysXHelloWorldScene>();
+    default:
+        return nullptr;
+    } 
 }

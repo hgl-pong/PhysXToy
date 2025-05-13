@@ -143,6 +143,7 @@ public:
 	virtual void DebugDraw() = 0;
 	virtual size_t GetOffset() const = 0;
 	virtual void* GetNativeScene() const = 0;
+	virtual void Clear() = 0;
 };
 
 class IColliderGeometry

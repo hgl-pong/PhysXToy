@@ -83,6 +83,8 @@ public:
      * Resume the current scene
      */
     void ResumeCurrentScene();
+
+    bool IsCurrentScenePause() const;
     
     /**
      * Get the number of registered scenes
@@ -101,7 +103,7 @@ public:
      * @param sceneName Name of the scene
      * @return Description of the scene or empty string if not found
      */
-    std::string GetSceneDescription(const std::string& sceneName) const;
+    std::string GetSceneDescription() const;
     
     /**
      * Register a callback function to be called when scene changes
@@ -159,3 +161,5 @@ private:
     // Thread safety
     mutable std::mutex m_SceneMutex;
 };
+
+extern std::shared_ptr<TestSceneBase> CreateTestScene(TestSceneType type);

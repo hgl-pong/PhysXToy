@@ -8,7 +8,8 @@
 class PhysXHelloWorldScene : public TestSceneBase
 {
 public:
-    PhysXHelloWorldScene() : TestSceneBase()
+    PhysXHelloWorldScene() : 
+        TestSceneBase("Basic physics scene with a ground plane, sphere, and boxes. As Same as Hello World in PhysX Snippet.")
     {
     }
 

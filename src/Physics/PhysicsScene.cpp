@@ -491,3 +491,47 @@ void* PhysicsScene::GetNativeScene() const
 {
     return m_Scene.get();
 }
+
+void PhysicsScene::Clear()
+{
+    if(m_Scene)
+    {
+        for (auto &object : m_PhysicsObjects)
+        {
+            if (object && object->IsValid())
+            {
+                PxActor* actor = nullptr;
+                switch (object->GetType())
+                {
+                case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC:
+                    actor = static_cast<PxActor*>(static_cast<PhysicsRigidStatic*>(object.get())->GetNativeActor());
+                    break;
+                case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC:
+                    actor = static_cast<PxActor*>(static_cast<PhysicsRigidDynamic*>(object.get())->GetNativeActor());
+                    break;
+                case PhysicsObjectType::PHYSICS_OBJECT_TYPE_SOFT_BODY:
+                    actor = reinterpret_cast<PxActor*>(std::static_pointer_cast<ISoftBody>(object)->GetOffset());
+                    break;
+                case PhysicsObjectType::PHYSICS_OBJECT_TYPE_CLOTH:
+                    actor = reinterpret_cast<PxActor*>(std::static_pointer_cast<ICloth>(object)->GetOffset());
+                    break;
+                default:
+                    break;
+                }
+
+                if (actor && m_Scene)
+                {
+                    m_Scene->removeActor(*actor);
+                }
+            }
+        }
+    }
+
+    m_PhysicsObjects.clear();
+    m_PhysicsRigidStatics.clear();
+    m_PhysicsRigidDynamics.clear();
+    m_PhysicsSoftBodies.clear();
+    m_PhysicsClothes.clear();
+    m_Joints.clear();
+}
+

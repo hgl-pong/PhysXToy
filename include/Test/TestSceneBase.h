@@ -1,18 +1,32 @@
 #pragma once
-
 #include <string>
 #include <memory>
 
-enum class TestSceneType
+enum TestSceneType : uint32_t
 {
     PHYSX_HELLO_WORLD,
+    TEST_SCENE_COUNT
+};
+
+static std::string testSceneName[] =
+{
+    "PhysX Hello World",
 };
 
 class TestSceneBase
 {
 public:
-    TestSceneBase();
-    virtual ~TestSceneBase();
+    TestSceneBase(std::string description)
+        : m_initialized(false)
+    , m_paused(false)
+    , m_elapsedTime(0.0f)
+    , m_description(description)
+    {
+    }
+    virtual ~TestSceneBase()
+    {
+
+    }
 
     virtual void Initialize() = 0;
     virtual void Update(float deltaTime) = 0;
@@ -20,9 +34,27 @@ public:
     virtual void Cleanup() = 0;
 
     virtual std::string GetName() const = 0;
-    virtual void Reset();
-    virtual void Pause();
-    virtual void Resume();
+    virtual std::string GetDescription() const
+    {
+        return m_description;
+    }
+
+    virtual void Reset()
+    {
+        m_initialized = false;
+        m_paused = false;
+        m_elapsedTime = 0.0f;
+    }
+
+    virtual void Pause()
+    {
+        m_paused = true;
+    }
+
+    virtual void Resume()
+    {
+        m_paused = false;
+    }
 
     virtual void MouseClickCallback(int x, int y, int button, int action, int mods) = 0;
     virtual void KeyBoardCallback(int key, int scancode, int action, int mods) = 0;
@@ -30,11 +62,9 @@ public:
     bool IsInitialized() const { return m_initialized; }
     bool IsPaused() const { return m_paused; }
 
-    // 工厂方法，创建指定类型的场景
-    static std::shared_ptr<TestSceneBase> CreateScene(TestSceneType type);
-
 protected:
     bool m_initialized = false;
     bool m_paused = false;
     float m_elapsedTime = 0.0f;
+    std::string m_description;
 };
