@@ -20,6 +20,7 @@ file(GLOB SOURCE_FILES
     src/Physics/*
     src/Physics/VHACD/*
     src/Physics/Utility/*
+    src/Test/*
 )
 add_definitions(-DOPENCL_FOUND)
 add_definitions(-DOPENCL_CL_FILES=\"${PROJECT_SOURCE_DIR}/src/Physics/VHACD/cl/vhacdKernels.cl\")

@@ -5,6 +5,9 @@
 #include "TestRigidBodyCreate.h"
 #include "RenderObjectAdapter.h"
 #include "PhysicsProfilerImGui.h"
+#include "ScenePanel.h"
+#include "Test/TestSceneManager.h"
+#include "Test/TestSceneBase.h"
 
 using namespace physx;
 PhysicsEngineTestingApplication *pApp = nullptr;
@@ -17,12 +20,10 @@ public:
 public:
 	void Release() override
 	{
-		// 先停止场景和物理引擎
 		m_Scene.reset();
 		m_Material.reset();
 		PhysicsEngineUtils::DestroyPhysicsEngine();
-		
-		// 释放渲染器资源
+
 		if (m_Renderer) {
 			m_Renderer->Release();
 			m_Renderer.reset();
@@ -50,12 +51,23 @@ private:
 	void _InitPhysics(bool interactive);
 	void _AddPhysicsDebugRenderableObject(const PhysicsPtr<IPhysicsObject> &object);
 	PhysicsPtr<IPhysicsObject> _CreateDynamic(const MathLib::HTransform3 &t, PhysicsPtr<IColliderGeometry> &geometry, const MathLib::HVector3 &velocity = MathLib::HVector3(0, 0, 0));
+	
+	// Scene handling methods
+	void _InitScenes();
+	void _OnSceneChange(const std::string& sceneName);
+	std::shared_ptr<TestSceneBase> _CreateDefaultScene();
+	std::shared_ptr<TestSceneBase> _CreateParticleScene();
+	std::shared_ptr<TestSceneBase> _CreateRigidBodiesScene();
+	std::shared_ptr<TestSceneBase> _CreateBoxStackScene();
 
 private:
 	PhysicsPtr<IRenderer> m_Renderer;
 	PhysicsPtr<IPhysicsMaterial> m_Material;
 	PhysicsPtr<IPhysicsScene> m_Scene;
 	std::shared_ptr<PhysicsProfilerImGui> m_ProfilerImGui;
+	std::shared_ptr<ScenePanel> m_ScenePanel;
+	
+	size_t m_SceneChangeCallbackId;
 };
 
 TestingApplication::TestingApplication(int argc, char **argv)
@@ -70,9 +82,153 @@ TestingApplication::TestingApplication(int argc, char **argv)
 		std::bind(&TestingApplication::_KeyPressEvent, this, std::placeholders::_1),
 		std::bind(&TestingApplication::_KeyReleaseEvent, this, std::placeholders::_1)
 	);
+	
+	// Initialize physics
 	_InitPhysics(true);
+	
+	// Initialize profiler panel
 	m_ProfilerImGui = std::make_shared<PhysicsProfilerImGui>(PhysicsEngineUtils::GetProfiler());
 	m_Renderer->AddGUIPanel(m_ProfilerImGui);
+	
+	auto& sceneManager = TestSceneManager::GetInstance();
+	m_SceneChangeCallbackId = sceneManager.RegisterSceneChangeCallback(
+		std::bind(&TestingApplication::_OnSceneChange, this, std::placeholders::_1)
+	);
+	
+	_InitScenes();
+	
+	m_ScenePanel = std::make_shared<ScenePanel>();
+	m_Renderer->AddGUIPanel(m_ScenePanel);
+}
+
+void TestingApplication::_InitScenes()
+{
+	auto& sceneManager = TestSceneManager::GetInstance();
+
+	sceneManager.RegisterScene("Default Scene", 
+		std::bind(&TestingApplication::_CreateDefaultScene, this),
+		"Default physics scene with standard gravity and bunny models.");
+	
+	sceneManager.RegisterScene("Particle System", 
+		std::bind(&TestingApplication::_CreateParticleScene, this),
+		"Fluid particle simulation with physics interactions.");
+	
+	sceneManager.RegisterScene("Rigid Bodies", 
+		std::bind(&TestingApplication::_CreateRigidBodiesScene, this),
+		"Multiple rigid bodies with collision detection and response.");
+
+	sceneManager.RegisterScene("Box Stack", 
+		std::bind(&TestingApplication::_CreateBoxStackScene, this),
+		"Stack of boxes demonstrating physics stability and constraints.");
+}
+
+void TestingApplication::_OnSceneChange(const std::string& sceneName)
+{
+	if (m_Scene)
+	{
+		m_Scene.reset();
+	}
+	
+	auto currentScene = TestSceneManager::GetInstance().GetCurrentScene();
+	if (currentScene)
+	{
+
+	}
+}
+
+std::shared_ptr<TestSceneBase> TestingApplication::_CreateDefaultScene()
+{
+	_InitPhysics(true);
+	
+	return std::shared_ptr<TestSceneBase>();
+}
+
+std::shared_ptr<TestSceneBase> TestingApplication::_CreateParticleScene()
+{
+	PhysicsEngineOptions options;
+	options.m_NumThreads = 10;
+	IPhysicsEngine *engine = PhysicsEngineUtils::CreatePhysicsEngine(options);
+
+	PhysicsSceneCreateOptions sceneOptions;
+	sceneOptions.m_FilterShaderType = PhysicsSceneFilterShaderType::eDEFAULT;
+	sceneOptions.m_Gravity = MathLib::HVector3(0.0f, -9.81f, 0.0f);
+
+	m_Scene = PhysicsEngineUtils::CreateScene(sceneOptions);
+	
+	return std::shared_ptr<TestSceneBase>();
+}
+
+std::shared_ptr<TestSceneBase> TestingApplication::_CreateRigidBodiesScene()
+{
+	PhysicsEngineOptions options;
+	options.m_NumThreads = 10;
+	IPhysicsEngine *engine = PhysicsEngineUtils::CreatePhysicsEngine(options);
+
+	PhysicsSceneCreateOptions sceneOptions;
+	sceneOptions.m_FilterShaderType = PhysicsSceneFilterShaderType::eDEFAULT;
+	sceneOptions.m_Gravity = MathLib::HVector3(0.0f, -9.81f, 0.0f);
+
+	m_Scene = PhysicsEngineUtils::CreateScene(sceneOptions);
+	
+	PhysicsMaterialCreateOptions materialOptions;
+	materialOptions.m_StaticFriction = 0.5f;
+	materialOptions.m_DynamicFriction = 0.5f;
+	materialOptions.m_Restitution = 0.6f;
+	materialOptions.m_Density = 10.0f;
+	m_Material = PhysicsEngineUtils::CreateMaterial(materialOptions);
+
+	CollisionGeometryCreateOptions groundPlaneOptions;
+	groundPlaneOptions.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE;
+	groundPlaneOptions.m_PlaneParams.m_Normal = MathLib::HVector3(0, 1, 0);
+	groundPlaneOptions.m_PlaneParams.m_Distance = 0.0f;
+	PhysicsPtr<IColliderGeometry> groundPlane = PhysicsEngineUtils::CreateColliderGeometry(groundPlaneOptions);
+
+	PhysicsObjectCreateOptions groundPlaneObjectOptions;
+	groundPlaneObjectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
+	groundPlaneObjectOptions.m_Transform = MathLib::HTransform3::Identity();
+	PhysicsPtr<IPhysicsObject> groundPlaneObject = PhysicsEngineUtils::CreateObject(groundPlaneObjectOptions);
+	groundPlaneObject->AddColliderGeometry(groundPlane, MathLib::HTransform3::Identity());
+	
+	m_Scene->AddPhysicsObject(groundPlaneObject);
+	
+	for (int i = 0; i < 10; i++)
+	{
+		CollisionGeometryCreateOptions options;
+		options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
+		options.m_SphereParams.m_Radius = 1.0f + (float)i * 0.2f;
+
+		PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
+		
+		MathLib::HTransform3 transform = MathLib::HTransform3::Identity();
+		transform.translate(MathLib::HVector3(i * 3.0f, 10.0f + i * 2.0f, 0.0f));
+		
+		_CreateDynamic(transform, geometry);
+	}
+	
+	return std::shared_ptr<TestSceneBase>();
+}
+
+std::shared_ptr<TestSceneBase> TestingApplication::_CreateBoxStackScene()
+{
+	// 堆叠箱子场景示例
+	PhysicsEngineOptions options;
+	options.m_NumThreads = 10;
+	IPhysicsEngine *engine = PhysicsEngineUtils::CreatePhysicsEngine(options);
+
+	PhysicsSceneCreateOptions sceneOptions;
+	sceneOptions.m_FilterShaderType = PhysicsSceneFilterShaderType::eDEFAULT;
+	sceneOptions.m_Gravity = MathLib::HVector3(0.0f, -9.81f, 0.0f);
+
+	m_Scene = PhysicsEngineUtils::CreateScene(sceneOptions);
+	
+	// 创建材质
+	PhysicsMaterialCreateOptions materialOptions;
+	materialOptions.m_StaticFriction = 0.8f; // 更高的摩擦力以获得更好的堆叠效果
+	materialOptions.m_DynamicFriction = 0.8f;
+	materialOptions.m_Restitution = 0.1f; // 较低的恢复系数减少弹跳
+	materialOptions.m_Density = 10.0f;
+	
+	return std::shared_ptr<TestSceneBase>();
 }
 
 void TestingApplication::_KeyPressEvent(void* eventData)
@@ -80,7 +236,6 @@ void TestingApplication::_KeyPressEvent(void* eventData)
 	if (!eventData) return;
 	
 	int key = *reinterpret_cast<int*>(eventData);
-	// 处理键盘按下事件
 }
 
 void TestingApplication::_KeyReleaseEvent(void* eventData)
