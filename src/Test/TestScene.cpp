@@ -5,7 +5,7 @@
 #include <Math/GraphicUtils/Camara.h>
 
 TestScene::TestScene() 
-    : TestSceneBase("Default physics scene with ground plane and physics objects")
+    : TestSceneBase(TestSceneType::DEFAULT_SCENE, "Default physics scene with ground plane and physics objects")
 {
 }
 
@@ -60,11 +60,6 @@ void TestScene::Update(float deltaTime)
 
 void TestScene::Render()
 {
-}
-
-std::string TestScene::GetName() const
-{
-    return "Default Physics Scene";
 }
 
 void TestScene::Reset()

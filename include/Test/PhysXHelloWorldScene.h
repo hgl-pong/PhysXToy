@@ -10,7 +10,7 @@ class PhysXHelloWorldScene : public TestSceneBase
 {
 public:
     PhysXHelloWorldScene() : 
-        TestSceneBase("Basic physics scene with a ground plane, sphere, and boxes. As Same as Hello World in PhysX Snippet.")
+        TestSceneBase(TestSceneType::PHYSX_HELLO_WORLD, "Basic physics scene with a ground plane, sphere, and boxes. As Same as Hello World in PhysX Snippet.")
     {
     }
 
@@ -64,11 +64,6 @@ public:
 
     void Render() override
     {
-    }
-
-    std::string GetName() const override
-    {
-        return "PhysX Hello World Scene";
     }
 
     void Reset() override

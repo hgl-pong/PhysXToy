@@ -16,7 +16,6 @@ public:
     void Initialize() override;
     void Update(float deltaTime) override;
     void Render() override;
-    std::string GetName() const override;
     
     void Reset() override;
     void Pause() override;

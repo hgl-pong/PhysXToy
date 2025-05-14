@@ -7,6 +7,7 @@ enum TestSceneType : uint32_t
 {
     DEFAULT_SCENE,
     PHYSX_HELLO_WORLD,
+    PHYSX_MASS_PROPERTIES,
     TEST_SCENE_COUNT
 };
 
@@ -14,19 +15,20 @@ static std::string testSceneName[] =
 {
     "Default Scene",
     "PhysX Hello World",
+    "PhysX Mass Properties",
 };
 
 class TestSceneBase
 {
 public:
-    TestSceneBase(std::string description);
+    TestSceneBase(TestSceneType type, std::string description);
     virtual ~TestSceneBase();
     virtual void Initialize() = 0;
     virtual void Update(float deltaTime) = 0;
     virtual void Render() = 0;
     virtual void Cleanup();
 
-    virtual std::string GetName() const = 0;
+    std::string GetName() const { return testSceneName[m_SceneType]; }
     virtual std::string GetDescription() const
     {
         return m_description;
@@ -72,6 +74,6 @@ protected:
         PhysicsPtr<IPhysicsObject> physicsObject;
         std::shared_ptr<RenderObject> renderObject;
     };
-
+    TestSceneType m_SceneType;
     std::vector<TestObject> m_TestObjects;
 };

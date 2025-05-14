@@ -5,11 +5,12 @@
 #include "TestRigidBodyCreate.h"
 
 
-TestSceneBase::TestSceneBase(std::string description)
+TestSceneBase::TestSceneBase(TestSceneType type, std::string description)
         : m_initialized(false)
     , m_paused(false)
     , m_elapsedTime(0.0f)
     , m_description(description)
+    , m_SceneType(type)
 {
     m_Renderer = std::shared_ptr<IRenderer>(GetRenderer());
 }
