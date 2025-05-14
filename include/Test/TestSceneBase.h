@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <memory>
+#include "../Renderer/Renderer.h"
 
 enum TestSceneType : uint32_t
 {
@@ -18,18 +19,8 @@ static std::string testSceneName[] =
 class TestSceneBase
 {
 public:
-    TestSceneBase(std::string description)
-        : m_initialized(false)
-    , m_paused(false)
-    , m_elapsedTime(0.0f)
-    , m_description(description)
-    {
-    }
-    virtual ~TestSceneBase()
-    {
-
-    }
-
+    TestSceneBase(std::string description);
+    virtual ~TestSceneBase();
     virtual void Initialize() = 0;
     virtual void Update(float deltaTime) = 0;
     virtual void Render() = 0;
@@ -65,8 +56,19 @@ public:
     bool IsPaused() const { return m_paused; }
 
 protected:
+    PhysicsPtr<IPhysicsObject> CreateDynamic(PhysicsPtr<IPhysicsScene>& scene, const MathLib::HTransform3& t,
+        PhysicsPtr<IColliderGeometry>& geometry,
+        const MathLib::HVector3& velocity);
+
+    void AddPhysicsDebugRenderableObject(const PhysicsPtr<IPhysicsObject> &object);
+
+protected:
     bool m_initialized = false;
     bool m_paused = false;
     float m_elapsedTime = 0.0f;
     std::string m_description;
+    std::shared_ptr<IRenderer> m_Renderer;
+    PhysicsPtr<IPhysicsScene> m_Scene;
+    PhysicsPtr<IPhysicsMaterial> m_Material;
+    std::vector<PhysicsPtr<IPhysicsObject>> m_PhysicsObjects;
 };

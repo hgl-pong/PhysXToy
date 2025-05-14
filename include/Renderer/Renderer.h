@@ -68,3 +68,4 @@ public:
 };
 
 IRenderer* CreateRenderer(int argc, char** argv); 
+IRenderer* GetRenderer();

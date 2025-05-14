@@ -25,6 +25,8 @@ using Microsoft::WRL::ComPtr;
 ComPtr<ID3D11Device> g_d3dDevice;
 ComPtr<ID3D11DeviceContext> g_d3dDeviceContext;
 
+IRenderer* g_Renderer = nullptr;
+
 class Renderer : public IRenderer {
 public:
 	Renderer(int argc, char** argv);
@@ -101,11 +103,18 @@ private:
 	std::vector<std::shared_ptr<GUIPanel>> m_guiPanels;
 };
 
+IRenderer* GetRenderer()
+{
+	return g_Renderer;
+}
+
 Renderer::Renderer(int argc, char** argv) {
 	InitializeGLFW();
 	InitializeDirectX();
 	InitializeCamera();
 	InitializeImGui();
+	_ASSERT(g_Renderer == nullptr);
+	g_Renderer = this;
 }
 
 Renderer::~Renderer() {
@@ -120,6 +129,7 @@ Renderer::~Renderer() {
 		glfwDestroyWindow(m_window);
 	}
 	glfwTerminate();
+	g_Renderer = nullptr;
 }
 
 void Renderer::InitializeGLFW() {

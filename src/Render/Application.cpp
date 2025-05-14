@@ -80,12 +80,6 @@ TestingApplication::TestingApplication(int argc, char **argv)
 
 	auto& sceneManager = TestSceneManager::GetInstance();
 	sceneManager.SwitchToScene(TestSceneType::DEFAULT_SCENE);
-
-	auto currentScene = sceneManager.GetCurrentScene();
-	if (auto testScene = std::dynamic_pointer_cast<TestScene>(currentScene))
-	{
-		testScene->SetRenderer(m_Renderer);
-	}
 }
 
 void TestingApplication::_KeyPressEvent(void* eventData)

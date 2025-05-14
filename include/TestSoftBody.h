@@ -62,7 +62,7 @@ inline void CreateSphereTetrahedronMesh(SoftBodyMeshDesc& meshDesc, float radius
     {
         float t = (float)i / numPoints;
         float inclination = std::acos(1.0f - 2.0f * t);
-        float azimuth = 2.0f * MathLib::PI * goldenRatio * i;
+        float azimuth = 2.0f * MathLib::H_PI * goldenRatio * i;
         
         float x = radius * std::sin(inclination) * std::cos(azimuth);
         float y = radius * std::sin(inclination) * std::sin(azimuth);
@@ -118,8 +118,8 @@ inline void CreateSoftBodyTestScene()
     
     PhysicsObjectCreateOptions groundOptions;
     groundOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
-    groundOptions.m_Transform.SetIdentity();
-    groundOptions.m_Transform.SetTranslation(MathLib::HVector3(0.0f, -5.0f, 0.0f));
+    groundOptions.m_Transform.setIdentity();
+    groundOptions.m_Transform.translate(MathLib::HVector3(0.0f, -5.0f, 0.0f));
     
     PhysicsPtr<IPhysicsObject> ground = physicsEngine->CreateObject(groundOptions);
     
@@ -144,8 +144,8 @@ inline void CreateSoftBodyTestScene()
     softBodyOptions.m_Params.m_Mass = 10.0f;          
     softBodyOptions.m_Params.m_SolverIterations = 10; 
     
-    softBodyOptions.m_Transform.SetIdentity();
-    softBodyOptions.m_Transform.SetTranslation(MathLib::HVector3(0.0f, 5.0f, 0.0f));
+    softBodyOptions.m_Transform.setIdentity();
+    softBodyOptions.m_Transform.translate(MathLib::HVector3(0.0f, 5.0f, 0.0f));
     
     bool createCube = true;
     if (createCube)
