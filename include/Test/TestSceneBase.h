@@ -24,7 +24,7 @@ public:
     virtual void Initialize() = 0;
     virtual void Update(float deltaTime) = 0;
     virtual void Render() = 0;
-    virtual void Cleanup() = 0;
+    virtual void Cleanup();
 
     virtual std::string GetName() const = 0;
     virtual std::string GetDescription() const
@@ -56,11 +56,8 @@ public:
     bool IsPaused() const { return m_paused; }
 
 protected:
-    PhysicsPtr<IPhysicsObject> CreateDynamic(PhysicsPtr<IPhysicsScene>& scene, const MathLib::HTransform3& t,
-        PhysicsPtr<IColliderGeometry>& geometry,
-        const MathLib::HVector3& velocity);
-
-    void AddPhysicsDebugRenderableObject(const PhysicsPtr<IPhysicsObject> &object);
+    void AddObject(PhysicsPtr<IPhysicsObject> &object, bool createRenderObject = true);
+    void RemoveObject(PhysicsPtr<IPhysicsObject> &object);
 
 protected:
     bool m_initialized = false;
@@ -70,5 +67,11 @@ protected:
     std::shared_ptr<IRenderer> m_Renderer;
     PhysicsPtr<IPhysicsScene> m_Scene;
     PhysicsPtr<IPhysicsMaterial> m_Material;
-    std::vector<PhysicsPtr<IPhysicsObject>> m_PhysicsObjects;
+    struct TestObject
+    {
+        PhysicsPtr<IPhysicsObject> physicsObject;
+        std::shared_ptr<RenderObject> renderObject;
+    };
+
+    std::vector<TestObject> m_TestObjects;
 };

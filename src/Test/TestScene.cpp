@@ -39,9 +39,7 @@ void TestScene::Initialize()
     
     for (auto &physicsObject : physicsObjects)
     {
-        m_Scene->AddPhysicsObject(physicsObject);
-        AddPhysicsDebugRenderableObject(physicsObject);
-        m_PhysicsObjects.push_back(physicsObject);
+        AddObject(physicsObject);
     }
 
     m_initialized = true;
@@ -62,27 +60,6 @@ void TestScene::Update(float deltaTime)
 
 void TestScene::Render()
 {
-}
-
-void TestScene::Cleanup()
-{
-    if (m_Scene)
-    {
-        for (auto &object : m_PhysicsObjects)
-        {
-            if (object)
-            {
-                m_Scene->RemovePhysicsObject(object);
-            }
-        }
-    }
-    
-    m_PhysicsObjects.clear();
-    
-    m_Scene.reset();
-    m_Material.reset();
-    
-    m_initialized = false;
 }
 
 std::string TestScene::GetName() const
@@ -120,20 +97,17 @@ void TestScene::KeyBoardCallback(int key, int scancode, int action, int mods)
 
         PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
         
-        auto dynamic = CreateDynamic(m_Scene, m_Renderer->GetActiveCamera()->GetTransform(), 
+        auto dynamic = TestRigidBody::CreateDynamic(m_Renderer->GetActiveCamera()->GetTransform(),
                      geometry, 
                      m_Renderer->GetActiveCamera()->GetDir() * 75);
-        AddPhysicsDebugRenderableObject(dynamic);
-        m_PhysicsObjects.push_back(dynamic);
+        AddObject(dynamic);
     }
     else if ((key == 'B' || key == 'b') && action == 1)
     {
         auto physicsObjects = TestRigidBody::TestRigidBodyCreate();
         for (auto &physicsObject : physicsObjects)
         {
-            m_Scene->AddPhysicsObject(physicsObject);
-            AddPhysicsDebugRenderableObject(physicsObject);
-            m_PhysicsObjects.push_back(physicsObject);
+            AddObject(physicsObject);
         }
     }
 }
@@ -152,9 +126,5 @@ void TestScene::CreateGround()
     PhysicsPtr<IPhysicsObject> groundPlaneObject = PhysicsEngineUtils::CreateObject(groundPlaneObjectOptions);
     groundPlaneObject->AddColliderGeometry(groundPlane, MathLib::HTransform3::Identity());
     
-    if (m_Scene)
-    {
-        m_Scene->AddPhysicsObject(groundPlaneObject);
-        m_PhysicsObjects.push_back(groundPlaneObject);
-    }
+    AddObject(groundPlaneObject, false);
 }

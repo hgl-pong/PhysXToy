@@ -98,7 +98,7 @@ namespace TestRigidBody
 		return objects;
 	}
 
-	static std::vector<PhysicsPtr<IPhysicsObject>> CreateBoxStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent)
+	static std::vector<PhysicsPtr<IPhysicsObject>> CreateBoxStack(const MathLib::HTransform3& t, uint32_t size, MathLib::HReal halfExtent, const uint32_t prob = 70)
 	{
 		std::vector<PhysicsPtr<IPhysicsObject>> objects;
 		CollisionGeometryCreateOptions options;
@@ -117,7 +117,7 @@ namespace TestRigidBody
 				objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
 				objectOptions.m_Transform = t * localTm;
 
-				if (RandomUInt(100) > 70)
+				if (RandomUInt(100) > prob)
 				{
 					objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
 				}

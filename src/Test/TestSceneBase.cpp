@@ -18,25 +18,55 @@ TestSceneBase::~TestSceneBase()
 {
 }
 
-PhysicsPtr<IPhysicsObject> TestSceneBase::CreateDynamic(PhysicsPtr<IPhysicsScene>& scene, const MathLib::HTransform3& t,
-        PhysicsPtr<IColliderGeometry>& geometry,
-        const MathLib::HVector3& velocity)
+void TestSceneBase::Cleanup()
 {
-    auto dynamic = TestRigidBody::CreateDynamic(t, geometry, velocity);
-    if (m_Scene)
+    for (auto& object : m_TestObjects)
     {
-        m_Scene->AddPhysicsObject(dynamic);
-        AddPhysicsDebugRenderableObject(dynamic);
-        m_PhysicsObjects.push_back(dynamic);
+        if (m_Renderer)
+        {
+            m_Renderer->RemoveRenderObject(object.renderObject);
+        }
+        if (m_Scene)
+            m_Scene->RemovePhysicsObject(object.physicsObject);
     }
-    return dynamic;
+
+    m_TestObjects.clear();
+
+    m_Scene.reset();
+    m_Material.reset();
+
+    m_initialized = false;
 }
 
-void TestSceneBase::AddPhysicsDebugRenderableObject(const PhysicsPtr<IPhysicsObject> &object)
+void TestSceneBase::AddObject(PhysicsPtr<IPhysicsObject> &object, bool createRenderObject)
 {
-    if (m_Renderer)
+    TestObject newObject;
+    newObject.physicsObject = object;
+    if (createRenderObject && m_Renderer)
     {
         std::shared_ptr<RenderObject> renderable = std::make_shared<RenderObjectAdapter>(object);
+        newObject.renderObject = renderable;
         m_Renderer->AddRenderObject(renderable);
     }
+    m_TestObjects.push_back(newObject);
+    if (m_Scene)
+        m_Scene->AddPhysicsObject(object);
 } 
+
+void TestSceneBase::RemoveObject(PhysicsPtr<IPhysicsObject>& object)
+{
+    auto it = std::find_if(m_TestObjects.begin(), m_TestObjects.end(),
+        [&object](const TestObject& obj) { return obj.physicsObject == object; });
+    if (it != m_TestObjects.end())
+    {
+        if (m_Renderer && it->renderObject)
+        {
+            m_Renderer->RemoveRenderObject(it->renderObject);
+        }
+        std::swap(*it, m_TestObjects.back());
+        m_TestObjects.pop_back();
+    }
+
+    if (m_Scene)
+        m_Scene->RemovePhysicsObject(object);
+}

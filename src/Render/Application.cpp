@@ -79,7 +79,7 @@ TestingApplication::TestingApplication(int argc, char **argv)
 	
 
 	auto& sceneManager = TestSceneManager::GetInstance();
-	sceneManager.SwitchToScene(TestSceneType::DEFAULT_SCENE);
+	sceneManager.SwitchToScene(TestSceneType::PHYSX_HELLO_WORLD);
 }
 
 void TestingApplication::_KeyPressEvent(void* eventData)
