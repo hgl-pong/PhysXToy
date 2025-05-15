@@ -86,8 +86,8 @@ void PhysicsScene::Tick(MathLib::HReal deltaTime)
     //PHYSICS_PROFILE_VALUE("ContactPoints", (int32_t)renderBuffer.getNbContactPoints(), this);
     //PHYSICS_PROFILE_VALUE("CollisionPairs", (int32_t)renderBuffer.getNbContactPairs(), this);
     //
-    //PxSimulationStatistics stats;
-    //m_Scene->getSimulationStatistics(stats);
+    PxSimulationStatistics stats;
+    m_Scene->getSimulationStatistics(stats);
     //uint64_t memoryUsage = stats.gpuMemory + stats.gpuTempMemory;
     //PHYSICS_PROFILE_VALUE("MemoryUsage", (float)memoryUsage, this);
     

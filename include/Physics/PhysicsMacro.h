@@ -1,4 +1,7 @@
 #pragma once
+#define PHYSICS_REPORT_ERROR(message, file, line) 
 
-
-#define REPORT_ERROR(message, file, line) 
+#define PHYSICS_STRINGIZE_HELPER(X) #X
+#define PHYSICS_STRINGIZE(X) PHYSICS_STRINGIZE_HELPER(X)
+#define PHYSICS_CONCAT_HELPER(X, Y) X##Y
+#define PHYSICS_CONCAT(X, Y) PHYSICS_CONCAT_HELPER(X, Y)

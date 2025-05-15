@@ -731,10 +731,6 @@ private:
 };
 
 #if _DEBUG
-    #define PHYSICS_STRINGIZE_HELPER(X) #X
-    #define PHYSICS_STRINGIZE(X) PHYSICS_STRINGIZE_HELPER(X)
-    #define PHYSICS_CONCAT_HELPER(X, Y) X##Y
-    #define PHYSICS_CONCAT(X, Y) PHYSICS_CONCAT_HELPER(X, Y)
 	#define PHYSICS_PROFILE_ZONE(x, y)										\
 		PhysicsProfilerScope PHYSICS_CONCAT(_scoped, __LINE__)(x, false, (size_t)y)
 	#define PHYSICS_PROFILE_START_CROSSTHREAD(x, y)							\

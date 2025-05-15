@@ -1,5 +1,6 @@
 #pragma once
 #include "Physics/PhysicsTypes.h"
+#include "PhysicsMacro.h"
 #include <memory>
 #include <unordered_set>
 #include <unordered_map>

@@ -10,6 +10,6 @@ public:
 
     virtual void reportError(physx::PxErrorCode::Enum code, const char* message, const char* file, int line)
     {
-        REPORT_ERROR(message, file, line);
+        PHYSICS_REPORT_ERROR(message, file, line);
     }
 };
