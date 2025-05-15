@@ -12,9 +12,8 @@ ScenePanel::ScenePanel()
 {
     m_SearchFilter[0] = '\0';
     
-    // 如果场景管理器中已有场景，设置当前索引为0
     if (m_SceneManager.GetSceneCount() > 0) {
-        m_CurrentSceneIndex = 0;
+        m_CurrentSceneIndex = m_SceneManager.GetCurrentSceneType();
     }
 }
 
@@ -145,7 +144,7 @@ void ScenePanel::RenderSceneSelection()
         for (size_t i = 0; i < TestSceneType::TEST_SCENE_COUNT; i++)
         {
             const auto& sceneName = sceneNames[i];
-            const auto& sceneDesc = m_SceneManager.GetSceneDescription();
+            const auto& sceneDesc = testSceneDesc[i];
             
             // Apply filter if any
             if (m_SearchFilter[0] != '\0')
@@ -185,7 +184,6 @@ void ScenePanel::RenderSceneSelection()
     ImGui::BeginDisabled(m_CurrentSceneIndex == (size_t)-1);
     if (ImGui::Button("Load Selected Scene", ImVec2(-1, 0)))
     {
-        // 直接调用SceneManager切换到当前选择的场景
         if (m_CurrentSceneIndex != (size_t)-1 && m_CurrentSceneIndex < TestSceneType::TEST_SCENE_COUNT)
         {
             m_SceneManager.SwitchToScene((TestSceneType)m_CurrentSceneIndex);

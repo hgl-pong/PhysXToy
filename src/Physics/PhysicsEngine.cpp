@@ -65,6 +65,9 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
 
 PhysicsEngine::~PhysicsEngine()
 {
+	ColliderGeometryCache::GetInstance().Clear();
+	PhysicsMaterialCache::GetInstance().Clear();
+
 	m_CpuDispatcher.reset();
 	m_Physics.reset();
 	m_CudaContextManager.reset();

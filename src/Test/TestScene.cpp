@@ -5,13 +5,12 @@
 #include <Math/GraphicUtils/Camara.h>
 
 TestScene::TestScene() 
-    : TestSceneBase(TestSceneType::DEFAULT_SCENE, "Default physics scene with ground plane and physics objects")
+    : TestSceneBase(TestSceneType::DEFAULT_SCENE)
 {
 }
 
 TestScene::~TestScene()
 {
-    Cleanup();
 }
 
 void TestScene::Initialize()
@@ -84,7 +83,8 @@ void TestScene::MouseClickCallback(int x, int y, int button, int action, int mod
 
 void TestScene::KeyBoardCallback(int key, int scancode, int action, int mods)
 {
-    if (key == ' ' && action == 1 && m_Renderer)
+    auto renderer = GetRenderer();
+    if (key == ' ' && action == 1 && renderer)
     {
         CollisionGeometryCreateOptions options;
         options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
@@ -92,9 +92,9 @@ void TestScene::KeyBoardCallback(int key, int scancode, int action, int mods)
 
         PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
         
-        auto dynamic = TestRigidBody::CreateDynamic(m_Renderer->GetActiveCamera()->GetTransform(),
+        auto dynamic = TestRigidBody::CreateDynamic(renderer->GetActiveCamera()->GetTransform(),
                      geometry, 
-                     m_Renderer->GetActiveCamera()->GetDir() * 75);
+                     renderer->GetActiveCamera()->GetDir() * 75);
         AddObject(dynamic);
     }
     else if ((key == 'B' || key == 'b') && action == 1)

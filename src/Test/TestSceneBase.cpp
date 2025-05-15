@@ -5,27 +5,29 @@
 #include "TestRigidBodyCreate.h"
 
 
-TestSceneBase::TestSceneBase(TestSceneType type, std::string description)
+TestSceneBase::TestSceneBase(TestSceneType type)
         : m_initialized(false)
     , m_paused(false)
     , m_elapsedTime(0.0f)
-    , m_description(description)
     , m_SceneType(type)
 {
-    m_Renderer = std::shared_ptr<IRenderer>(GetRenderer());
 }
 
 TestSceneBase::~TestSceneBase()
 {
+    Cleanup();
+    PhysicsEngineUtils::GetPhysicsEngine()->SetActiveScene(nullptr);
 }
 
 void TestSceneBase::Cleanup()
 {
+    auto renderer = GetRenderer();
+
     for (auto& object : m_TestObjects)
     {
-        if (m_Renderer)
+        if (renderer && object.renderObject)
         {
-            m_Renderer->RemoveRenderObject(object.renderObject);
+            renderer->RemoveRenderObject(object.renderObject);
         }
         if (m_Scene)
             m_Scene->RemovePhysicsObject(object.physicsObject);
@@ -43,11 +45,12 @@ void TestSceneBase::AddObject(PhysicsPtr<IPhysicsObject> &object, bool createRen
 {
     TestObject newObject;
     newObject.physicsObject = object;
-    if (createRenderObject && m_Renderer)
+    auto renderer = GetRenderer();
+    if (createRenderObject && renderer)
     {
         std::shared_ptr<RenderObject> renderable = std::make_shared<RenderObjectAdapter>(object);
         newObject.renderObject = renderable;
-        m_Renderer->AddRenderObject(renderable);
+        renderer->AddRenderObject(renderable);
     }
     m_TestObjects.push_back(newObject);
     if (m_Scene)
@@ -56,13 +59,14 @@ void TestSceneBase::AddObject(PhysicsPtr<IPhysicsObject> &object, bool createRen
 
 void TestSceneBase::RemoveObject(PhysicsPtr<IPhysicsObject>& object)
 {
+    auto renderer = GetRenderer();
     auto it = std::find_if(m_TestObjects.begin(), m_TestObjects.end(),
         [&object](const TestObject& obj) { return obj.physicsObject == object; });
     if (it != m_TestObjects.end())
     {
-        if (m_Renderer && it->renderObject)
+        if (renderer && it->renderObject)
         {
-            m_Renderer->RemoveRenderObject(it->renderObject);
+            renderer->RemoveRenderObject(it->renderObject);
         }
         std::swap(*it, m_TestObjects.back());
         m_TestObjects.pop_back();

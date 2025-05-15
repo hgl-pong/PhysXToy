@@ -18,10 +18,17 @@ static std::string testSceneName[] =
     "PhysX Mass Properties",
 };
 
+static std::string testSceneDesc[] = 
+{
+    "Default physics scene with ground plane and physics objects",
+    "Basic physics scene with a ground plane, sphere, and boxes. As Same as Hello World in PhysX Snippet.",
+    "Show different ways to set the rigid body mass, create 5 snowmen with different mass properties",
+};
+
 class TestSceneBase
 {
 public:
-    TestSceneBase(TestSceneType type, std::string description);
+    TestSceneBase(TestSceneType type);
     virtual ~TestSceneBase();
     virtual void Initialize() = 0;
     virtual void Update(float deltaTime) = 0;
@@ -31,7 +38,7 @@ public:
     std::string GetName() const { return testSceneName[m_SceneType]; }
     virtual std::string GetDescription() const
     {
-        return m_description;
+        return testSceneDesc[m_SceneType];
     }
 
     virtual void Reset()
@@ -65,8 +72,6 @@ protected:
     bool m_initialized = false;
     bool m_paused = false;
     float m_elapsedTime = 0.0f;
-    std::string m_description;
-    std::shared_ptr<IRenderer> m_Renderer;
     PhysicsPtr<IPhysicsScene> m_Scene;
     PhysicsPtr<IPhysicsMaterial> m_Material;
     struct TestObject

@@ -6,11 +6,24 @@
 
 #include <algorithm>
 
+TestSceneManager* g_pInstance = nullptr;
 // Singleton instance
 TestSceneManager& TestSceneManager::GetInstance()
 {
-    static TestSceneManager instance;
-    return instance;
+    if (g_pInstance != nullptr)
+        return *g_pInstance;
+    g_pInstance = new TestSceneManager();
+    return *g_pInstance;
+}
+
+void TestSceneManager::DestroyInstance()
+{
+    delete g_pInstance;
+}
+
+TestSceneManager::TestSceneManager()
+{
+    SwitchToScene(m_CurrentSceneType);
 }
 
 bool TestSceneManager::SwitchToScene(TestSceneType type)
@@ -40,6 +53,12 @@ bool TestSceneManager::SwitchToScene(TestSceneType type)
     // If we get here, scene creation failed
     m_CurrentSceneType = TestSceneType::TEST_SCENE_COUNT; // Invalid scene type
     return false;
+}
+
+TestSceneType TestSceneManager::GetCurrentSceneType() const
+{
+    std::lock_guard<std::mutex> lock(m_SceneMutex);
+    return m_CurrentSceneType;
 }
 
 std::shared_ptr<TestSceneBase> TestSceneManager::GetCurrentScene() const

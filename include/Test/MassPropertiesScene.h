@@ -10,13 +10,12 @@ class MassPropertiesScene : public TestSceneBase
 {
 public:
     MassPropertiesScene() : 
-        TestSceneBase(TestSceneType::PHYSX_MASS_PROPERTIES, "Show different ways to set the rigid body mass, create 5 snowmen with different mass properties")
+        TestSceneBase(TestSceneType::PHYSX_MASS_PROPERTIES)
     {
     }
 
     ~MassPropertiesScene() override
     {
-        Cleanup();
     }
 
     void Initialize() override
@@ -82,7 +81,8 @@ public:
 
     void KeyBoardCallback(int key, int scancode, int action, int mods) override
     {
-        if (key == ' ' && action == 1 && m_Renderer)
+        auto renderer = GetRenderer();
+        if (key == ' ' && action == 1 && renderer)
         {
             // Shoot a sphere to test the mass properties of the snowman
             CollisionGeometryCreateOptions options;
@@ -91,9 +91,9 @@ public:
 
             PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
             
-            auto dynamic = TestRigidBody::CreateDynamic(m_Renderer->GetActiveCamera()->GetTransform(),
+            auto dynamic = TestRigidBody::CreateDynamic(renderer->GetActiveCamera()->GetTransform(),
                      geometry, 
-                     m_Renderer->GetActiveCamera()->GetDir() * 50);
+                     renderer->GetActiveCamera()->GetDir() * 50);
             AddObject(dynamic);
         }
     }

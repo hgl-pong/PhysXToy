@@ -527,7 +527,6 @@ private:
 	PhysicsPtr<IPhysicsMaterial> m_Material;
 };
 
-
 extern bool AreGeometriesEqual(const CollisionGeometryCreateOptions& a, const CollisionGeometryCreateOptions& b);
 extern size_t GenerateHash(const CollisionGeometryCreateOptions& options);
 

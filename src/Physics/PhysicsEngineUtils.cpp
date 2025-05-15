@@ -21,9 +21,6 @@ IPhysicsEngine* PhysicsEngineUtils::CreatePhysicsEngine(const PhysicsEngineOptio
 
 void PhysicsEngineUtils::DestroyPhysicsEngine()
 {
-	// 清空几何体缓存
-	PhysicsCacheUtils::ClearGeometryCache();
-	
 	if (gPhysicsEngine)
 	{
 		delete gPhysicsEngine;

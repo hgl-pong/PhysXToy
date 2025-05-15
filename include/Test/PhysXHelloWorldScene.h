@@ -10,13 +10,12 @@ class PhysXHelloWorldScene : public TestSceneBase
 {
 public:
     PhysXHelloWorldScene() : 
-        TestSceneBase(TestSceneType::PHYSX_HELLO_WORLD, "Basic physics scene with a ground plane, sphere, and boxes. As Same as Hello World in PhysX Snippet.")
+        TestSceneBase(TestSceneType::PHYSX_HELLO_WORLD)
     {
     }
 
     ~PhysXHelloWorldScene() override
     {
-        Cleanup();
     }
 
     void Initialize() override
@@ -88,7 +87,8 @@ public:
 
     void KeyBoardCallback(int key, int scancode, int action, int mods) override
     {
-        if (key == ' ' && action == 1 && m_Renderer)
+        auto renderer = GetRenderer();
+        if (key == ' ' && action == 1 && renderer)
         {
             CollisionGeometryCreateOptions options;
             options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
@@ -96,9 +96,9 @@ public:
 
             PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
 
-            auto dynamic = TestRigidBody::CreateDynamic(m_Renderer->GetActiveCamera()->GetTransform(),
+            auto dynamic = TestRigidBody::CreateDynamic(renderer->GetActiveCamera()->GetTransform(),
                 geometry,
-                m_Renderer->GetActiveCamera()->GetDir() * 75);
+                renderer->GetActiveCamera()->GetDir() * 75);
             AddObject(dynamic);
         }
         else if ((key == 'B' || key == 'b') && action == 1)

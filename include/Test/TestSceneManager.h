@@ -26,9 +26,11 @@ public:
      * @return Reference to the TestSceneManager singleton
      */
     static TestSceneManager& GetInstance();
-
+    static void DestroyInstance();
 
     bool SwitchToScene(TestSceneType type);
+
+    TestSceneType GetCurrentSceneType() const;
     
     /**
      * Get currently active scene
@@ -79,7 +81,7 @@ public:
     
 private:
     // Private constructor to enforce singleton pattern
-    TestSceneManager() = default;
+    TestSceneManager();
     ~TestSceneManager() = default;
     
     // Disable copy and move
@@ -93,7 +95,7 @@ private:
     
     // Current scene state
     std::shared_ptr<TestSceneBase> m_CurrentScene = nullptr;
-    TestSceneType m_CurrentSceneType = TestSceneType::DEFAULT_SCENE;
+    TestSceneType m_CurrentSceneType = TestSceneType::PHYSX_HELLO_WORLD;
     
     // Thread safety
     mutable std::mutex m_SceneMutex;

@@ -20,6 +20,11 @@ public:
 public:
 	void Release() override
 	{
+		if (m_Renderer) {
+			m_Renderer->RemoveGUIPanel(m_ScenePanel);
+		}
+		m_ScenePanel.reset();
+		TestSceneManager::DestroyInstance();
 		PhysicsEngineUtils::DestroyPhysicsEngine();
 
 		if (m_Renderer) {
@@ -76,10 +81,7 @@ TestingApplication::TestingApplication(int argc, char **argv)
 	
 	m_ScenePanel = std::make_shared<ScenePanel>();
 	m_Renderer->AddGUIPanel(m_ScenePanel);
-	
 
-	auto& sceneManager = TestSceneManager::GetInstance();
-	sceneManager.SwitchToScene(TestSceneType::PHYSX_MASS_PROPERTIES);
 }
 
 void TestingApplication::_KeyPressEvent(void* eventData)
