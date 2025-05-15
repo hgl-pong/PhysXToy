@@ -79,6 +79,7 @@ public:
     virtual void RecordData(const char* name, float value, uint64_t contextId) = 0;
     virtual void RecordData(const char* name, int32_t value, uint64_t contextId) = 0;
     virtual void RecordFrame(const char* name, uint64_t contextId) = 0;
+	virtual void EndFrame() = 0;
     
     // Statistics management
     virtual const PhysicsStatisticsData::FrameStats& GetLatestFrameStats() const = 0;

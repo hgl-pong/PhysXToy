@@ -8,6 +8,7 @@
 #include "PhysicsSoftBody.h"
 #include "common/PxRenderBuffer.h"
 #include "PhysicsProfiler.h"
+#include "PhysicsProfilerScope.h"
 #ifndef NDEBUG
 #define ENABLE_PVD
 #endif
@@ -43,26 +44,53 @@ void PhysicsScene::Release()
 void PhysicsScene::Tick(MathLib::HReal deltaTime)
 {
     PHYSICS_PROFILE_FRAME("Scene", this);
-    m_Scene->simulate(deltaTime);
-    m_Scene->fetchResults(true);
-
-    for (auto &dynamicObject : m_PhysicsRigidDynamics)
+    
     {
-        dynamicObject->Update();
-    }
+        PHYSICS_PROFILE_ZONE("PhysicsStep", this);
+        
+        {
+            PHYSICS_PROFILE_ZONE("CollisionDetection", this);
+            m_Scene->simulate(deltaTime);
+        }
 
-    for (auto &softBody : m_PhysicsSoftBodies)
-    {
-        softBody->Update();
+        {
+            PHYSICS_PROFILE_ZONE("Solver", this);
+            m_Scene->fetchResults(true);
+        }
+        
+        PHYSICS_PROFILE_ZONE("Integrate", this);
+        
+        for (auto &dynamicObject : m_PhysicsRigidDynamics)
+        {
+            dynamicObject->Update();
+        }
+
+        for (auto &softBody : m_PhysicsSoftBodies)
+        {
+            softBody->Update();
+        }
+        
+        for (auto &cloth : m_PhysicsClothes)
+        {
+            cloth->Update();
+        }
     }
     
-    for (auto &cloth : m_PhysicsClothes)
-    {
-        cloth->Update();
-    }
+    PHYSICS_PROFILE_VALUE("ActiveObjects", (int32_t)m_PhysicsObjects.size(), this);
+    PHYSICS_PROFILE_VALUE("ActiveDynamicObjects", (int32_t)m_PhysicsRigidDynamics.size(), this);
+    PHYSICS_PROFILE_VALUE("ActiveStaticObjects", (int32_t)m_PhysicsRigidStatics.size(), this);
+    PHYSICS_PROFILE_VALUE("ActiveSoftBodies", (int32_t)m_PhysicsSoftBodies.size(), this);
+    PHYSICS_PROFILE_VALUE("ActiveJoints", (int32_t)m_Joints.size(), this);
     
-    // 每秒钟清理一次未使用的几何体
-    // 这里使用静态变量来跟踪累积时间
+    //const PxRenderBuffer& renderBuffer = m_Scene->getRenderBuffer();
+    //PHYSICS_PROFILE_VALUE("ContactPoints", (int32_t)renderBuffer.getNbContactPoints(), this);
+    //PHYSICS_PROFILE_VALUE("CollisionPairs", (int32_t)renderBuffer.getNbContactPairs(), this);
+    //
+    //PxSimulationStatistics stats;
+    //m_Scene->getSimulationStatistics(stats);
+    //uint64_t memoryUsage = stats.gpuMemory + stats.gpuTempMemory;
+    //PHYSICS_PROFILE_VALUE("MemoryUsage", (float)memoryUsage, this);
+    
     static float accumulatedTime = 0.0f;
     accumulatedTime += deltaTime;
     if (accumulatedTime >= 1.0f)
@@ -70,6 +98,8 @@ void PhysicsScene::Tick(MathLib::HReal deltaTime)
         PhysicsCacheUtils::CleanupUnusedGeometries();
         accumulatedTime = 0.0f;
     }
+    
+    PHYSICS_PROFILE_END_FRAME();
 }
 
 bool PhysicsScene::AddPhysicsObject(PhysicsPtr<IPhysicsObject> &physicsObject)
@@ -254,7 +284,6 @@ void PhysicsScene::RemoveSoftBody(PhysicsPtr<ISoftBody>& softBody)
         m_Scene->removeActor(*pxSoftBody);
     }
     
-    // 从列表中移除
     auto it = std::find(m_PhysicsSoftBodies.begin(), m_PhysicsSoftBodies.end(), softBody);
     if (it != m_PhysicsSoftBodies.end())
     {

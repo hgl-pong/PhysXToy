@@ -671,6 +671,11 @@ public:
 		return ExportPhysicsStatisticsData(this, filename, ProfileChartExportFormat::HTML);
 	}
 
+    virtual void EndFrame() override
+    {
+        m_Statistic.EndFrame();
+    }
+
 private:
 	uint64_t getCurrentTimeMicroseconds() const 
 	{
@@ -726,9 +731,12 @@ private:
 };
 
 #if _DEBUG
-	#define PHYSICS_CONCAT(X, Y) X##Y
+    #define PHYSICS_STRINGIZE_HELPER(X) #X
+    #define PHYSICS_STRINGIZE(X) PHYSICS_STRINGIZE_HELPER(X)
+    #define PHYSICS_CONCAT_HELPER(X, Y) X##Y
+    #define PHYSICS_CONCAT(X, Y) PHYSICS_CONCAT_HELPER(X, Y)
 	#define PHYSICS_PROFILE_ZONE(x, y)										\
-		PhysicsProfilerScope PHYSICS_CONCAT(_scoped, __LINE__)(PhysicsEngineUtils::GetProfiler(), x, false, (size_t)y)
+		PhysicsProfilerScope PHYSICS_CONCAT(_scoped, __LINE__)(x, false, (size_t)y)
 	#define PHYSICS_PROFILE_START_CROSSTHREAD(x, y)							\
 		if(PhysicsEngineUtils::GetProfiler())										\
 			PhysicsEngineUtils::GetProfiler()->ZoneStart(x, true, (size_t)y)
@@ -741,12 +749,16 @@ private:
 	#define PHYSICS_PROFILE_FRAME(x, y)                                                                                                         \
 		if(PhysicsEngineUtils::GetProfiler())                                                                                                        \
 			PhysicsEngineUtils::GetProfiler()->RecordFrame(x, (size_t)y)
+	#define PHYSICS_PROFILE_END_FRAME()                                                                                                         \
+		if(PhysicsEngineUtils::GetProfiler())                                                                                                        \
+			PhysicsEngineUtils::GetProfiler()->EndFrame()
 #else
 	#define PHYSICS_PROFILE_ZONE(x, y)
 	#define PHYSICS_PROFILE_START_CROSSTHREAD(x, y)
 	#define PHYSICS_PROFILE_STOP_CROSSTHREAD(x, y)
 	#define PHYSICS_PROFILE_VALUE(x, y, z)
 	#define PHYSICS_PROFILE_FRAME(x, y)
+	#define PHYSICS_PROFILE_END_FRAME()
 #endif
 
 #include "PhysicsProfilerChart.h"
