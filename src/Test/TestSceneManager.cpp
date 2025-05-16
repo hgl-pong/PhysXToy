@@ -3,6 +3,7 @@
 #include "Test/PhysXHelloWorldScene.h"
 #include "Test/TestScene.h"
 #include "Test/MassPropertiesScene.h"
+#include "Test/PhysXJointScene.h"
 
 #include <algorithm>
 
@@ -163,6 +164,8 @@ std::shared_ptr<TestSceneBase> CreateTestScene(TestSceneType type)
         return std::make_shared<PhysXHelloWorldScene>();
     case TestSceneType::PHYSX_MASS_PROPERTIES:
         return std::make_shared<MassPropertiesScene>();
+    case TestSceneType::PHYSX_JOINT_SCENE:
+        return std::make_shared<PhysXJointScene>();
     default:
         return nullptr;
     } 

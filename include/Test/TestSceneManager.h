@@ -95,7 +95,7 @@ private:
     
     // Current scene state
     std::shared_ptr<TestSceneBase> m_CurrentScene = nullptr;
-    TestSceneType m_CurrentSceneType = TestSceneType::PHYSX_HELLO_WORLD;
+    TestSceneType m_CurrentSceneType = TestSceneType::PHYSX_JOINT_SCENE;
     
     // Thread safety
     mutable std::mutex m_SceneMutex;

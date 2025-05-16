@@ -8,6 +8,7 @@ enum TestSceneType : uint32_t
     DEFAULT_SCENE,
     PHYSX_HELLO_WORLD,
     PHYSX_MASS_PROPERTIES,
+    PHYSX_JOINT_SCENE,
     TEST_SCENE_COUNT
 };
 
@@ -16,6 +17,7 @@ static std::string testSceneName[] =
     "Default Scene",
     "PhysX Hello World",
     "PhysX Mass Properties",
+    "PhysX Joint Scene",
 };
 
 static std::string testSceneDesc[] = 
@@ -23,6 +25,7 @@ static std::string testSceneDesc[] =
     "Default physics scene with ground plane and physics objects",
     "Basic physics scene with a ground plane, sphere, and boxes. As Same as Hello World in PhysX Snippet.",
     "Show different ways to set the rigid body mass, create 5 snowmen with different mass properties",
+    "PhysX Joint Scene, show different types of joints: limited spherical joint, breakable fixed joint, and damped D6 joint.",
 };
 
 class TestSceneBase
