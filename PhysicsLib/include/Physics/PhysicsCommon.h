@@ -37,7 +37,7 @@ struct CollisionEventData
 	MathLib::HReal penetrationDepth;
 };
 
-class ICollisionCallback
+class PHYSICSLIB_API ICollisionCallback
 {
 public:
 
@@ -69,7 +69,7 @@ struct JointCreateOptions
 	bool collisionEnabled = false;
 };
 
-class IPhysicsProfiler
+class PHYSICSLIB_API IPhysicsProfiler
 {
 public:
     virtual ~IPhysicsProfiler() = default;
@@ -103,7 +103,7 @@ public:
     virtual bool ExportStatisticsToHTML(const std::string& filename) = 0;
 }; 
 
-class IPhysicsEngine
+class PHYSICSLIB_API IPhysicsEngine
 {
 public:
 	virtual PhysicsPtr<IPhysicsObject> CreateObject(const PhysicsObjectCreateOptions &options) = 0;
@@ -125,7 +125,7 @@ public:
 	virtual void SetActiveScene(PhysicsPtr<IPhysicsScene> scene) = 0;
 };
 
-class IPhysicsScene
+class PHYSICSLIB_API IPhysicsScene
 {
 public:
 	virtual void Release() = 0;
@@ -148,7 +148,7 @@ public:
 	virtual void Clear() = 0;
 };
 
-class IColliderGeometry
+class PHYSICSLIB_API IColliderGeometry
 {
 public:
 	virtual void Release() = 0;
@@ -161,7 +161,7 @@ public:
 	virtual bool RaycastTest(const MathLib::HRay3D& ray, const MathLib::HTransform3& worldTransform, MathLib::HReal& distance, MathLib::HVector3& normal) = 0;
 };
 
-class IPhysicsObject
+class PHYSICSLIB_API IPhysicsObject
 {
 public:
 	virtual void Release() = 0;
@@ -184,7 +184,7 @@ public:
 	virtual uint32_t GetCollisionMask() const = 0;
 };
 
-class IRigidBody : public IPhysicsObject
+class PHYSICSLIB_API IRigidBody : public IPhysicsObject
 {
 public:
 	virtual ~IRigidBody() = default;
@@ -219,7 +219,7 @@ public:
 	virtual void* GetNativeActor() const = 0;
 };
 
-class IRigidDynamic : public IRigidBody
+class PHYSICSLIB_API IRigidDynamic : public IRigidBody
 {
 public:
 	virtual void SetAngularDamping(const MathLib::HReal &damping) = 0;
@@ -249,12 +249,12 @@ public:
 	virtual MathLib::HReal GetSleepThreshold() const = 0;
 };
 
-class IRigidStatic : public IRigidBody
+class PHYSICSLIB_API IRigidStatic : public IRigidBody
 {
 public:
 };
 
-class ISoftBody : public IPhysicsObject
+class PHYSICSLIB_API ISoftBody : public IPhysicsObject
 {
 public:
 	virtual ~ISoftBody() = default;
@@ -278,7 +278,7 @@ public:
 	virtual void GetRenderMesh(std::vector<MathLib::HVector3>& vertices, std::vector<uint32_t>& indices) const = 0;
 };
 
-class ICloth : public IPhysicsObject
+class PHYSICSLIB_API ICloth : public IPhysicsObject
 {
 public:
 	virtual ~ICloth() = default;
@@ -300,7 +300,7 @@ public:
 	virtual void GetRenderMesh(std::vector<MathLib::HVector3>& vertices, std::vector<uint32_t>& indices) const = 0;
 };
 
-class IPhysicsMaterial
+class PHYSICSLIB_API IPhysicsMaterial
 {
 public:
 	virtual void Release() = 0;
@@ -315,7 +315,7 @@ public:
 	virtual size_t GetOffset() const = 0;
 };
 
-class IPhysicsJoint
+class PHYSICSLIB_API IPhysicsJoint
 {
 public:
 	virtual void Release() = 0;
@@ -332,7 +332,7 @@ public:
 	virtual size_t GetOffset() const = 0;
 };
 
-class IPhysicsDebugRenderer
+class PHYSICSLIB_API IPhysicsDebugRenderer
 {
 public:
 	virtual void Release() = 0;
@@ -346,7 +346,7 @@ public:
 	virtual void Flush() = 0;
 };
 
-class PhysicsEngineUtils
+class PHYSICSLIB_API PhysicsEngineUtils
 {
 public:
 	static IPhysicsEngine *CreatePhysicsEngine(const PhysicsEngineOptions &options, const bool createConvexDecomposer = true);

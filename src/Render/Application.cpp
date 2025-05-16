@@ -1,6 +1,5 @@
 #include "Application.h"
 #include "Physics/PhysicsCommon.h"
-#include "PxPhysicsAPI.h"
 #include <Math/GraphicUtils/Camara.h>
 #include "RenderObjectAdapter.h"
 #include "PhysicsProfilerImGui.h"
@@ -9,7 +8,6 @@
 #include "Test/TestSceneBase.h"
 #include "Test/TestScene.h"
 
-using namespace physx;
 PhysicsEngineTestingApplication *pApp = nullptr;
 
 class TestingApplication : public PhysicsEngineTestingApplication
