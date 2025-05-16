@@ -624,6 +624,8 @@ void Renderer::InitializeImGui() {
 	ImGuiIO& io = ImGui::GetIO();
 	(void)io;
 
+	io.FontDefault = io.Fonts->AddFontFromFileTTF("asset/fonts/SourceSansPro-Regular.ttf", 13.0f);
+
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;    // Enable Docking
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;  // Enable Multi-Viewport / Platform Windows

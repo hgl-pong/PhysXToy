@@ -43,3 +43,9 @@ target_link_libraries(${PHYSICS_TEST} PRIVATE
     Jolt::Jolt
     PhysicsLib
 )
+
+add_custom_command(TARGET ${PHYSICS_TEST} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/asset
+    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/asset
+)
