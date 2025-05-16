@@ -487,6 +487,23 @@ void PhysicsRigidDynamic::SetSleepThreshold(const MathLib::HReal& threshold)
 	m_SleepThreshold = threshold;
 }
 
+void PhysicsRigidDynamic::EnableGyroscopicForces(bool enable)
+{
+	if (m_RigidDynamic == nullptr)
+		return;
+		
+	m_RigidDynamic->setRigidBodyFlag(physx::PxRigidBodyFlag::eENABLE_GYROSCOPIC_FORCES, enable);
+	m_GyroscopicForcesEnabled = enable;
+}
+
+bool PhysicsRigidDynamic::IsGyroscopicForcesEnabled() const
+{
+	if (m_RigidDynamic == nullptr)
+		return false;
+		
+	return m_GyroscopicForcesEnabled;
+}
+
 void PhysicsRigidDynamic::SetFriction(const MathLib::HReal& staticFriction, const MathLib::HReal& dynamicFriction)
 {
 	if (m_RigidDynamic == nullptr || m_Material == nullptr)

@@ -10,6 +10,7 @@ enum TestSceneType : uint32_t
     PHYSX_MASS_PROPERTIES,
     PHYSX_JOINT_SCENE,
     PHYSX_SPLIT_SIM_SCENE,
+    PHYSX_GYROSCOPIC_SCENE,
     TEST_SCENE_COUNT
 };
 
@@ -20,6 +21,7 @@ static std::string testSceneName[] =
     "PhysX Mass Properties",
     "PhysX Joint Scene",
     "PhysX Split Sim Scene",
+    "PhysX Gyroscopic Scene",
 };
 
 static std::string testSceneDesc[] = 
@@ -29,6 +31,7 @@ static std::string testSceneDesc[] =
     "Show different ways to set the rigid body mass, create 5 snowmen with different mass properties",
     "PhysX Joint Scene, show different types of joints: limited spherical joint, breakable fixed joint, and damped D6 joint.",
     "PhysX Split Simulation Scene, demonstrates how to overlap collision detection with rendering and application work. Press M to toggle between no-lag and one-frame-lag modes.",
+    "PhysX Gyroscopic Scene, demonstrates the Dzhanibekov effect by enabling gyroscopic forces on rotating objects. Press SPACE to toggle gyroscopic forces on/off.",
 };
 
 class TestSceneBase

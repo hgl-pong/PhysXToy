@@ -247,6 +247,8 @@ public:
 	virtual bool IsGravityEnabled() const = 0;
 	virtual void SetSleepThreshold(const MathLib::HReal& threshold) = 0;
 	virtual MathLib::HReal GetSleepThreshold() const = 0;
+	virtual void EnableGyroscopicForces(bool enable) = 0;
+	virtual bool IsGyroscopicForcesEnabled() const = 0;
 };
 
 class PHYSICSLIB_API IRigidStatic : public IRigidBody

@@ -74,6 +74,8 @@ public:
 	void SetRestitution(const MathLib::HReal& restitution) override;
 	MathLib::HReal GetRestitution() const override;
 	void* GetNativeActor() const override;
+	void EnableGyroscopicForces(bool enable) override;
+	bool IsGyroscopicForcesEnabled() const override;
 
 private:
 	PhysicsObjectType m_Type;
@@ -95,6 +97,7 @@ private:
 	MathLib::HVector3 m_CenterOfMass = MathLib::HVector3(0, 0, 0);
 	bool m_GravityEnabled = true;
 	MathLib::HReal m_SleepThreshold = 0.05f;
+	bool m_GyroscopicForcesEnabled = false;
 };
 
 class PhysicsRigidStatic : public IRigidStatic
