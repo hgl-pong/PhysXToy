@@ -6,6 +6,7 @@
 #include "Test/PhysXJointScene.h"
 #include "Test/PhysXSplitSimScene.h"
 #include "Test/PhysXGyroscopicScene.h"
+#include "Test/PhysXRackJointScene.h"
 
 #include <algorithm>
 
@@ -172,6 +173,8 @@ std::shared_ptr<TestSceneBase> CreateTestScene(TestSceneType type)
         return std::make_shared<PhysXSplitSimScene>();
     case TestSceneType::PHYSX_GYROSCOPIC_SCENE:
         return std::make_shared<PhysXGyroscopicScene>();
+    case TestSceneType::PHYSX_RACK_JOINT_SCENE:
+        return std::make_shared<PhysXRackJointScene>();
     default:
         return nullptr;
     } 

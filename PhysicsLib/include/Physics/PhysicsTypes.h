@@ -321,6 +321,7 @@ enum class JointType
     RACK_AND_PINION,
     CHAIN,
     PORTAL,
+    RESOLUTION,
     COUNT
 };
 

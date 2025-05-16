@@ -39,6 +39,21 @@ PhysicsJoint::PhysicsJoint(JointType type, PhysicsPtr<IPhysicsObject> objectA, P
     case JointType::D6:
         CreateD6Joint();
         break;
+    case JointType::HINGE:
+        CreateHingeJoint();
+        break;
+    case JointType::GEAR:
+        CreateGearJoint();
+        break;
+    case JointType::RACK_AND_PINION:
+        CreateRackAndPinionJoint();
+        break;
+    case JointType::CHAIN:
+        CreateChainJoint();
+        break;
+    case JointType::PORTAL:
+        CreatePortalJoint();
+        break;
     default:
         break;
     }
@@ -236,7 +251,8 @@ void PhysicsJoint::SetJointLimits(const JointLimitOptions& limitOptions)
                 m_PxD6Joint->setMotion(PxD6Axis::eTWIST, PxD6Motion::eLIMITED);
                 m_PxD6Joint->setTwistLimit(PxJointAngularLimitPair(
                     m_LimitOptions.m_Twist.m_LowerLimit, 
-                    m_LimitOptions.m_Twist.m_UpperLimit));
+                    m_LimitOptions.m_Twist.m_UpperLimit, 
+                    PxSpring(m_LimitOptions.m_Twist.m_Stiffness, m_LimitOptions.m_Twist.m_Damping)));
             }
             else
             {
@@ -247,8 +263,9 @@ void PhysicsJoint::SetJointLimits(const JointLimitOptions& limitOptions)
             {
                 m_PxD6Joint->setMotion(PxD6Axis::eSWING1, PxD6Motion::eLIMITED);
                 m_PxD6Joint->setSwingLimit(PxJointLimitCone(
-                    m_LimitOptions.m_Swing1.m_UpperLimit,
-                    m_LimitOptions.m_Swing2.m_UpperLimit));
+                    m_LimitOptions.m_Swing1.m_UpperLimit, 
+                    m_LimitOptions.m_Swing2.m_UpperLimit, 
+                    PxSpring(m_LimitOptions.m_Swing1.m_Stiffness, m_LimitOptions.m_Swing1.m_Damping)));
             }
             else
             {
@@ -263,6 +280,108 @@ void PhysicsJoint::SetJointLimits(const JointLimitOptions& limitOptions)
             {
                 m_PxD6Joint->setMotion(PxD6Axis::eSWING2, PxD6Motion::eFREE);
             }
+        }
+        break;
+    case JointType::HINGE:
+        if (m_PxHingeJoint)
+        {
+            if (m_LimitOptions.m_Twist.m_IsLimited)
+            {
+                m_PxHingeJoint->setMotion(PxD6Axis::eTWIST, PxD6Motion::eLIMITED);
+                m_PxHingeJoint->setTwistLimit(PxJointAngularLimitPair(
+                    m_LimitOptions.m_Twist.m_LowerLimit, 
+                    m_LimitOptions.m_Twist.m_UpperLimit, 
+                    PxSpring(m_LimitOptions.m_Twist.m_Stiffness, m_LimitOptions.m_Twist.m_Damping)));
+            }
+            else
+            {
+                m_PxHingeJoint->setMotion(PxD6Axis::eTWIST, PxD6Motion::eFREE);
+            }
+        }
+        break;
+    case JointType::GEAR:
+        if (m_PxGearJoint && m_PxGearJoint->is<PxD6Joint>())
+        {
+            PxD6Joint* d6Joint = static_cast<PxD6Joint*>(m_PxGearJoint);
+            
+            if (m_LimitOptions.m_Twist.m_IsLimited)
+            {
+                d6Joint->setMotion(PxD6Axis::eTWIST, PxD6Motion::eLIMITED);
+                d6Joint->setTwistLimit(PxJointAngularLimitPair(
+                    m_LimitOptions.m_Twist.m_LowerLimit, 
+                    m_LimitOptions.m_Twist.m_UpperLimit, 
+                    PxSpring(m_LimitOptions.m_Twist.m_Stiffness, m_LimitOptions.m_Twist.m_Damping)));
+            }
+            else
+            {
+                d6Joint->setMotion(PxD6Axis::eTWIST, PxD6Motion::eFREE);
+            }
+        }
+        break;
+    case JointType::RACK_AND_PINION:
+        if (m_PxRackAndPinionJoint && m_PxRackAndPinionJoint->is<PxD6Joint>())
+        {
+            PxD6Joint* d6Joint = static_cast<PxD6Joint*>(m_PxRackAndPinionJoint);
+            
+            if (m_LimitOptions.m_ZAxis.m_IsLimited)
+            {
+                d6Joint->setMotion(PxD6Axis::eZ, PxD6Motion::eLIMITED);
+                d6Joint->setLinearLimit(PxD6Axis::eZ, PxJointLinearLimitPair(
+                    PxTolerancesScale(), 
+                    m_LimitOptions.m_ZAxis.m_LowerLimit, 
+                    m_LimitOptions.m_ZAxis.m_UpperLimit));
+            }
+            else
+            {
+                d6Joint->setMotion(PxD6Axis::eZ, PxD6Motion::eFREE);
+            }
+            
+            if (m_LimitOptions.m_Twist.m_IsLimited)
+            {
+                d6Joint->setMotion(PxD6Axis::eTWIST, PxD6Motion::eLIMITED);
+                d6Joint->setTwistLimit(PxJointAngularLimitPair(
+                    m_LimitOptions.m_Twist.m_LowerLimit, 
+                    m_LimitOptions.m_Twist.m_UpperLimit, 
+                    PxSpring(m_LimitOptions.m_Twist.m_Stiffness, m_LimitOptions.m_Twist.m_Damping)));
+            }
+            else
+            {
+                d6Joint->setMotion(PxD6Axis::eTWIST, PxD6Motion::eFREE);
+            }
+        }
+        break;
+    case JointType::CHAIN:
+        if (m_PxChainJoint && m_PxChainJoint->is<PxSphericalJoint>())
+        {
+            PxSphericalJoint* sphericalJoint = static_cast<PxSphericalJoint*>(m_PxChainJoint);
+            
+            if (m_LimitOptions.m_Swing1.m_IsLimited && m_LimitOptions.m_Swing2.m_IsLimited)
+            {
+                PxJointLimitCone limitCone(
+                    m_LimitOptions.m_Swing1.m_UpperLimit, 
+                    m_LimitOptions.m_Swing2.m_UpperLimit, 
+                    PxSpring(m_LimitOptions.m_Swing1.m_Stiffness, m_LimitOptions.m_Swing1.m_Damping));
+                
+                sphericalJoint->setLimitCone(limitCone);
+                sphericalJoint->setSphericalJointFlag(PxSphericalJointFlag::eLIMIT_ENABLED, true);
+            }
+            else
+            {
+                sphericalJoint->setSphericalJointFlag(PxSphericalJointFlag::eLIMIT_ENABLED, false);
+            }
+        }
+        break;
+    case JointType::PORTAL:
+        if (m_PxPortalJoint && m_PxPortalJoint->is<PxD6Joint>())
+        {
+            PxD6Joint* d6Joint = static_cast<PxD6Joint*>(m_PxPortalJoint);
+            
+            d6Joint->setMotion(PxD6Axis::eX, PxD6Motion::eFREE);
+            d6Joint->setMotion(PxD6Axis::eY, PxD6Motion::eFREE);
+            d6Joint->setMotion(PxD6Axis::eZ, PxD6Motion::eFREE);
+            d6Joint->setMotion(PxD6Axis::eTWIST, PxD6Motion::eFREE);
+            d6Joint->setMotion(PxD6Axis::eSWING1, PxD6Motion::eFREE);
+            d6Joint->setMotion(PxD6Axis::eSWING2, PxD6Motion::eFREE);
         }
         break;
     default:
@@ -469,6 +588,202 @@ bool PhysicsJoint::CreateD6Joint()
         return false;
 
     m_PxJoint = m_PxD6Joint;
+    return true;
+}
+
+bool PhysicsJoint::CreateHingeJoint()
+{
+    if (!m_ObjectA || !m_ObjectB)
+        return false;
+
+    IRigidBody* objA = static_cast<IRigidBody*>(m_ObjectA.get());
+    IRigidBody* objB = static_cast<IRigidBody*>(m_ObjectB.get());
+
+    if (!objA || !objB)
+        return false;
+
+    PxRigidActor* actorA = static_cast<PxRigidActor*>(objA->GetNativeActor());
+    PxRigidActor* actorB = static_cast<PxRigidActor*>(objB->GetNativeActor());
+
+    if (!actorA || !actorB)
+        return false;
+
+    PxTransform pxLocalFrameA = ConvertUtils::ToPx(m_LocalFrameA);
+    PxTransform pxLocalFrameB = ConvertUtils::ToPx(m_LocalFrameB);
+
+    PxPhysics* physics = &PxGetPhysics();
+    if (!physics)
+        return false;
+
+    m_PxHingeJoint = PxD6JointCreate(*physics, actorA, pxLocalFrameA, actorB, pxLocalFrameB);
+    if (!m_PxHingeJoint)
+        return false;
+
+    m_PxHingeJoint->setMotion(PxD6Axis::eX, PxD6Motion::eLOCKED);
+    m_PxHingeJoint->setMotion(PxD6Axis::eY, PxD6Motion::eLOCKED);
+    m_PxHingeJoint->setMotion(PxD6Axis::eZ, PxD6Motion::eLOCKED);
+    m_PxHingeJoint->setMotion(PxD6Axis::eTWIST, PxD6Motion::eFREE);
+    m_PxHingeJoint->setMotion(PxD6Axis::eSWING1, PxD6Motion::eLOCKED);
+    m_PxHingeJoint->setMotion(PxD6Axis::eSWING2, PxD6Motion::eLOCKED);
+
+    m_PxJoint = m_PxHingeJoint;
+    return true;
+}
+
+bool PhysicsJoint::CreateGearJoint()
+{
+    if (!m_ObjectA || !m_ObjectB)
+        return false;
+
+    IRigidBody* objA = static_cast<IRigidBody*>(m_ObjectA.get());
+    IRigidBody* objB = static_cast<IRigidBody*>(m_ObjectB.get());
+
+    if (!objA || !objB)
+        return false;
+
+    PxRigidActor* actorA = static_cast<PxRigidActor*>(objA->GetNativeActor());
+    PxRigidActor* actorB = static_cast<PxRigidActor*>(objB->GetNativeActor());
+
+    if (!actorA || !actorB)
+        return false;
+
+    PxTransform pxLocalFrameA = ConvertUtils::ToPx(m_LocalFrameA);
+    PxTransform pxLocalFrameB = ConvertUtils::ToPx(m_LocalFrameB);
+
+    PxPhysics* physics = &PxGetPhysics();
+    if (!physics)
+        return false;
+
+    PxD6Joint* d6Joint = PxD6JointCreate(*physics, actorA, pxLocalFrameA, actorB, pxLocalFrameB);
+    if (!d6Joint)
+        return false;
+
+    d6Joint->setMotion(PxD6Axis::eX, PxD6Motion::eLOCKED);
+    d6Joint->setMotion(PxD6Axis::eY, PxD6Motion::eLOCKED);
+    d6Joint->setMotion(PxD6Axis::eZ, PxD6Motion::eLOCKED);
+    d6Joint->setMotion(PxD6Axis::eTWIST, PxD6Motion::eFREE);
+    d6Joint->setMotion(PxD6Axis::eSWING1, PxD6Motion::eLOCKED);
+    d6Joint->setMotion(PxD6Axis::eSWING2, PxD6Motion::eLOCKED);
+
+    m_PxGearJoint = d6Joint;
+    m_PxJoint = m_PxGearJoint;
+    return true;
+}
+
+bool PhysicsJoint::CreateRackAndPinionJoint()
+{
+    if (!m_ObjectA || !m_ObjectB)
+        return false;
+
+    IRigidBody* objA = static_cast<IRigidBody*>(m_ObjectA.get());
+    IRigidBody* objB = static_cast<IRigidBody*>(m_ObjectB.get());
+
+    if (!objA || !objB)
+        return false;
+
+    PxRigidActor* actorA = static_cast<PxRigidActor*>(objA->GetNativeActor());
+    PxRigidActor* actorB = static_cast<PxRigidActor*>(objB->GetNativeActor());
+
+    if (!actorA || !actorB)
+        return false;
+
+    PxTransform pxLocalFrameA = ConvertUtils::ToPx(m_LocalFrameA);
+    PxTransform pxLocalFrameB = ConvertUtils::ToPx(m_LocalFrameB);
+
+    PxPhysics* physics = &PxGetPhysics();
+    if (!physics)
+        return false;
+
+    PxD6Joint* d6Joint = PxD6JointCreate(*physics, actorA, pxLocalFrameA, actorB, pxLocalFrameB);
+    if (!d6Joint)
+        return false;
+
+    d6Joint->setMotion(PxD6Axis::eX, PxD6Motion::eLOCKED);
+    d6Joint->setMotion(PxD6Axis::eY, PxD6Motion::eLOCKED);
+    d6Joint->setMotion(PxD6Axis::eZ, PxD6Motion::eFREE);
+    d6Joint->setMotion(PxD6Axis::eTWIST, PxD6Motion::eFREE);
+    d6Joint->setMotion(PxD6Axis::eSWING1, PxD6Motion::eLOCKED);
+    d6Joint->setMotion(PxD6Axis::eSWING2, PxD6Motion::eLOCKED);
+
+    m_PxRackAndPinionJoint = d6Joint;
+    m_PxJoint = m_PxRackAndPinionJoint;
+    return true;
+}
+
+bool PhysicsJoint::CreateChainJoint()
+{
+    if (!m_ObjectA || !m_ObjectB)
+        return false;
+
+    IRigidBody* objA = static_cast<IRigidBody*>(m_ObjectA.get());
+    IRigidBody* objB = static_cast<IRigidBody*>(m_ObjectB.get());
+
+    if (!objA || !objB)
+        return false;
+
+    PxRigidActor* actorA = static_cast<PxRigidActor*>(objA->GetNativeActor());
+    PxRigidActor* actorB = static_cast<PxRigidActor*>(objB->GetNativeActor());
+
+    if (!actorA || !actorB)
+        return false;
+
+    PxTransform pxLocalFrameA = ConvertUtils::ToPx(m_LocalFrameA);
+    PxTransform pxLocalFrameB = ConvertUtils::ToPx(m_LocalFrameB);
+
+    PxPhysics* physics = &PxGetPhysics();
+    if (!physics)
+        return false;
+
+    PxSphericalJoint* sphericalJoint = PxSphericalJointCreate(*physics, actorA, pxLocalFrameA, actorB, pxLocalFrameB);
+    if (!sphericalJoint)
+        return false;
+
+    PxJointLimitCone limitCone(MathLib::H_PI / 6.0f, MathLib::H_PI / 6.0f);
+    sphericalJoint->setLimitCone(limitCone);
+    sphericalJoint->setSphericalJointFlag(PxSphericalJointFlag::eLIMIT_ENABLED, true);
+
+    m_PxChainJoint = sphericalJoint;
+    m_PxJoint = m_PxChainJoint;
+    return true;
+}
+
+bool PhysicsJoint::CreatePortalJoint()
+{
+    if (!m_ObjectA || !m_ObjectB)
+        return false;
+
+    IRigidBody* objA = static_cast<IRigidBody*>(m_ObjectA.get());
+    IRigidBody* objB = static_cast<IRigidBody*>(m_ObjectB.get());
+
+    if (!objA || !objB)
+        return false;
+
+    PxRigidActor* actorA = static_cast<PxRigidActor*>(objA->GetNativeActor());
+    PxRigidActor* actorB = static_cast<PxRigidActor*>(objB->GetNativeActor());
+
+    if (!actorA || !actorB)
+        return false;
+
+    PxTransform pxLocalFrameA = ConvertUtils::ToPx(m_LocalFrameA);
+    PxTransform pxLocalFrameB = ConvertUtils::ToPx(m_LocalFrameB);
+
+    PxPhysics* physics = &PxGetPhysics();
+    if (!physics)
+        return false;
+
+    PxD6Joint* d6Joint = PxD6JointCreate(*physics, actorA, pxLocalFrameA, actorB, pxLocalFrameB);
+    if (!d6Joint)
+        return false;
+
+    d6Joint->setMotion(PxD6Axis::eX, PxD6Motion::eFREE);
+    d6Joint->setMotion(PxD6Axis::eY, PxD6Motion::eFREE);
+    d6Joint->setMotion(PxD6Axis::eZ, PxD6Motion::eFREE);
+    d6Joint->setMotion(PxD6Axis::eTWIST, PxD6Motion::eFREE);
+    d6Joint->setMotion(PxD6Axis::eSWING1, PxD6Motion::eFREE);
+    d6Joint->setMotion(PxD6Axis::eSWING2, PxD6Motion::eFREE);
+
+    m_PxPortalJoint = d6Joint;
+    m_PxJoint = m_PxPortalJoint;
     return true;
 }
 

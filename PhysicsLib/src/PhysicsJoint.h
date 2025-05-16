@@ -47,6 +47,11 @@ protected:
     bool CreateRevoluteJoint();
     bool CreatePrismaticJoint();
     bool CreateD6Joint();
+    bool CreateHingeJoint();
+    bool CreateGearJoint();
+    bool CreateRackAndPinionJoint();
+    bool CreateChainJoint();
+    bool CreatePortalJoint();
 
     void UpdateJointPose();
 
@@ -70,5 +75,10 @@ protected:
         physx::PxRevoluteJoint* m_PxRevoluteJoint;
         physx::PxPrismaticJoint* m_PxPrismaticJoint;
         physx::PxD6Joint* m_PxD6Joint;
+        physx::PxD6Joint* m_PxHingeJoint;
+        physx::PxJoint* m_PxGearJoint;
+        physx::PxJoint* m_PxRackAndPinionJoint;
+        physx::PxJoint* m_PxChainJoint;
+        physx::PxJoint* m_PxPortalJoint;
     };
 }; 
