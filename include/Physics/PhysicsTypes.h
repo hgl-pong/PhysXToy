@@ -418,6 +418,42 @@ struct PhysicsStatisticsData
         uint32_t contactPoints = 0;         // Contact points count
         uint32_t collisionPairs = 0;        // Collision pairs count
         
+        uint32_t discreteContactPairs = 0;      // Total number of discrete contact pairs
+        uint32_t cacheHitPairs = 0;            // Pairs with contact cache hits
+        uint32_t contactPairsWithContacts = 0;  // Pairs with actual contacts
+        uint32_t newPairs = 0;                 // New broadphase pairs
+        uint32_t lostPairs = 0;                // Lost broadphase pairs
+        uint32_t newTouches = 0;               // New touches found by narrowphase
+        uint32_t lostTouches = 0;              // Lost touches from narrowphase
+        uint32_t partitions = 0;               // Solver partitions
+        uint32_t activeConstraints = 0;        // Active constraints
+        uint32_t activeDynamicBodies = 0;      // Active dynamic bodies from PhysX
+        uint32_t activeKinematicBodies = 0;    // Active kinematic bodies
+        uint32_t staticBodies = 0;             // Static bodies
+        uint32_t dynamicBodies = 0;            // Dynamic bodies
+        uint32_t kinematicBodies = 0;          // Kinematic bodies
+        uint32_t aggregates = 0;               // Aggregates
+        uint32_t articulations = 0;            // Articulations
+        uint32_t axisSolverConstraints = 0;     // Axis solver constraints
+        uint32_t compressedContactSize = 0;    // Compressed contact stream size
+        uint32_t requiredContactConstraintMemory = 0; // Required contact constraint memory
+        uint32_t peakConstraintMemory = 0;     // Peak constraint memory
+        uint32_t broadphaseAdds = 0;           // Broadphase additions
+        uint32_t broadphaseRemoves = 0;        // Broadphase removals
+        
+        // GPU Memory statistics
+        uint64_t gpuMemParticles = 0;          // GPU memory for particles
+        uint64_t gpuMemSoftBodies = 0;         // GPU memory for soft bodies
+        uint64_t gpuMemFEMCloths = 0;          // GPU memory for FEM-based cloth
+        uint64_t gpuMemHairSystems = 0;        // GPU memory for hair systems
+        uint64_t gpuMemHeap = 0;               // GPU memory for heap
+        uint64_t gpuMemHeapBroadPhase = 0;     // GPU memory for broadphase
+        uint64_t gpuMemHeapNarrowPhase = 0;    // GPU memory for narrowphase
+        uint64_t gpuMemHeapSolver = 0;         // GPU memory for solver
+        uint64_t gpuMemHeapArticulation = 0;   // GPU memory for articulation
+        uint64_t gpuMemHeapSimulation = 0;     // GPU memory for simulation
+        uint64_t totalGPUMemory = 0;           // Total GPU memory used
+        
         // Memory statistics
         uint64_t memoryUsage = 0;           // Physics engine memory usage (bytes)
     };

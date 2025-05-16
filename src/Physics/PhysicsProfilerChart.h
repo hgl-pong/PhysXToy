@@ -106,7 +106,13 @@ private:
         // Write headers
         file << "Frame,FrameStartTime,FrameEndTime,FrameDuration,PhysicsStepTime,CollisionDetectionTime,SolverTime,IntegrateTime,"
              << "ActiveObjects,ActiveDynamicObjects,ActiveStaticObjects,ActiveSoftBodies,ActiveJoints,"
-             << "ContactPoints,CollisionPairs,MemoryUsage\n";
+             << "ContactPoints,CollisionPairs,MemoryUsage,DiscreteContactPairs,CacheHitPairs,ContactPairsWithContacts,"
+             << "NewPairs,LostPairs,NewTouches,LostTouches,Partitions,ActiveConstraints,ActiveDynamicBodies,"
+             << "ActiveKinematicBodies,StaticBodies,DynamicBodies,KinematicBodies,Aggregates,Articulations,"
+             << "AxisSolverConstraints,CompressedContactSize,RequiredContactConstraintMemory,PeakConstraintMemory,"
+             << "BroadphaseAdds,BroadphaseRemoves,GPUMemParticles,GPUMemSoftBodies,GPUMemFEMCloths,"
+             << "GPUMemHairSystems,GPUMemHeap,GPUMemHeapBroadPhase,GPUMemHeapNarrowPhase,GPUMemHeapSolver,"
+             << "GPUMemHeapArticulation,GPUMemHeapSimulation,TotalGPUMemory\n";
         
         // Write data for each frame
         for (size_t i = 0; i < frameHistory.size(); i++)
@@ -127,7 +133,40 @@ private:
                  << frame.activeJoints << "," 
                  << frame.contactPoints << "," 
                  << frame.collisionPairs << "," 
-                 << frame.memoryUsage << "\n";
+                 << frame.memoryUsage << ","
+                 << frame.discreteContactPairs << ","
+                 << frame.cacheHitPairs << ","
+                 << frame.contactPairsWithContacts << ","
+                 << frame.newPairs << ","
+                 << frame.lostPairs << ","
+                 << frame.newTouches << ","
+                 << frame.lostTouches << ","
+                 << frame.partitions << ","
+                 << frame.activeConstraints << ","
+                 << frame.activeDynamicBodies << ","
+                 << frame.activeKinematicBodies << ","
+                 << frame.staticBodies << ","
+                 << frame.dynamicBodies << ","
+                 << frame.kinematicBodies << ","
+                 << frame.aggregates << ","
+                 << frame.articulations << ","
+                 << frame.axisSolverConstraints << ","
+                 << frame.compressedContactSize << ","
+                 << frame.requiredContactConstraintMemory << ","
+                 << frame.peakConstraintMemory << ","
+                 << frame.broadphaseAdds << ","
+                 << frame.broadphaseRemoves << ","
+                 << frame.gpuMemParticles << ","
+                 << frame.gpuMemSoftBodies << ","
+                 << frame.gpuMemFEMCloths << ","
+                 << frame.gpuMemHairSystems << ","
+                 << frame.gpuMemHeap << ","
+                 << frame.gpuMemHeapBroadPhase << ","
+                 << frame.gpuMemHeapNarrowPhase << ","
+                 << frame.gpuMemHeapSolver << ","
+                 << frame.gpuMemHeapArticulation << ","
+                 << frame.gpuMemHeapSimulation << ","
+                 << frame.totalGPUMemory << "\n";
         }
         
         // Write summary statistics
@@ -245,7 +284,40 @@ private:
                  << "        \"activeJoints\": " << frame.activeJoints << ",\n"
                  << "        \"contactPoints\": " << frame.contactPoints << ",\n"
                  << "        \"collisionPairs\": " << frame.collisionPairs << ",\n"
-                 << "        \"memoryUsage\": " << frame.memoryUsage << "\n"
+                 << "        \"memoryUsage\": " << frame.memoryUsage << ",\n"
+                 << "        \"discreteContactPairs\": " << frame.discreteContactPairs << ",\n"
+                 << "        \"cacheHitPairs\": " << frame.cacheHitPairs << ",\n"
+                 << "        \"contactPairsWithContacts\": " << frame.contactPairsWithContacts << ",\n"
+                 << "        \"newPairs\": " << frame.newPairs << ",\n"
+                 << "        \"lostPairs\": " << frame.lostPairs << ",\n"
+                 << "        \"newTouches\": " << frame.newTouches << ",\n"
+                 << "        \"lostTouches\": " << frame.lostTouches << ",\n"
+                 << "        \"partitions\": " << frame.partitions << ",\n"
+                 << "        \"activeConstraints\": " << frame.activeConstraints << ",\n"
+                 << "        \"activeDynamicBodies\": " << frame.activeDynamicBodies << ",\n"
+                 << "        \"activeKinematicBodies\": " << frame.activeKinematicBodies << ",\n"
+                 << "        \"staticBodies\": " << frame.staticBodies << ",\n"
+                 << "        \"dynamicBodies\": " << frame.dynamicBodies << ",\n"
+                 << "        \"kinematicBodies\": " << frame.kinematicBodies << ",\n"
+                 << "        \"aggregates\": " << frame.aggregates << ",\n"
+                 << "        \"articulations\": " << frame.articulations << ",\n"
+                 << "        \"axisSolverConstraints\": " << frame.axisSolverConstraints << ",\n"
+                 << "        \"compressedContactSize\": " << frame.compressedContactSize << ",\n"
+                 << "        \"requiredContactConstraintMemory\": " << frame.requiredContactConstraintMemory << ",\n"
+                 << "        \"peakConstraintMemory\": " << frame.peakConstraintMemory << ",\n"
+                 << "        \"broadphaseAdds\": " << frame.broadphaseAdds << ",\n"
+                 << "        \"broadphaseRemoves\": " << frame.broadphaseRemoves << ",\n"
+                 << "        \"gpuMemParticles\": " << frame.gpuMemParticles << ",\n"
+                 << "        \"gpuMemSoftBodies\": " << frame.gpuMemSoftBodies << ",\n"
+                 << "        \"gpuMemFEMCloths\": " << frame.gpuMemFEMCloths << ",\n"
+                 << "        \"gpuMemHairSystems\": " << frame.gpuMemHairSystems << ",\n"
+                 << "        \"gpuMemHeap\": " << frame.gpuMemHeap << ",\n"
+                 << "        \"gpuMemHeapBroadPhase\": " << frame.gpuMemHeapBroadPhase << ",\n"
+                 << "        \"gpuMemHeapNarrowPhase\": " << frame.gpuMemHeapNarrowPhase << ",\n"
+                 << "        \"gpuMemHeapSolver\": " << frame.gpuMemHeapSolver << ",\n"
+                 << "        \"gpuMemHeapArticulation\": " << frame.gpuMemHeapArticulation << ",\n"
+                 << "        \"gpuMemHeapSimulation\": " << frame.gpuMemHeapSimulation << ",\n"
+                 << "        \"totalGPUMemory\": " << frame.totalGPUMemory << "\n"
                  << "      }";
         }
         file << "\n    ],\n";
@@ -380,19 +452,13 @@ private:
         const auto& statistic = m_Profiler->GetStatistic();
         const auto& frameHistory = statistic.GetFrameHistory();
         
-        // Prepare frame time data
-        std::stringstream frameIndices, frameDurations, physicsStepTimes, collisionTimes, solverTimes, integrateTimes;
+        // Prepare data series
+        std::stringstream frameIndices, frameDurations, physicsStepTimes, collisionTimes;
+        std::stringstream solverTimes, integrateTimes, objectCounts, dynamicObjects, staticObjects;
+        std::stringstream softBodyObjects, jointObjects, contactPointCounts, collisionPairCounts;
+        std::stringstream memoryUsage, gpuMemoryUsage;
+        std::stringstream gpuMemParticles, gpuMemSoftBodies, gpuMemFEMCloths, gpuMemHairSystems, gpuMemHeap;
         
-        // Prepare object count data
-        std::stringstream objectCounts, dynamicObjects, staticObjects, softBodyObjects, jointObjects;
-        
-        // Prepare collision statistics data
-        std::stringstream contactPointCounts, collisionPairCounts;
-        
-        // Prepare memory usage data
-        std::stringstream memoryUsage;
-        
-        // Fill data
         for (size_t i = 0; i < frameHistory.size(); i++)
         {
             const auto& frame = frameHistory[i];
@@ -412,6 +478,12 @@ private:
                 contactPointCounts << ", ";
                 collisionPairCounts << ", ";
                 memoryUsage << ", ";
+                gpuMemoryUsage << ", ";
+                gpuMemParticles << ", ";
+                gpuMemSoftBodies << ", ";
+                gpuMemFEMCloths << ", ";
+                gpuMemHairSystems << ", ";
+                gpuMemHeap << ", ";
             }
             
             frameIndices << i;
@@ -431,293 +503,399 @@ private:
             collisionPairCounts << frame.collisionPairs;
             
             memoryUsage << (frame.memoryUsage / (1024.0 * 1024.0)); // Convert to MB
+            gpuMemoryUsage << (frame.totalGPUMemory / (1024.0 * 1024.0)); // Convert to MB
+            
+            gpuMemParticles << (frame.gpuMemParticles / (1024.0 * 1024.0));
+            gpuMemSoftBodies << (frame.gpuMemSoftBodies / (1024.0 * 1024.0));
+            gpuMemFEMCloths << (frame.gpuMemFEMCloths / (1024.0 * 1024.0));
+            gpuMemHairSystems << (frame.gpuMemHairSystems / (1024.0 * 1024.0));
+            gpuMemHeap << (frame.gpuMemHeap / (1024.0 * 1024.0));
         }
         
         // Generate HTML
-        file << "<!DOCTYPE html>\n"
-             << "<html>\n"
-             << "<head>\n"
-             << "  <title>Physics Engine Detailed Statistics</title>\n"
-             << "  <script src=\"https://cdn.jsdelivr.net/npm/chart.js\"></script>\n"
-             << "  <style>\n"
-             << "    body { font-family: Arial, sans-serif; margin: 20px; }\n"
-             << "    .chart-container { width: 800px; height: 400px; margin: 20px auto; }\n"
-             << "    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px auto; max-width: 800px; }\n"
-             << "    .stats-box { background-color: #f8f9fa; border-radius: 5px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n"
-             << "    .stats-heading { margin-top: 0; color: #333; }\n"
-             << "    .stats-value { font-size: 24px; font-weight: bold; margin: 10px 0; color: #007bff; }\n"
-             << "    .stats-label { color: #6c757d; font-size: 14px; }\n"
-             << "    table { width: 800px; margin: 20px auto; border-collapse: collapse; }\n"
-             << "    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }\n"
-             << "    th { background-color: #f2f2f2; }\n"
-             << "    tr:nth-child(even) { background-color: #f9f9f9; }\n"
-             << "    h2 { text-align: center; color: #333; margin-top: 40px; }\n"
-             << "  </style>\n"
-             << "</head>\n"
-             << "<body>\n"
-             << "  <h1 style=\"text-align: center;\">Physics Engine Detailed Statistics</h1>\n"
-             
-             // Summary statistics
-             << "  <div class=\"stats-grid\">\n"
-             << "    <div class=\"stats-box\">\n"
-             << "      <h3 class=\"stats-heading\">Average Frame Time</h3>\n"
-             << "      <div class=\"stats-value\">" << statistic.GetAverageFrameTime() << " us</div>\n"
-             << "      <div class=\"stats-label\">Average time per frame</div>\n"
-             << "    </div>\n"
-             << "    <div class=\"stats-box\">\n"
-             << "      <h3 class=\"stats-heading\">Peak Frame Time</h3>\n"
-             << "      <div class=\"stats-value\">" << statistic.GetPeakFrameTime() << " us</div>\n"
-             << "      <div class=\"stats-label\">Maximum frame time</div>\n"
-             << "    </div>\n"
-             << "    <div class=\"stats-box\">\n"
-             << "      <h3 class=\"stats-heading\">Average Physics Step Time</h3>\n"
-             << "      <div class=\"stats-value\">" << statistic.GetAveragePhysicsStepTime() << " us</div>\n"
-             << "      <div class=\"stats-label\">Average time spent in physics simulation</div>\n"
-             << "    </div>\n"
-             << "    <div class=\"stats-box\">\n"
-             << "      <h3 class=\"stats-heading\">Physics Time Percentage</h3>\n"
-             << "      <div class=\"stats-value\">" << statistic.GetPhysicsTimePercentage() << "%</div>\n"
-             << "      <div class=\"stats-label\">Percentage of frame time spent in physics</div>\n"
-             << "    </div>\n"
-             << "  </div>\n"
-             
-             // Frame time chart
-             << "  <h2>Frame Time Analysis</h2>\n"
-             << "  <div class=\"chart-container\">\n"
-             << "    <canvas id=\"frameTimeChart\"></canvas>\n"
-             << "  </div>\n"
-             
-             // Physics stage time chart
-             << "  <h2>Physics Stage Time Analysis</h2>\n"
-             << "  <div class=\"chart-container\">\n"
-             << "    <canvas id=\"physicsStageChart\"></canvas>\n"
-             << "  </div>\n"
-             
-             // Object count chart
-             << "  <h2>Object Count Analysis</h2>\n"
-             << "  <div class=\"chart-container\">\n"
-             << "    <canvas id=\"objectCountChart\"></canvas>\n"
-             << "  </div>\n"
-             
-             // Collision statistics chart
-             << "  <h2>Collision Statistics</h2>\n"
-             << "  <div class=\"chart-container\">\n"
-             << "    <canvas id=\"collisionChart\"></canvas>\n"
-             << "  </div>\n"
-             
-             // Memory usage chart
-             << "  <h2>Memory Usage</h2>\n"
-             << "  <div class=\"chart-container\">\n"
-             << "    <canvas id=\"memoryChart\"></canvas>\n"
-             << "  </div>\n"
-             
-             // Table data
-             << "  <h2>Latest Frame Details</h2>\n"
-             << "  <table>\n"
-             << "    <tr><th>Metric</th><th>Value</th></tr>\n";
+        file << R"(<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Engine Statistics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .chart-container { width: 80%; margin: 20px auto; }
+        .chart-wrapper { margin-bottom: 30px; }
+        h1, h2 { color: #333; }
+        .summary { background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .summary table { width: 100%; border-collapse: collapse; }
+        .summary th, .summary td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        .summary th { background-color: #eee; }
+    </style>
+</head>
+<body>
+    <h1>Physics Engine Statistics Report</h1>
+    
+    <div class="summary">
+        <h2>Summary Statistics</h2>
+        <table>
+            <tr><th>Metric</th><th>Value</th></tr>
+            <tr><td>Average Frame Time</td><td>)";
         
-        // Only show latest frame detailed data
-        if (!frameHistory.empty())
-        {
-            const auto& latest = statistic.GetLatestFrameStats();
+        file << statistic.GetAverageFrameTime() * 0.001f;
+        
+        file << R"( ms</td></tr>
+            <tr><td>Average Physics Step Time</td><td>)";
             
-            file << "    <tr><td>Frame Duration</td><td>" << latest.frameDuration << " us</td></tr>\n"
-                 << "    <tr><td>Physics Step Time</td><td>" << latest.physicsStepTime << " us</td></tr>\n"
-                 << "    <tr><td>Collision Detection Time</td><td>" << latest.collisionDetectionTime << " us</td></tr>\n"
-                 << "    <tr><td>Solver Time</td><td>" << latest.solverTime << " us</td></tr>\n"
-                 << "    <tr><td>Integration Time</td><td>" << latest.integrateTime << " us</td></tr>\n"
-                 << "    <tr><td>Active Objects Total</td><td>" << latest.activeObjects << "</td></tr>\n"
-                 << "    <tr><td>Active Dynamic Objects</td><td>" << latest.activeDynamicObjects << "</td></tr>\n"
-                 << "    <tr><td>Active Static Objects</td><td>" << latest.activeStaticObjects << "</td></tr>\n"
-                 << "    <tr><td>Active Soft Bodies</td><td>" << latest.activeSoftBodies << "</td></tr>\n"
-                 << "    <tr><td>Active Joints</td><td>" << latest.activeJoints << "</td></tr>\n"
-                 << "    <tr><td>Contact Points</td><td>" << latest.contactPoints << "</td></tr>\n"
-                 << "    <tr><td>Collision Pairs</td><td>" << latest.collisionPairs << "</td></tr>\n"
-                 << "    <tr><td>Memory Usage</td><td>" << (latest.memoryUsage / (1024.0 * 1024.0)) << " MB</td></tr>\n";
-        }
+        file << statistic.GetAveragePhysicsStepTime() * 0.001f;
         
-        file << "  </table>\n"
-             // JavaScript chart code
-             << "  <script>\n"
-             // Frame time chart
-             << "    const frameTimeCtx = document.getElementById('frameTimeChart');\n"
-             << "    new Chart(frameTimeCtx, {\n"
-             << "      type: 'line',\n"
-             << "      data: {\n"
-             << "        labels: [" << frameIndices.str() << "],\n"
-             << "        datasets: [{\n"
-             << "          label: 'Frame Duration',\n"
-             << "          data: [" << frameDurations.str() << "],\n"
-             << "          borderColor: 'rgb(54, 162, 235)',\n"
-             << "          backgroundColor: 'rgba(54, 162, 235, 0.1)',\n"
-             << "          fill: true,\n"
-             << "          tension: 0.1\n"
-             << "        }, {\n"
-             << "          label: 'Physics Step Time',\n"
-             << "          data: [" << physicsStepTimes.str() << "],\n"
-             << "          borderColor: 'rgb(255, 99, 132)',\n"
-             << "          backgroundColor: 'rgba(255, 99, 132, 0.1)',\n"
-             << "          fill: true,\n"
-             << "          tension: 0.1\n"
-             << "        }]\n"
-             << "      },\n"
-             << "      options: {\n"
-             << "        responsive: true,\n"
-             << "        plugins: {\n"
-             << "          title: { display: true, text: 'Frame Time vs Physics Time (microseconds)' }\n"
-             << "        },\n"
-             << "        scales: { y: { beginAtZero: true } }\n"
-             << "      }\n"
-             << "    });\n"
-             
-             // Physics stage time chart
-             << "    const physicsStageCtx = document.getElementById('physicsStageChart');\n"
-             << "    new Chart(physicsStageCtx, {\n"
-             << "      type: 'line',\n"
-             << "      data: {\n"
-             << "        labels: [" << frameIndices.str() << "],\n"
-             << "        datasets: [{\n"
-             << "          label: 'Collision Detection',\n"
-             << "          data: [" << collisionTimes.str() << "],\n"
-             << "          borderColor: 'rgb(75, 192, 192)',\n"
-             << "          backgroundColor: 'rgba(75, 192, 192, 0.1)',\n"
-             << "          fill: true,\n"
-             << "          tension: 0.1\n"
-             << "        }, {\n"
-             << "          label: 'Solver',\n"
-             << "          data: [" << solverTimes.str() << "],\n"
-             << "          borderColor: 'rgb(153, 102, 255)',\n"
-             << "          backgroundColor: 'rgba(153, 102, 255, 0.1)',\n"
-             << "          fill: true,\n"
-             << "          tension: 0.1\n"
-             << "        }, {\n"
-             << "          label: 'Integration',\n"
-             << "          data: [" << integrateTimes.str() << "],\n"
-             << "          borderColor: 'rgb(255, 159, 64)',\n"
-             << "          backgroundColor: 'rgba(255, 159, 64, 0.1)',\n"
-             << "          fill: true,\n"
-             << "          tension: 0.1\n"
-             << "        }]\n"
-             << "      },\n"
-             << "      options: {\n"
-             << "        responsive: true,\n"
-             << "        plugins: {\n"
-             << "          title: { display: true, text: 'Physics Stage Times (microseconds)' }\n"
-             << "        },\n"
-             << "        scales: { y: { beginAtZero: true } }\n"
-             << "      }\n"
-             << "    });\n"
-             
-             // Object count chart
-             << "    const objectCountCtx = document.getElementById('objectCountChart');\n"
-             << "    new Chart(objectCountCtx, {\n"
-             << "      type: 'line',\n"
-             << "      data: {\n"
-             << "        labels: [" << frameIndices.str() << "],\n"
-             << "        datasets: [{\n"
-             << "          label: 'Total Objects',\n"
-             << "          data: [" << objectCounts.str() << "],\n"
-             << "          borderColor: 'rgb(54, 162, 235)',\n"
-             << "          backgroundColor: 'rgba(54, 162, 235, 0.1)',\n"
-             << "          fill: true,\n"
-             << "          tension: 0.1\n"
-             << "        }, {\n"
-             << "          label: 'Dynamic Objects',\n"
-             << "          data: [" << dynamicObjects.str() << "],\n"
-             << "          borderColor: 'rgb(255, 99, 132)',\n"
-             << "          backgroundColor: 'rgba(255, 99, 132, 0.1)',\n"
-             << "          fill: true,\n"
-             << "          tension: 0.1\n"
-             << "        }, {\n"
-             << "          label: 'Static Objects',\n"
-             << "          data: [" << staticObjects.str() << "],\n"
-             << "          borderColor: 'rgb(75, 192, 192)',\n"
-             << "          backgroundColor: 'rgba(75, 192, 192, 0.1)',\n"
-             << "          fill: true,\n"
-             << "          tension: 0.1\n"
-             << "        }, {\n"
-             << "          label: 'Soft Bodies',\n"
-             << "          data: [" << softBodyObjects.str() << "],\n"
-             << "          borderColor: 'rgb(153, 102, 255)',\n"
-             << "          backgroundColor: 'rgba(153, 102, 255, 0.1)',\n"
-             << "          fill: true,\n"
-             << "          tension: 0.1\n"
-             << "        }, {\n"
-             << "          label: 'Joints',\n"
-             << "          data: [" << jointObjects.str() << "],\n"
-             << "          borderColor: 'rgb(255, 159, 64)',\n"
-             << "          backgroundColor: 'rgba(255, 159, 64, 0.1)',\n"
-             << "          fill: true,\n"
-             << "          tension: 0.1\n"
-             << "        }]\n"
-             << "      },\n"
-             << "      options: {\n"
-             << "        responsive: true,\n"
-             << "        plugins: {\n"
-             << "          title: { display: true, text: 'Object Counts' }\n"
-             << "        },\n"
-             << "        scales: { y: { beginAtZero: true } }\n"
-             << "      }\n"
-             << "    });\n"
-             
-             // Collision statistics chart
-             << "    const collisionCtx = document.getElementById('collisionChart');\n"
-             << "    new Chart(collisionCtx, {\n"
-             << "      type: 'line',\n"
-             << "      data: {\n"
-             << "        labels: [" << frameIndices.str() << "],\n"
-             << "        datasets: [{\n"
-             << "          label: 'Contact Points',\n"
-             << "          data: [" << contactPointCounts.str() << "],\n"
-             << "          borderColor: 'rgb(54, 162, 235)',\n"
-             << "          backgroundColor: 'rgba(54, 162, 235, 0.1)',\n"
-             << "          fill: true,\n"
-             << "          tension: 0.1\n"
-             << "        }, {\n"
-             << "          label: 'Collision Pairs',\n"
-             << "          data: [" << collisionPairCounts.str() << "],\n"
-             << "          borderColor: 'rgb(255, 99, 132)',\n"
-             << "          backgroundColor: 'rgba(255, 99, 132, 0.1)',\n"
-             << "          fill: true,\n"
-             << "          tension: 0.1\n"
-             << "        }]\n"
-             << "      },\n"
-             << "      options: {\n"
-             << "        responsive: true,\n"
-             << "        plugins: {\n"
-             << "          title: { display: true, text: 'Collision Statistics' }\n"
-             << "        },\n"
-             << "        scales: { y: { beginAtZero: true } }\n"
-             << "      }\n"
-             << "    });\n"
-             
-             // Memory usage chart
-             << "    const memoryCtx = document.getElementById('memoryChart');\n"
-             << "    new Chart(memoryCtx, {\n"
-             << "      type: 'line',\n"
-             << "      data: {\n"
-             << "        labels: [" << frameIndices.str() << "],\n"
-             << "        datasets: [{\n"
-             << "          label: 'Memory Usage (MB)',\n"
-             << "          data: [" << memoryUsage.str() << "],\n"
-             << "          borderColor: 'rgb(54, 162, 235)',\n"
-             << "          backgroundColor: 'rgba(54, 162, 235, 0.1)',\n"
-             << "          fill: true,\n"
-             << "          tension: 0.1\n"
-             << "        }]\n"
-             << "      },\n"
-             << "      options: {\n"
-             << "        responsive: true,\n"
-             << "        plugins: {\n"
-             << "          title: { display: true, text: 'Memory Usage (MB)' }\n"
-             << "        },\n"
-             << "        scales: { y: { beginAtZero: true } }\n"
-             << "      }\n"
-             << "    });\n"
-             << "  </script>\n"
-             << "</body>\n"
-             << "</html>\n";
+        file << R"( ms</td></tr>
+            <tr><td>Peak Frame Time</td><td>)";
+            
+        file << statistic.GetPeakFrameTime() * 0.001f;
         
+        file << R"( ms</td></tr>
+            <tr><td>Physics Time Percentage</td><td>)";
+            
+        file << statistic.GetPhysicsTimePercentage();
+        
+        file << R"(%</td></tr>
+            <tr><td>Total Frames</td><td>)";
+            
+        file << frameHistory.size();
+        
+        file << R"(</td></tr>
+        </table>
+    </div>
+    
+    <div class="chart-wrapper">
+        <h2>Frame Time and Physics Step Time</h2>
+        <div class="chart-container">
+            <canvas id="timeChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="chart-wrapper">
+        <h2>Physics Components Breakdown</h2>
+        <div class="chart-container">
+            <canvas id="componentsChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="chart-wrapper">
+        <h2>Object Counts</h2>
+        <div class="chart-container">
+            <canvas id="objectsChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="chart-wrapper">
+        <h2>Collision Statistics</h2>
+        <div class="chart-container">
+            <canvas id="collisionChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="chart-wrapper">
+        <h2>Memory Usage</h2>
+        <div class="chart-container">
+            <canvas id="memoryChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="chart-wrapper">
+        <h2>GPU Memory Breakdown</h2>
+        <div class="chart-container">
+            <canvas id="gpuMemoryChart"></canvas>
+        </div>
+    </div>
+    
+    <script>
+        // Common chart configurations
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            elements: { point: { radius: 0 } },
+            scales: {
+                x: { title: { display: true, text: 'Frame' } },
+                y: { beginAtZero: true }
+            }
+        };
+        
+        // Create Charts
+        const timeCtx = document.getElementById('timeChart').getContext('2d');
+        const timeChart = new Chart(timeCtx, {
+            type: 'line',
+            data: {
+                labels: [)";
+        file << frameIndices.str();
+        file << R"(],
+                datasets: [{
+                    label: 'Frame Time (ms)',
+                    data: [)";
+        file << frameDurations.str();
+        file << R"(],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Physics Step Time (ms)',
+                    data: [)";
+        file << physicsStepTimes.str();
+        file << R"(],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    ...commonOptions.scales,
+                    y: { 
+                        beginAtZero: true,
+                        title: { display: true, text: 'Time (ms)' }
+                    }
+                }
+            }
+        });
+        
+        const componentsCtx = document.getElementById('componentsChart').getContext('2d');
+        const componentsChart = new Chart(componentsCtx, {
+            type: 'line',
+            data: {
+                labels: [)";
+        file << frameIndices.str();
+        file << R"(],
+                datasets: [{
+                    label: 'Collision Detection (ms)',
+                    data: [)";
+        file << collisionTimes.str();
+        file << R"(],
+                    borderColor: 'rgb(255, 159, 64)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Solver (ms)',
+                    data: [)";
+        file << solverTimes.str();
+        file << R"(],
+                    borderColor: 'rgb(54, 162, 235)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Integration (ms)',
+                    data: [)";
+        file << integrateTimes.str();
+        file << R"(],
+                    borderColor: 'rgb(153, 102, 255)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    ...commonOptions.scales,
+                    y: { 
+                        beginAtZero: true,
+                        title: { display: true, text: 'Time (ms)' }
+                    }
+                }
+            }
+        });
+        
+        const objectsCtx = document.getElementById('objectsChart').getContext('2d');
+        const objectsChart = new Chart(objectsCtx, {
+            type: 'line',
+            data: {
+                labels: [)";
+        file << frameIndices.str();
+        file << R"(],
+                datasets: [{
+                    label: 'Total Objects',
+                    data: [)";
+        file << objectCounts.str();
+        file << R"(],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Dynamic Objects',
+                    data: [)";
+        file << dynamicObjects.str();
+        file << R"(],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Static Objects',
+                    data: [)";
+        file << staticObjects.str();
+        file << R"(],
+                    borderColor: 'rgb(255, 159, 64)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Soft Bodies',
+                    data: [)";
+        file << softBodyObjects.str();
+        file << R"(],
+                    borderColor: 'rgb(54, 162, 235)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Joints',
+                    data: [)";
+        file << jointObjects.str();
+        file << R"(],
+                    borderColor: 'rgb(153, 102, 255)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    ...commonOptions.scales,
+                    y: { 
+                        beginAtZero: true,
+                        title: { display: true, text: 'Count' }
+                    }
+                }
+            }
+        });
+        
+        const collisionCtx = document.getElementById('collisionChart').getContext('2d');
+        const collisionChart = new Chart(collisionCtx, {
+            type: 'line',
+            data: {
+                labels: [)";
+        file << frameIndices.str();
+        file << R"(],
+                datasets: [{
+                    label: 'Contact Points',
+                    data: [)";
+        file << contactPointCounts.str();
+        file << R"(],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Collision Pairs',
+                    data: [)";
+        file << collisionPairCounts.str();
+        file << R"(],
+                    borderColor: 'rgb(54, 162, 235)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    ...commonOptions.scales,
+                    y: { 
+                        beginAtZero: true,
+                        title: { display: true, text: 'Count' }
+                    }
+                }
+            }
+        });
+        
+        const memoryCtx = document.getElementById('memoryChart').getContext('2d');
+        const memoryChart = new Chart(memoryCtx, {
+            type: 'line',
+            data: {
+                labels: [)";
+        file << frameIndices.str();
+        file << R"(],
+                datasets: [{
+                    label: 'CPU Memory Usage (MB)',
+                    data: [)";
+        file << memoryUsage.str();
+        file << R"(],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1
+                },
+                {
+                    label: 'GPU Memory Usage (MB)',
+                    data: [)";
+        file << gpuMemoryUsage.str();
+        file << R"(],
+                    borderColor: 'rgb(54, 162, 235)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    ...commonOptions.scales,
+                    y: { 
+                        beginAtZero: true,
+                        title: { display: true, text: 'Memory (MB)' }
+                    }
+                }
+            }
+        });
+        
+        const gpuMemoryCtx = document.getElementById('gpuMemoryChart').getContext('2d');
+        const gpuMemoryChart = new Chart(gpuMemoryCtx, {
+            type: 'line',
+            data: {
+                labels: [)";
+        file << frameIndices.str();
+        file << R"(],
+                datasets: [{
+                    label: 'Particles (MB)',
+                    data: [)";
+        file << gpuMemParticles.str();
+        file << R"(],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Soft Bodies (MB)',
+                    data: [)";
+        file << gpuMemSoftBodies.str();
+        file << R"(],
+                    borderColor: 'rgb(54, 162, 235)',
+                    tension: 0.1
+                },
+                {
+                    label: 'FEM Cloths (MB)',
+                    data: [)";
+        file << gpuMemFEMCloths.str();
+        file << R"(],
+                    borderColor: 'rgb(255, 159, 64)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Hair Systems (MB)',
+                    data: [)";
+        file << gpuMemHairSystems.str();
+        file << R"(],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Heap Memory (MB)',
+                    data: [)";
+        file << gpuMemHeap.str();
+        file << R"(],
+                    borderColor: 'rgb(153, 102, 255)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    ...commonOptions.scales,
+                    y: { 
+                        beginAtZero: true,
+                        title: { display: true, text: 'Memory (MB)' }
+                    }
+                }
+            }
+        });
+        
+    </script>
+</body>
+</html>)";
+
         return true;
     }
 

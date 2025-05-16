@@ -88,8 +88,64 @@ void PhysicsScene::Tick(MathLib::HReal deltaTime)
     //
     PxSimulationStatistics stats;
     m_Scene->getSimulationStatistics(stats);
-    //uint64_t memoryUsage = stats.gpuMemory + stats.gpuTempMemory;
-    //PHYSICS_PROFILE_VALUE("MemoryUsage", (float)memoryUsage, this);
+    
+
+    PHYSICS_PROFILE_VALUE("DiscreteContactPairs", (int32_t)stats.nbDiscreteContactPairsTotal, this);
+    PHYSICS_PROFILE_VALUE("CacheHitPairs", (int32_t)stats.nbDiscreteContactPairsWithCacheHits, this);
+    PHYSICS_PROFILE_VALUE("ContactPairs", (int32_t)stats.nbDiscreteContactPairsWithContacts, this);
+    PHYSICS_PROFILE_VALUE("NewPairs", (int32_t)stats.nbNewPairs, this);
+    PHYSICS_PROFILE_VALUE("LostPairs", (int32_t)stats.nbLostPairs, this);
+    PHYSICS_PROFILE_VALUE("NewTouches", (int32_t)stats.nbNewTouches, this);
+    PHYSICS_PROFILE_VALUE("LostTouches", (int32_t)stats.nbLostTouches, this);
+    PHYSICS_PROFILE_VALUE("Partitions", (int32_t)stats.nbPartitions, this);
+    PHYSICS_PROFILE_VALUE("ActiveConstraints", (int32_t)stats.nbActiveConstraints, this);
+    PHYSICS_PROFILE_VALUE("ActiveDynamicBodies", (int32_t)stats.nbActiveDynamicBodies, this);
+    PHYSICS_PROFILE_VALUE("ActiveKinematicBodies", (int32_t)stats.nbActiveKinematicBodies, this);
+    PHYSICS_PROFILE_VALUE("StaticBodies", (int32_t)stats.nbStaticBodies, this);
+    PHYSICS_PROFILE_VALUE("DynamicBodies", (int32_t)stats.nbDynamicBodies, this);
+    PHYSICS_PROFILE_VALUE("KinematicBodies", (int32_t)stats.nbKinematicBodies, this);
+    PHYSICS_PROFILE_VALUE("Aggregates", (int32_t)stats.nbAggregates, this);
+    PHYSICS_PROFILE_VALUE("Articulations", (int32_t)stats.nbArticulations, this);
+    PHYSICS_PROFILE_VALUE("AxisSolverConstraints", (int32_t)stats.nbAxisSolverConstraints, this);
+    PHYSICS_PROFILE_VALUE("CompressedContactSize", (int32_t)stats.compressedContactSize, this);
+    PHYSICS_PROFILE_VALUE("RequiredContactConstraintMemory", (int32_t)stats.requiredContactConstraintMemory, this);
+    PHYSICS_PROFILE_VALUE("PeakConstraintMemory", (int32_t)stats.peakConstraintMemory, this);
+    PHYSICS_PROFILE_VALUE("BroadPhaseAdds", (int32_t)stats.getNbBroadPhaseAdds(), this);
+    PHYSICS_PROFILE_VALUE("BroadPhaseRemoves", (int32_t)stats.getNbBroadPhaseRemoves(), this);
+    
+    PHYSICS_PROFILE_VALUE("GPUMemParticles", (int32_t)stats.gpuMemParticles, this);
+    PHYSICS_PROFILE_VALUE("GPUMemSoftBodies", (int32_t)stats.gpuMemSoftBodies, this);
+    PHYSICS_PROFILE_VALUE("GPUMemFEMCloths", (int32_t)stats.gpuMemFEMCloths, this);
+    PHYSICS_PROFILE_VALUE("GPUMemHairSystems", (int32_t)stats.gpuMemHairSystems, this);
+    PHYSICS_PROFILE_VALUE("GPUMemHeap", (int32_t)stats.gpuMemHeap, this);
+    PHYSICS_PROFILE_VALUE("GPUMemHeapBroadPhase", (int32_t)stats.gpuMemHeapBroadPhase, this);
+    PHYSICS_PROFILE_VALUE("GPUMemHeapNarrowPhase", (int32_t)stats.gpuMemHeapNarrowPhase, this);
+    PHYSICS_PROFILE_VALUE("GPUMemHeapSolver", (int32_t)stats.gpuMemHeapSolver, this);
+    PHYSICS_PROFILE_VALUE("GPUMemHeapArticulation", (int32_t)stats.gpuMemHeapArticulation, this);
+    PHYSICS_PROFILE_VALUE("GPUMemHeapSimulation", (int32_t)stats.gpuMemHeapSimulation, this);
+    
+    uint64_t totalGPUMemory = stats.gpuMemParticles + stats.gpuMemSoftBodies + 
+                             stats.gpuMemFEMCloths + stats.gpuMemHairSystems + 
+                             stats.gpuMemHeap;
+    int32_t totalGPUMemoryLow = (int32_t)(totalGPUMemory & 0xFFFFFFFF);
+    int32_t totalGPUMemoryHigh = (int32_t)(totalGPUMemory >> 32);
+    PHYSICS_PROFILE_VALUE("TotalGPUMemoryLow", totalGPUMemoryLow, this);
+    PHYSICS_PROFILE_VALUE("TotalGPUMemoryHigh", totalGPUMemoryHigh, this);
+    
+    PHYSICS_PROFILE_VALUE("GPUMemParticlesLow", (int32_t)(stats.gpuMemParticles & 0xFFFFFFFF), this);
+    PHYSICS_PROFILE_VALUE("GPUMemParticlesHigh", (int32_t)(stats.gpuMemParticles >> 32), this);
+    
+    PHYSICS_PROFILE_VALUE("GPUMemSoftBodiesLow", (int32_t)(stats.gpuMemSoftBodies & 0xFFFFFFFF), this);
+    PHYSICS_PROFILE_VALUE("GPUMemSoftBodiesHigh", (int32_t)(stats.gpuMemSoftBodies >> 32), this);
+    
+    PHYSICS_PROFILE_VALUE("GPUMemFEMClothsLow", (int32_t)(stats.gpuMemFEMCloths & 0xFFFFFFFF), this);
+    PHYSICS_PROFILE_VALUE("GPUMemFEMClothsHigh", (int32_t)(stats.gpuMemFEMCloths >> 32), this);
+    
+    PHYSICS_PROFILE_VALUE("GPUMemHairSystemsLow", (int32_t)(stats.gpuMemHairSystems & 0xFFFFFFFF), this);
+    PHYSICS_PROFILE_VALUE("GPUMemHairSystemsHigh", (int32_t)(stats.gpuMemHairSystems >> 32), this);
+    
+    PHYSICS_PROFILE_VALUE("GPUMemHeapLow", (int32_t)(stats.gpuMemHeap & 0xFFFFFFFF), this);
+    PHYSICS_PROFILE_VALUE("GPUMemHeapHigh", (int32_t)(stats.gpuMemHeap >> 32), this);
     
     static float accumulatedTime = 0.0f;
     accumulatedTime += deltaTime;

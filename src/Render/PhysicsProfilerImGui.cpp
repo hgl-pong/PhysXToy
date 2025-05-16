@@ -81,38 +81,38 @@ void PhysicsProfilerImGui::Render()
     // Add main tabs
     if (ImGui::BeginTabBar("PhysicsProfilerTabs"))
     {
-        if (ImGui::BeginTabItem("Performance"))
+        if (ImGui::BeginTabItem("Performance##PerfTab"))
         {
             RenderPerformanceSummary();
             RenderFrameTimeGraph();
             ImGui::EndTabItem();
         }
         
-        if (ImGui::BeginTabItem("Objects"))
+        if (ImGui::BeginTabItem("Objects##ObjTab"))
         {
             RenderObjectStatistics();
             ImGui::EndTabItem();
         }
         
-        if (ImGui::BeginTabItem("Collisions"))
+        if (ImGui::BeginTabItem("Collisions##CollTab"))
         {
             RenderCollisionStatistics();
             ImGui::EndTabItem();
         }
         
-        if (ImGui::BeginTabItem("Memory"))
+        if (ImGui::BeginTabItem("Memory##MemTab"))
         {
             RenderMemoryUsage();
             ImGui::EndTabItem();
         }
         
-        if (ImGui::BeginTabItem("Events"))
+        if (ImGui::BeginTabItem("Events##EvtTab"))
         {
             RenderDetailedEvents();
             ImGui::EndTabItem();
         }
         
-        if (ImGui::BeginTabItem("Export"))
+        if (ImGui::BeginTabItem("Export##ExpTab"))
         {
             RenderExportOptions();
             ImGui::EndTabItem();
@@ -228,17 +228,93 @@ void PhysicsProfilerImGui::RenderCollisionStatistics()
     ImGui::Text("Collision Statistics:");
     ImGui::Separator();
     
-    ImGui::Columns(2);
+    ImGui::Columns(2, "CollStats");
     ImGui::Text("Contact Points:"); ImGui::NextColumn();
     ImGui::Text("%u", latest.contactPoints); ImGui::NextColumn();
     
     ImGui::Text("Collision Pairs:"); ImGui::NextColumn();
     ImGui::Text("%u", latest.collisionPairs); ImGui::NextColumn();
     
+    // PhysX Engine Details
+    ImGui::Text("Discrete Contact Pairs:"); ImGui::NextColumn();
+    ImGui::Text("%u", latest.discreteContactPairs); ImGui::NextColumn();
+    
+    ImGui::Text("Cache Hit Pairs:"); ImGui::NextColumn();
+    ImGui::Text("%u", latest.cacheHitPairs); ImGui::NextColumn();
+    
+    ImGui::Text("Contact Pairs With Contacts:"); ImGui::NextColumn();
+    ImGui::Text("%u", latest.contactPairsWithContacts); ImGui::NextColumn();
+    
+    ImGui::Text("New Pairs:"); ImGui::NextColumn();
+    ImGui::Text("%u", latest.newPairs); ImGui::NextColumn();
+    
+    ImGui::Text("Lost Pairs:"); ImGui::NextColumn();
+    ImGui::Text("%u", latest.lostPairs); ImGui::NextColumn();
+    
+    ImGui::Text("New Touches:"); ImGui::NextColumn();
+    ImGui::Text("%u", latest.newTouches); ImGui::NextColumn();
+    
+    ImGui::Text("Lost Touches:"); ImGui::NextColumn();
+    ImGui::Text("%u", latest.lostTouches); ImGui::NextColumn();
+    
+    ImGui::Text("Solver Partitions:"); ImGui::NextColumn();
+    ImGui::Text("%u", latest.partitions); ImGui::NextColumn();
+    
     ImGui::Columns(1);
     
+    // PhysX Engine Details
+    if (ImGui::CollapsingHeader("PhysX Engine Details##PhysxDetails1", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::Columns(2, "PhysxStats1");
+        
+        ImGui::Text("Active Constraints:"); ImGui::NextColumn();
+        ImGui::Text("%u", latest.activeConstraints); ImGui::NextColumn();
+        
+        ImGui::Text("Active Dynamic Bodies:"); ImGui::NextColumn();
+        ImGui::Text("%u", latest.activeDynamicBodies); ImGui::NextColumn();
+        
+        ImGui::Text("Active Kinematic Bodies:"); ImGui::NextColumn();
+        ImGui::Text("%u", latest.activeKinematicBodies); ImGui::NextColumn();
+        
+        ImGui::Text("Static Bodies:"); ImGui::NextColumn();
+        ImGui::Text("%u", latest.staticBodies); ImGui::NextColumn();
+        
+        ImGui::Text("Dynamic Bodies:"); ImGui::NextColumn();
+        ImGui::Text("%u", latest.dynamicBodies); ImGui::NextColumn();
+        
+        ImGui::Text("Kinematic Bodies:"); ImGui::NextColumn();
+        ImGui::Text("%u", latest.kinematicBodies); ImGui::NextColumn();
+        
+        ImGui::Text("Aggregates:"); ImGui::NextColumn();
+        ImGui::Text("%u", latest.aggregates); ImGui::NextColumn();
+        
+        ImGui::Text("Articulations:"); ImGui::NextColumn();
+        ImGui::Text("%u", latest.articulations); ImGui::NextColumn();
+        
+        ImGui::Text("Axis Solver Constraints:"); ImGui::NextColumn();
+        ImGui::Text("%u", latest.axisSolverConstraints); ImGui::NextColumn();
+        
+        ImGui::Columns(1);
+    }
+    
+    if (ImGui::CollapsingHeader("Memory Details##CollMemDetails", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::Columns(2, "MemStats1");
+        
+        ImGui::Text("Compressed Contact Size:"); ImGui::NextColumn();
+        ImGui::Text("%u bytes", latest.compressedContactSize); ImGui::NextColumn();
+        
+        ImGui::Text("Required Contact Constraint Memory:"); ImGui::NextColumn();
+        ImGui::Text("%u bytes", latest.requiredContactConstraintMemory); ImGui::NextColumn();
+        
+        ImGui::Text("Peak Constraint Memory:"); ImGui::NextColumn();
+        ImGui::Text("%u bytes", latest.peakConstraintMemory); ImGui::NextColumn();
+        
+        ImGui::Columns(1);
+    }
+    
     // Display historical collision data chart
-    if (ImGui::CollapsingHeader("Collision History", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::CollapsingHeader("Collision History##CollHistory", ImGuiTreeNodeFlags_DefaultOpen))
     {
         // Placeholder for a graph of collision data over time
         ImGui::Text("Collision history graph would be displayed here");
@@ -256,18 +332,66 @@ void PhysicsProfilerImGui::RenderMemoryUsage()
     ImGui::Separator();
     
     // Convert bytes to more readable units
-    float memoryMB = latest.memoryUsage / (1024.0f * 1024.0f);
+    float cpuMemoryMB = latest.memoryUsage / (1024.0f * 1024.0f);
+    float gpuMemoryMB = latest.totalGPUMemory / (1024.0f * 1024.0f);
     
-    ImGui::Columns(2);
-    ImGui::Text("Total Memory:"); ImGui::NextColumn();
-    ImGui::Text("%.2f MB", memoryMB); ImGui::NextColumn();
+    ImGui::Columns(2, "MemMain");
+    ImGui::Text("CPU Memory:"); ImGui::NextColumn();
+    ImGui::Text("%.2f MB", cpuMemoryMB); ImGui::NextColumn();
     
-    // Additional memory metrics would go here
+    ImGui::Text("GPU Memory:"); ImGui::NextColumn();
+    ImGui::Text("%.2f MB", gpuMemoryMB); ImGui::NextColumn();
     
     ImGui::Columns(1);
     
+    if (ImGui::CollapsingHeader("GPU Memory Details##GPUMem", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::Columns(2, "GPUMemDetails");
+        
+        float mbScale = 1.0f / (1024.0f * 1024.0f);
+        ImGui::Text("Particles:"); ImGui::NextColumn();
+        ImGui::Text("%.2f MB", latest.gpuMemParticles * mbScale); ImGui::NextColumn();
+        
+        ImGui::Text("Soft Bodies:"); ImGui::NextColumn();
+        ImGui::Text("%.2f MB", latest.gpuMemSoftBodies * mbScale); ImGui::NextColumn();
+        
+        ImGui::Text("FEM Cloths:"); ImGui::NextColumn();
+        ImGui::Text("%.2f MB", latest.gpuMemFEMCloths * mbScale); ImGui::NextColumn();
+        
+        ImGui::Text("Hair Systems:"); ImGui::NextColumn();
+        ImGui::Text("%.2f MB", latest.gpuMemHairSystems * mbScale); ImGui::NextColumn();
+        
+        ImGui::Text("Heap Memory:"); ImGui::NextColumn();
+        ImGui::Text("%.2f MB", latest.gpuMemHeap * mbScale); ImGui::NextColumn();
+        
+        ImGui::Columns(1);
+    }
+    
+    if (ImGui::CollapsingHeader("GPU Heap Details##GPUHeap", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::Columns(2, "GPUHeapDetails");
+        
+        float mbScale = 1.0f / (1024.0f * 1024.0f);
+        ImGui::Text("Broad Phase:"); ImGui::NextColumn();
+        ImGui::Text("%.2f MB", latest.gpuMemHeapBroadPhase * mbScale); ImGui::NextColumn();
+        
+        ImGui::Text("Narrow Phase:"); ImGui::NextColumn();
+        ImGui::Text("%.2f MB", latest.gpuMemHeapNarrowPhase * mbScale); ImGui::NextColumn();
+        
+        ImGui::Text("Solver:"); ImGui::NextColumn();
+        ImGui::Text("%.2f MB", latest.gpuMemHeapSolver * mbScale); ImGui::NextColumn();
+        
+        ImGui::Text("Articulation:"); ImGui::NextColumn();
+        ImGui::Text("%.2f MB", latest.gpuMemHeapArticulation * mbScale); ImGui::NextColumn();
+        
+        ImGui::Text("Simulation:"); ImGui::NextColumn();
+        ImGui::Text("%.2f MB", latest.gpuMemHeapSimulation * mbScale); ImGui::NextColumn();
+        
+        ImGui::Columns(1);
+    }
+    
     // Display historical memory usage chart
-    if (ImGui::CollapsingHeader("Memory History", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::CollapsingHeader("Memory History##MemHistory", ImGuiTreeNodeFlags_DefaultOpen))
     {
         // Placeholder for a graph of memory usage over time
         ImGui::Text("Memory usage history graph would be displayed here");

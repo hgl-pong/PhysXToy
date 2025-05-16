@@ -225,7 +225,28 @@ public:
         printf("  Contact Points: %u\n", latest.contactPoints);
         printf("  Collision Pairs: %u\n", latest.collisionPairs);
         
-        printf("\nMemory Usage: %.2f MB\n", latest.memoryUsage / (1024.0 * 1024.0));
+        // Print memory usage
+        printf("\nMemory Usage:\n");
+        printf("  CPU Memory: %.2f MB\n", latest.memoryUsage / (1024.0 * 1024.0));
+        printf("  GPU Memory: %.2f MB\n", latest.totalGPUMemory / (1024.0 * 1024.0));
+        
+        // Print GPU memory details
+        if (latest.totalGPUMemory > 0)
+        {
+            printf("\nGPU Memory Details:\n");
+            printf("  Particles: %.2f MB\n", latest.gpuMemParticles / (1024.0 * 1024.0));
+            printf("  Soft Bodies: %.2f MB\n", latest.gpuMemSoftBodies / (1024.0 * 1024.0));
+            printf("  FEM Cloths: %.2f MB\n", latest.gpuMemFEMCloths / (1024.0 * 1024.0));
+            printf("  Hair Systems: %.2f MB\n", latest.gpuMemHairSystems / (1024.0 * 1024.0));
+            printf("  Heap Memory: %.2f MB\n", latest.gpuMemHeap / (1024.0 * 1024.0));
+            
+            printf("\nGPU Heap Details:\n");
+            printf("  Broad Phase: %.2f MB\n", latest.gpuMemHeapBroadPhase / (1024.0 * 1024.0));
+            printf("  Narrow Phase: %.2f MB\n", latest.gpuMemHeapNarrowPhase / (1024.0 * 1024.0));
+            printf("  Solver: %.2f MB\n", latest.gpuMemHeapSolver / (1024.0 * 1024.0));
+            printf("  Articulation: %.2f MB\n", latest.gpuMemHeapArticulation / (1024.0 * 1024.0));
+            printf("  Simulation: %.2f MB\n", latest.gpuMemHeapSimulation / (1024.0 * 1024.0));
+        }
         
         printf("==========================================\n");
     }
@@ -236,6 +257,12 @@ public:
         m_FrameHistory.clear();
         m_CurrentFrame = PhysicsStatisticsData::FrameStats();
         m_StageStartTimes.clear();
+    }
+    
+    // Get current frame statistics (mutable)
+    PhysicsStatisticsData::FrameStats& GetCurrentFrame()
+    {
+        return m_CurrentFrame;
     }
     
 private:
@@ -347,6 +374,199 @@ public:
             {
                 m_Statistic.SetMemoryUsage(static_cast<uint64_t>(value));
             }
+            // PhysX Statistics
+            else if (strcmp(name, "DiscreteContactPairs") == 0)
+            {
+                m_Statistic.GetCurrentFrame().discreteContactPairs = value;
+            }
+            else if (strcmp(name, "CacheHitPairs") == 0)
+            {
+                m_Statistic.GetCurrentFrame().cacheHitPairs = value;
+            }
+            else if (strcmp(name, "ContactPairs") == 0)
+            {
+                m_Statistic.GetCurrentFrame().contactPairsWithContacts = value;
+            }
+            else if (strcmp(name, "NewPairs") == 0)
+            {
+                m_Statistic.GetCurrentFrame().newPairs = value;
+            }
+            else if (strcmp(name, "LostPairs") == 0)
+            {
+                m_Statistic.GetCurrentFrame().lostPairs = value;
+            }
+            else if (strcmp(name, "NewTouches") == 0)
+            {
+                m_Statistic.GetCurrentFrame().newTouches = value;
+            }
+            else if (strcmp(name, "LostTouches") == 0)
+            {
+                m_Statistic.GetCurrentFrame().lostTouches = value;
+            }
+            else if (strcmp(name, "Partitions") == 0)
+            {
+                m_Statistic.GetCurrentFrame().partitions = value;
+            }
+            else if (strcmp(name, "ActiveConstraints") == 0)
+            {
+                m_Statistic.GetCurrentFrame().activeConstraints = value;
+            }
+            else if (strcmp(name, "ActiveDynamicBodies") == 0)
+            {
+                m_Statistic.GetCurrentFrame().activeDynamicBodies = value;
+            }
+            else if (strcmp(name, "ActiveKinematicBodies") == 0)
+            {
+                m_Statistic.GetCurrentFrame().activeKinematicBodies = value;
+            }
+            else if (strcmp(name, "StaticBodies") == 0)
+            {
+                m_Statistic.GetCurrentFrame().staticBodies = value;
+            }
+            else if (strcmp(name, "DynamicBodies") == 0)
+            {
+                m_Statistic.GetCurrentFrame().dynamicBodies = value;
+            }
+            else if (strcmp(name, "KinematicBodies") == 0)
+            {
+                m_Statistic.GetCurrentFrame().kinematicBodies = value;
+            }
+            else if (strcmp(name, "Aggregates") == 0)
+            {
+                m_Statistic.GetCurrentFrame().aggregates = value;
+            }
+            else if (strcmp(name, "Articulations") == 0)
+            {
+                m_Statistic.GetCurrentFrame().articulations = value;
+            }
+            else if (strcmp(name, "AxisSolverConstraints") == 0)
+            {
+                m_Statistic.GetCurrentFrame().axisSolverConstraints = value;
+            }
+            else if (strcmp(name, "CompressedContactSize") == 0)
+            {
+                m_Statistic.GetCurrentFrame().compressedContactSize = value;
+            }
+            else if (strcmp(name, "RequiredContactConstraintMemory") == 0)
+            {
+                m_Statistic.GetCurrentFrame().requiredContactConstraintMemory = value;
+            }
+            else if (strcmp(name, "PeakConstraintMemory") == 0)
+            {
+                m_Statistic.GetCurrentFrame().peakConstraintMemory = value;
+            }
+            else if (strcmp(name, "BroadPhaseAdds") == 0)
+            {
+                m_Statistic.GetCurrentFrame().broadphaseAdds = value;
+            }
+            else if (strcmp(name, "BroadPhaseRemoves") == 0)
+            {
+                m_Statistic.GetCurrentFrame().broadphaseRemoves = value;
+            }
+            else if (strcmp(name, "GPUMemParticles") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemParticles = value;
+            }
+            else if (strcmp(name, "GPUMemSoftBodies") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemSoftBodies = value;
+            }
+            else if (strcmp(name, "GPUMemFEMCloths") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemFEMCloths = value;
+            }
+            else if (strcmp(name, "GPUMemHairSystems") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHairSystems = value;
+            }
+            else if (strcmp(name, "GPUMemHeap") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHeap = value;
+            }
+            else if (strcmp(name, "GPUMemHeapBroadPhase") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHeapBroadPhase = value;
+            }
+            else if (strcmp(name, "GPUMemHeapNarrowPhase") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHeapNarrowPhase = value;
+            }
+            else if (strcmp(name, "GPUMemHeapSolver") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHeapSolver = value;
+            }
+            else if (strcmp(name, "GPUMemHeapArticulation") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHeapArticulation = value;
+            }
+            else if (strcmp(name, "GPUMemHeapSimulation") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHeapSimulation = value;
+            }
+            else if (strcmp(name, "TotalGPUMemory") == 0)
+            {
+                m_Statistic.GetCurrentFrame().totalGPUMemory = value;
+            }
+            else if (strcmp(name, "TotalGPUMemoryLow") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().totalGPUMemory;
+                totalValue = (totalValue & 0xFFFFFFFF00000000) | (uint32_t)value;
+            }
+            else if (strcmp(name, "TotalGPUMemoryHigh") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().totalGPUMemory;
+                totalValue = (totalValue & 0x00000000FFFFFFFF) | ((uint64_t)value << 32);
+            }
+            else if (strcmp(name, "GPUMemParticlesLow") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemParticles;
+                totalValue = (totalValue & 0xFFFFFFFF00000000) | (uint32_t)value;
+            }
+            else if (strcmp(name, "GPUMemParticlesHigh") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemParticles;
+                totalValue = (totalValue & 0x00000000FFFFFFFF) | ((uint64_t)value << 32);
+            }
+            else if (strcmp(name, "GPUMemSoftBodiesLow") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemSoftBodies;
+                totalValue = (totalValue & 0xFFFFFFFF00000000) | (uint32_t)value;
+            }
+            else if (strcmp(name, "GPUMemSoftBodiesHigh") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemSoftBodies;
+                totalValue = (totalValue & 0x00000000FFFFFFFF) | ((uint64_t)value << 32);
+            }
+            else if (strcmp(name, "GPUMemFEMClothsLow") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemFEMCloths;
+                totalValue = (totalValue & 0xFFFFFFFF00000000) | (uint32_t)value;
+            }
+            else if (strcmp(name, "GPUMemFEMClothsHigh") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemFEMCloths;
+                totalValue = (totalValue & 0x00000000FFFFFFFF) | ((uint64_t)value << 32);
+            }
+            else if (strcmp(name, "GPUMemHairSystemsLow") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemHairSystems;
+                totalValue = (totalValue & 0xFFFFFFFF00000000) | (uint32_t)value;
+            }
+            else if (strcmp(name, "GPUMemHairSystemsHigh") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemHairSystems;
+                totalValue = (totalValue & 0x00000000FFFFFFFF) | ((uint64_t)value << 32);
+            }
+            else if (strcmp(name, "GPUMemHeapLow") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemHeap;
+                totalValue = (totalValue & 0xFFFFFFFF00000000) | (uint32_t)value;
+            }
+            else if (strcmp(name, "GPUMemHeapHigh") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemHeap;
+                totalValue = (totalValue & 0x00000000FFFFFFFF) | ((uint64_t)value << 32);
+            }
 		}
 
         //return recordData(name, value, contextId);
@@ -408,6 +628,199 @@ public:
             else if (strcmp(name, "MemoryUsage") == 0)
             {
                 m_Statistic.SetMemoryUsage(static_cast<uint64_t>(value));
+            }
+            // PhysX统计数据处理
+            else if (strcmp(name, "DiscreteContactPairs") == 0)
+            {
+                m_Statistic.GetCurrentFrame().discreteContactPairs = value;
+            }
+            else if (strcmp(name, "CacheHitPairs") == 0)
+            {
+                m_Statistic.GetCurrentFrame().cacheHitPairs = value;
+            }
+            else if (strcmp(name, "ContactPairs") == 0)
+            {
+                m_Statistic.GetCurrentFrame().contactPairsWithContacts = value;
+            }
+            else if (strcmp(name, "NewPairs") == 0)
+            {
+                m_Statistic.GetCurrentFrame().newPairs = value;
+            }
+            else if (strcmp(name, "LostPairs") == 0)
+            {
+                m_Statistic.GetCurrentFrame().lostPairs = value;
+            }
+            else if (strcmp(name, "NewTouches") == 0)
+            {
+                m_Statistic.GetCurrentFrame().newTouches = value;
+            }
+            else if (strcmp(name, "LostTouches") == 0)
+            {
+                m_Statistic.GetCurrentFrame().lostTouches = value;
+            }
+            else if (strcmp(name, "Partitions") == 0)
+            {
+                m_Statistic.GetCurrentFrame().partitions = value;
+            }
+            else if (strcmp(name, "ActiveConstraints") == 0)
+            {
+                m_Statistic.GetCurrentFrame().activeConstraints = value;
+            }
+            else if (strcmp(name, "ActiveDynamicBodies") == 0)
+            {
+                m_Statistic.GetCurrentFrame().activeDynamicBodies = value;
+            }
+            else if (strcmp(name, "ActiveKinematicBodies") == 0)
+            {
+                m_Statistic.GetCurrentFrame().activeKinematicBodies = value;
+            }
+            else if (strcmp(name, "StaticBodies") == 0)
+            {
+                m_Statistic.GetCurrentFrame().staticBodies = value;
+            }
+            else if (strcmp(name, "DynamicBodies") == 0)
+            {
+                m_Statistic.GetCurrentFrame().dynamicBodies = value;
+            }
+            else if (strcmp(name, "KinematicBodies") == 0)
+            {
+                m_Statistic.GetCurrentFrame().kinematicBodies = value;
+            }
+            else if (strcmp(name, "Aggregates") == 0)
+            {
+                m_Statistic.GetCurrentFrame().aggregates = value;
+            }
+            else if (strcmp(name, "Articulations") == 0)
+            {
+                m_Statistic.GetCurrentFrame().articulations = value;
+            }
+            else if (strcmp(name, "AxisSolverConstraints") == 0)
+            {
+                m_Statistic.GetCurrentFrame().axisSolverConstraints = value;
+            }
+            else if (strcmp(name, "CompressedContactSize") == 0)
+            {
+                m_Statistic.GetCurrentFrame().compressedContactSize = value;
+            }
+            else if (strcmp(name, "RequiredContactConstraintMemory") == 0)
+            {
+                m_Statistic.GetCurrentFrame().requiredContactConstraintMemory = value;
+            }
+            else if (strcmp(name, "PeakConstraintMemory") == 0)
+            {
+                m_Statistic.GetCurrentFrame().peakConstraintMemory = value;
+            }
+            else if (strcmp(name, "BroadPhaseAdds") == 0)
+            {
+                m_Statistic.GetCurrentFrame().broadphaseAdds = value;
+            }
+            else if (strcmp(name, "BroadPhaseRemoves") == 0)
+            {
+                m_Statistic.GetCurrentFrame().broadphaseRemoves = value;
+            }
+            else if (strcmp(name, "GPUMemParticles") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemParticles = value;
+            }
+            else if (strcmp(name, "GPUMemSoftBodies") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemSoftBodies = value;
+            }
+            else if (strcmp(name, "GPUMemFEMCloths") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemFEMCloths = value;
+            }
+            else if (strcmp(name, "GPUMemHairSystems") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHairSystems = value;
+            }
+            else if (strcmp(name, "GPUMemHeap") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHeap = value;
+            }
+            else if (strcmp(name, "GPUMemHeapBroadPhase") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHeapBroadPhase = value;
+            }
+            else if (strcmp(name, "GPUMemHeapNarrowPhase") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHeapNarrowPhase = value;
+            }
+            else if (strcmp(name, "GPUMemHeapSolver") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHeapSolver = value;
+            }
+            else if (strcmp(name, "GPUMemHeapArticulation") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHeapArticulation = value;
+            }
+            else if (strcmp(name, "GPUMemHeapSimulation") == 0)
+            {
+                m_Statistic.GetCurrentFrame().gpuMemHeapSimulation = value;
+            }
+            else if (strcmp(name, "TotalGPUMemory") == 0)
+            {
+                m_Statistic.GetCurrentFrame().totalGPUMemory = value;
+            }
+            else if (strcmp(name, "TotalGPUMemoryLow") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().totalGPUMemory;
+                totalValue = (totalValue & 0xFFFFFFFF00000000) | (uint32_t)value;
+            }
+            else if (strcmp(name, "TotalGPUMemoryHigh") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().totalGPUMemory;
+                totalValue = (totalValue & 0x00000000FFFFFFFF) | ((uint64_t)value << 32);
+            }
+            else if (strcmp(name, "GPUMemParticlesLow") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemParticles;
+                totalValue = (totalValue & 0xFFFFFFFF00000000) | (uint32_t)value;
+            }
+            else if (strcmp(name, "GPUMemParticlesHigh") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemParticles;
+                totalValue = (totalValue & 0x00000000FFFFFFFF) | ((uint64_t)value << 32);
+            }
+            else if (strcmp(name, "GPUMemSoftBodiesLow") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemSoftBodies;
+                totalValue = (totalValue & 0xFFFFFFFF00000000) | (uint32_t)value;
+            }
+            else if (strcmp(name, "GPUMemSoftBodiesHigh") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemSoftBodies;
+                totalValue = (totalValue & 0x00000000FFFFFFFF) | ((uint64_t)value << 32);
+            }
+            else if (strcmp(name, "GPUMemFEMClothsLow") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemFEMCloths;
+                totalValue = (totalValue & 0xFFFFFFFF00000000) | (uint32_t)value;
+            }
+            else if (strcmp(name, "GPUMemFEMClothsHigh") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemFEMCloths;
+                totalValue = (totalValue & 0x00000000FFFFFFFF) | ((uint64_t)value << 32);
+            }
+            else if (strcmp(name, "GPUMemHairSystemsLow") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemHairSystems;
+                totalValue = (totalValue & 0xFFFFFFFF00000000) | (uint32_t)value;
+            }
+            else if (strcmp(name, "GPUMemHairSystemsHigh") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemHairSystems;
+                totalValue = (totalValue & 0x00000000FFFFFFFF) | ((uint64_t)value << 32);
+            }
+            else if (strcmp(name, "GPUMemHeapLow") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemHeap;
+                totalValue = (totalValue & 0xFFFFFFFF00000000) | (uint32_t)value;
+            }
+            else if (strcmp(name, "GPUMemHeapHigh") == 0)
+            {
+                uint64_t& totalValue = m_Statistic.GetCurrentFrame().gpuMemHeap;
+                totalValue = (totalValue & 0x00000000FFFFFFFF) | ((uint64_t)value << 32);
             }
 		}
 	}
