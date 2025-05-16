@@ -12,6 +12,7 @@ enum TestSceneType : uint32_t
     PHYSX_SPLIT_SIM_SCENE,
     PHYSX_GYROSCOPIC_SCENE,
     PHYSX_RACK_JOINT_SCENE,
+    PHYSX_CUSTOM_CONVEX_SCENE,
     TEST_SCENE_COUNT
 };
 
@@ -24,6 +25,7 @@ static std::string testSceneName[] =
     "PhysX Split Sim Scene",
     "PhysX Gyroscopic Scene",
     "PhysX Rack Joint Scene",
+    "PhysX Custom Convex Scene",
 };
 
 static std::string testSceneDesc[] = 
@@ -35,6 +37,7 @@ static std::string testSceneDesc[] =
     "PhysX Split Simulation Scene, demonstrates how to overlap collision detection with rendering and application work. Press M to toggle between no-lag and one-frame-lag modes.",
     "PhysX Gyroscopic Scene, demonstrates the Dzhanibekov effect by enabling gyroscopic forces on rotating objects. Press SPACE to toggle gyroscopic forces on/off.",
     "PhysX Rack Joint Scene, demonstrates a rack and pinion joint mechanism where a rotating gear drives a linear rack. Press SPACE to toggle the drive direction.",
+    "PhysX Custom Convex Scene, demonstrates the use of custom convex geometries (cylinders and cones) using PhysicsLib interfaces. Press SPACE to shoot spheres.",
 };
 
 class TestSceneBase
