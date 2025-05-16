@@ -1,0 +1,176 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 物理测试场景生成规则
+
+## 场景结构
+
+测试场景应从 [include/Test/TestSceneBase.h](mdc:include/Test/TestSceneBase.h) 继承并实现以下基本方法：
+
+- `Initialize()`: 初始化场景和所有物理对象
+- `Update(float deltaTime)`: 更新场景状态
+- `Render()`: 渲染场景元素（如需要）
+- `Cleanup()`: 清理所有物理对象和资源
+- `MouseClickCallback()`: 处理鼠标输入
+- `KeyBoardCallback()`: 处理键盘输入
+
+## 创建新测试场景
+
+1. 创建场景类
+   - 新建类头文件 `include/Test/Your场景Name.h`
+   - 新建类实现文件 `src/Test/Your场景Name.cpp`
+   - 从 `TestSceneBase` 继承并实现所有必要的方法
+
+2. 注册到场景管理器
+   - 在 [include/Test/TestSceneBase.h](mdc:include/Test/TestSceneBase.h) 中添加新的场景类型到 `TestSceneType` 枚举
+   - 更新 `testSceneName` 和 `testSceneDesc` 数组以包含新场景的名称和描述
+   - 在 [src/Test/TestSceneManager.cpp](mdc:src/Test/TestSceneManager.cpp) 的 `CreateTestScene` 函数中添加新场景
+
+## 物理对象创建规则
+
+### 重要限制
+
+1. **只能使用PhysicsLib接口**
+   - 物理功能只能通过PhysicsLib提供的接口实现
+   - 禁止直接使用底层物理引擎(如PhysX)的API
+   - 如果需要新功能但PhysicsLib未提供，必须先在PhysicsLib中实现
+
+2. **使用英文注释**
+   - 所有代码注释必须使用英文
+   - 注释应清晰解释物理场景的行为和意图
+
+```cpp
+// GOOD: Use English comments
+// Create a ground plane with Y-up orientation
+CreateGround();
+
+// BAD: Using non-English comments or direct PhysX API calls
+// 创建地面平面
+physx::PxRigidStatic* groundPlane = PxCreatePlane(...); // Direct PhysX API - not allowed!
+```
+
+## 物理对象创建步骤
+
+物理对象通常通过以下步骤创建：
+
+1. 创建碰撞几何体
+```cpp
+CollisionGeometryCreateOptions options;
+options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE; // or other types
+// Set specific geometry parameters...
+PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
+```
+
+2. 创建物理对象
+```cpp
+PhysicsObjectCreateOptions objectOptions;
+objectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC; // or other types
+objectOptions.m_Transform = MathLib::HTransform3::Identity(); // Set initial transform
+PhysicsPtr<IPhysicsObject> physicsObject = PhysicsEngineUtils::CreateObject(objectOptions);
+```
+
+3. 为物理对象添加碰撞几何体
+```cpp
+physicsObject->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
+```
+
+4. 添加到场景
+```cpp
+AddObject(physicsObject);
+```
+
+## 常见场景元素
+
+1. 地面平面
+```cpp
+void CreateGround()
+{
+    // Create a ground plane with normal pointing up (Y-axis)
+    CollisionGeometryCreateOptions groundPlaneOptions;
+    groundPlaneOptions.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_PLANE;
+    groundPlaneOptions.m_PlaneParams.m_Normal = MathLib::HVector3(0, 1, 0);
+    groundPlaneOptions.m_PlaneParams.m_Distance = 0.0f;
+    PhysicsPtr<IColliderGeometry> groundPlane = PhysicsEngineUtils::CreateColliderGeometry(groundPlaneOptions);
+
+    PhysicsObjectCreateOptions groundPlaneObjectOptions;
+    groundPlaneObjectOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
+    groundPlaneObjectOptions.m_Transform = MathLib::HTransform3::Identity();
+    PhysicsPtr<IPhysicsObject> groundPlaneObject = PhysicsEngineUtils::CreateObject(groundPlaneObjectOptions);
+    groundPlaneObject->AddColliderGeometry(groundPlane, MathLib::HTransform3::Identity());
+    
+    AddObject(groundPlaneObject, false); // Second parameter indicates whether to create render object
+}
+```
+
+2. 创建动态刚体
+```cpp
+// Create a dynamic rigid body using our utility function
+PhysicsPtr<IPhysicsObject> dynamic = TestRigidBody::CreateDynamic(
+    position,         // Position transform
+    geometry,         // Geometry
+    initialVelocity   // Initial velocity
+);
+AddObject(dynamic);
+```
+
+## 用户交互
+
+可以在 `KeyBoardCallback` 和 `MouseClickCallback` 中添加交互功能，例如：
+
+```cpp
+void KeyBoardCallback(int key, int scancode, int action, int mods) override
+{
+    // Fire an object when spacebar is pressed
+    if (key == ' ' && action == 1)
+    {
+        // Create object and apply initial velocity or force
+        CollisionGeometryCreateOptions options;
+        options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_SPHERE;
+        options.m_SphereParams.m_Radius = 2.0f;
+
+        PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(options);
+        
+        // Get camera position and direction for launching
+        auto dynamic = TestRigidBody::CreateDynamic(renderer->GetActiveCamera()->GetTransform(),
+                     geometry, 
+                     renderer->GetActiveCamera()->GetDir() * 75);
+        AddObject(dynamic);
+    }
+    // Other keyboard interactions...
+}
+```
+
+## 场景状态管理
+
+- 使用 `m_paused` 控制场景暂停/继续
+- 使用 `m_elapsedTime` 跟踪场景运行时间
+- 使用 `Reset()` 重置场景状态
+
+## 功能扩展
+
+如果需要添加PhysicsLib未提供的功能：
+
+1. 先在PhysicsLib中实现该功能
+   - 在PhysicsLib中添加相关接口和实现
+   - 确保接口设计与现有PhysicsLib风格一致
+   - 测试新功能的正确性
+
+2. 然后在测试场景中使用新增的功能
+
+```cpp
+// If you need a feature not available in PhysicsLib:
+// 1. First implement in PhysicsLib:
+//    - Add interface in PhysicsLib/include/IPhysicsXXX.h
+//    - Add implementation in PhysicsLib/src/PhysicsXXX.cpp
+// 2. Then use the new feature in test scenes
+```
+
+## 场景参考示例
+
+参考已有的示例场景：
+- [src/Test/TestScene.cpp](mdc:src/Test/TestScene.cpp) - 基本场景
+
+
+- [src/Test/PhysXJointScene.cpp](mdc:src/Test/PhysXJointScene.cpp) - 关节约束场景

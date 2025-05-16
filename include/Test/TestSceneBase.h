@@ -9,6 +9,7 @@ enum TestSceneType : uint32_t
     PHYSX_HELLO_WORLD,
     PHYSX_MASS_PROPERTIES,
     PHYSX_JOINT_SCENE,
+    PHYSX_SPLIT_SIM_SCENE,
     TEST_SCENE_COUNT
 };
 
@@ -18,6 +19,7 @@ static std::string testSceneName[] =
     "PhysX Hello World",
     "PhysX Mass Properties",
     "PhysX Joint Scene",
+    "PhysX Split Sim Scene",
 };
 
 static std::string testSceneDesc[] = 
@@ -26,6 +28,7 @@ static std::string testSceneDesc[] =
     "Basic physics scene with a ground plane, sphere, and boxes. As Same as Hello World in PhysX Snippet.",
     "Show different ways to set the rigid body mass, create 5 snowmen with different mass properties",
     "PhysX Joint Scene, show different types of joints: limited spherical joint, breakable fixed joint, and damped D6 joint.",
+    "PhysX Split Simulation Scene, demonstrates how to overlap collision detection with rendering and application work. Press M to toggle between no-lag and one-frame-lag modes.",
 };
 
 class TestSceneBase

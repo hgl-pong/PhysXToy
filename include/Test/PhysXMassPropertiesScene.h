@@ -6,15 +6,15 @@
 #include "TestRigidBodyCreate.h"
 #include <Math/GraphicUtils/Camara.h>
 
-class MassPropertiesScene : public TestSceneBase
+class PhysXMassPropertiesScene : public TestSceneBase
 {
 public:
-    MassPropertiesScene() : 
+    PhysXMassPropertiesScene() : 
         TestSceneBase(TestSceneType::PHYSX_MASS_PROPERTIES)
     {
     }
 
-    ~MassPropertiesScene() override
+    ~PhysXMassPropertiesScene() override
     {
     }
 
