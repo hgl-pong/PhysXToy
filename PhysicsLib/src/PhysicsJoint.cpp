@@ -54,34 +54,43 @@ PhysicsJoint::PhysicsJoint(JointType type, PhysicsPtr<IPhysicsObject> objectA, P
     switch (m_Type)
     {
     case JointType::FIXED:
-        CreateFixedJoint();
+        m_PxFixedJoint = CreatePxJoint<PxFixedJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxFixedJointCreate);
+        m_PxJoint = m_PxFixedJoint;
         break;
     case JointType::DISTANCE:
-        CreateDistanceJoint();
+        m_PxDistanceJoint = CreatePxJoint<PxDistanceJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxDistanceJointCreate);
+        m_PxJoint = m_PxDistanceJoint;
         break;
     case JointType::SPHERICAL:
-        CreateSphericalJoint();
+        m_PxSphericalJoint = CreatePxJoint<PxSphericalJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxSphericalJointCreate);
+        m_PxJoint = m_PxSphericalJoint;
         break;
     case JointType::REVOLUTE:
-        CreateRevoluteJoint();
+        m_PxRevoluteJoint = CreatePxJoint<PxRevoluteJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxRevoluteJointCreate);
+        m_PxJoint = m_PxRevoluteJoint;
         break;
     case JointType::REVOLUTE2:
-        CreateRevoluteJoint2();
+        m_PxRevoluteJoint = CreatePxJoint<PxRevoluteJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxRevoluteJointCreate);
+        m_PxJoint = m_PxRevoluteJoint;
         break;
     case JointType::PRISMATIC:
-        CreatePrismaticJoint();
+        m_PxPrismaticJoint = CreatePxJoint<PxPrismaticJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxPrismaticJointCreate);
+        m_PxJoint = m_PxPrismaticJoint;
         break;
     case JointType::D6:
-        CreateD6Joint();
+        m_PxD6Joint = CreatePxJoint<PxD6Joint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxD6JointCreate);
+        m_PxJoint = m_PxD6Joint;
         break;
     case JointType::HINGE:
         CreateHingeJoint();
         break;
     case JointType::GEAR:
-        CreateGearJoint();
+        m_PxGearJoint = CreatePxJoint<PxGearJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxGearJointCreate);
+        m_PxJoint = m_PxGearJoint;
         break;
     case JointType::RACK_AND_PINION:
-        CreateRackAndPinionJoint();
+        m_PxRackAndPinionJoint = CreatePxJoint<PxRackAndPinionJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxRackAndPinionJointCreate);
+        m_PxJoint = m_PxRackAndPinionJoint;
         break;
     case JointType::CHAIN:
         CreateChainJoint();
@@ -291,31 +300,31 @@ void PhysicsJoint::SetJointLimits(const JointLimitOptions& limitOptions)
     case JointType::D6:
         if (m_PxD6Joint)
         {
-            //if (m_LimitOptions.m_XAxis.m_IsLimited)
-            //{
-            //    m_PxD6Joint->setMotion(PxD6Axis::eX, PxD6Motion::eLIMITED);
-            //    m_PxD6Joint->setLinearLimit(PxD6Axis::eX, PxJointLinearLimitPair(
-            //        PxTolerancesScale(), 
-            //        m_LimitOptions.m_XAxis.m_LowerLimit, 
-            //        m_LimitOptions.m_XAxis.m_UpperLimit));
-            //}
-            //else
-            //{
-            //    m_PxD6Joint->setMotion(PxD6Axis::eX, PxD6Motion::eFREE);
-            //}
+            if (m_LimitOptions.m_XAxis.m_IsLimited)
+            {
+               m_PxD6Joint->setMotion(PxD6Axis::eX, PxD6Motion::eLIMITED);
+               m_PxD6Joint->setLinearLimit(PxD6Axis::eX, PxJointLinearLimitPair(
+                   PxTolerancesScale(), 
+                   m_LimitOptions.m_XAxis.m_LowerLimit, 
+                   m_LimitOptions.m_XAxis.m_UpperLimit));
+            }
+            else
+            {
+               m_PxD6Joint->setMotion(PxD6Axis::eX, PxD6Motion::eFREE);
+            }
 
-            //if (m_LimitOptions.m_YAxis.m_IsLimited)
-            //{
-            //    m_PxD6Joint->setMotion(PxD6Axis::eY, PxD6Motion::eLIMITED);
-            //    m_PxD6Joint->setLinearLimit(PxD6Axis::eY, PxJointLinearLimitPair(
-            //        PxTolerancesScale(), 
-            //        m_LimitOptions.m_YAxis.m_LowerLimit, 
-            //        m_LimitOptions.m_YAxis.m_UpperLimit));
-            //}
-            //else
-            //{
-            //    m_PxD6Joint->setMotion(PxD6Axis::eY, PxD6Motion::eFREE);
-            //}
+            if (m_LimitOptions.m_YAxis.m_IsLimited)
+            {
+               m_PxD6Joint->setMotion(PxD6Axis::eY, PxD6Motion::eLIMITED);
+               m_PxD6Joint->setLinearLimit(PxD6Axis::eY, PxJointLinearLimitPair(
+                   PxTolerancesScale(), 
+                   m_LimitOptions.m_YAxis.m_LowerLimit, 
+                   m_LimitOptions.m_YAxis.m_UpperLimit));
+            }
+            else
+            {
+               m_PxD6Joint->setMotion(PxD6Axis::eY, PxD6Motion::eFREE);
+            }
 
             if (m_LimitOptions.m_ZAxis.m_IsLimited)
             {
@@ -483,179 +492,6 @@ JointLimitOptions PhysicsJoint::GetJointLimits() const
 physx::PxJoint* PhysicsJoint::GetPxJoint() const
 {
     return m_PxJoint;
-}
-
-bool PhysicsJoint::CreateFixedJoint()
-{
-    m_PxFixedJoint = CreatePxJoint<PxFixedJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxFixedJointCreate);
-    if (!m_PxFixedJoint)
-        return false;
-
-    m_PxJoint = m_PxFixedJoint;
-    return true;
-}
-
-bool PhysicsJoint::CreateDistanceJoint()
-{
-    if (!m_ObjectA || !m_ObjectB)
-        return false;
-
-    IRigidBody* objA = static_cast<IRigidBody*>(m_ObjectA.get());
-    IRigidBody* objB = static_cast<IRigidBody*>(m_ObjectB.get());
-
-    if (!objA || !objB)
-        return false;
-
-    PxRigidActor* actorA = static_cast<PxRigidActor*>(objA->GetNativeActor());
-    PxRigidActor* actorB = static_cast<PxRigidActor*>(objB->GetNativeActor());
-
-    if (!actorA || !actorB)
-        return false;
-
-    PxTransform pxLocalFrameA = ConvertUtils::ToPx(m_LocalFrameA);
-    PxTransform pxLocalFrameB = ConvertUtils::ToPx(m_LocalFrameB);
-
-    m_PxDistanceJoint = CreatePxJoint<PxDistanceJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxDistanceJointCreate);
-    if (!m_PxDistanceJoint)
-        return false;
-
-    m_PxJoint = m_PxDistanceJoint;
-    return true;
-}
-
-bool PhysicsJoint::CreateSphericalJoint()
-{
-    m_PxSphericalJoint = CreatePxJoint<PxSphericalJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxSphericalJointCreate);
-    if (!m_PxSphericalJoint)
-        return false;
-
-    m_PxJoint = m_PxSphericalJoint;
-    return true;
-}
-
-bool PhysicsJoint::CreateRevoluteJoint()
-{
-    if (!m_ObjectA || !m_ObjectB)
-        return false;
-
-    IRigidBody* objA = static_cast<IRigidBody*>(m_ObjectA.get());
-    IRigidBody* objB = static_cast<IRigidBody*>(m_ObjectB.get());
-
-    if (!objA || !objB)
-        return false;
-
-    PxRigidActor* actorA = static_cast<PxRigidActor*>(objA->GetNativeActor());
-    PxRigidActor* actorB = static_cast<PxRigidActor*>(objB->GetNativeActor());
-
-    if (!actorA || !actorB)
-        return false;
-
-    PxTransform pxLocalFrameA = ConvertUtils::ToPx(m_LocalFrameA);
-    PxTransform pxLocalFrameB = ConvertUtils::ToPx(m_LocalFrameB);
-
-    m_PxRevoluteJoint = CreatePxJoint<PxRevoluteJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxRevoluteJointCreate);
-    if (!m_PxRevoluteJoint)
-        return false;
-
-    if (m_LimitOptions.m_Twist.m_IsLimited)
-    {
-        m_PxRevoluteJoint->setRevoluteJointFlag(PxRevoluteJointFlag::eLIMIT_ENABLED, true);
-        PxJointAngularLimitPair limit(m_LimitOptions.m_Twist.m_LowerLimit, m_LimitOptions.m_Twist.m_UpperLimit);
-        limit.stiffness = m_LimitOptions.m_Twist.m_Stiffness;
-        limit.damping = m_LimitOptions.m_Twist.m_Damping;
-        m_PxRevoluteJoint->setLimit(limit);
-    }
-
-    m_PxJoint = m_PxRevoluteJoint;
-    return true;
-}
-
-bool PhysicsJoint::CreateRevoluteJoint2()
-{
-    if (!m_ObjectA || !m_ObjectB)
-        return false;
-
-    IRigidBody* objA = static_cast<IRigidBody*>(m_ObjectA.get());
-    IRigidBody* objB = static_cast<IRigidBody*>(m_ObjectB.get());
-
-    if (!objA || !objB)
-        return false;
-
-    PxRigidActor* actorA = static_cast<PxRigidActor*>(objA->GetNativeActor());
-    PxRigidActor* actorB = static_cast<PxRigidActor*>(objB->GetNativeActor());
-
-    if (!actorA || !actorB)
-        return false;
-
-    PxTransform pxLocalFrameA = ConvertUtils::ToPx(m_LocalFrameA);
-    PxTransform pxLocalFrameB = ConvertUtils::ToPx(m_LocalFrameB);
-
-    m_PxRevoluteJoint = CreatePxJoint<PxRevoluteJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxRevoluteJointCreate);
-    if (!m_PxRevoluteJoint)
-        return false;
-
-    m_PxJoint = m_PxRevoluteJoint;
-    return true;
-}
-
-bool PhysicsJoint::CreatePrismaticJoint()
-{
-    if (!m_ObjectA || !m_ObjectB)
-        return false;
-
-    IRigidBody* objA = static_cast<IRigidBody*>(m_ObjectA.get());
-    IRigidBody* objB = static_cast<IRigidBody*>(m_ObjectB.get());
-
-    if (!objA || !objB)
-        return false;
-
-    PxRigidActor* actorA = static_cast<PxRigidActor*>(objA->GetNativeActor());
-    PxRigidActor* actorB = static_cast<PxRigidActor*>(objB->GetNativeActor());
-
-    if (!actorA || !actorB)
-        return false;
-
-    PxTransform pxLocalFrameA = ConvertUtils::ToPx(m_LocalFrameA);
-    PxTransform pxLocalFrameB = ConvertUtils::ToPx(m_LocalFrameB);
-
-    m_PxPrismaticJoint = CreatePxJoint<PxPrismaticJoint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxPrismaticJointCreate);
-    if (!m_PxPrismaticJoint)
-        return false;
-
-    m_PxJoint = m_PxPrismaticJoint;
-    return true;
-}
-
-bool PhysicsJoint::CreateD6Joint()
-{
-    if (!m_ObjectA || !m_ObjectB)
-        return false;
-
-    IRigidBody* objA = static_cast<IRigidBody*>(m_ObjectA.get());
-    IRigidBody* objB = static_cast<IRigidBody*>(m_ObjectB.get());
-
-    if (!objA || !objB)
-        return false;
-
-    PxRigidActor* actorA = static_cast<PxRigidActor*>(objA->GetNativeActor());
-    PxRigidActor* actorB = static_cast<PxRigidActor*>(objB->GetNativeActor());
-
-    if (!actorA || !actorB)
-        return false;
-
-    PxTransform pxLocalFrameA = ConvertUtils::ToPx(m_LocalFrameA);
-    PxTransform pxLocalFrameB = ConvertUtils::ToPx(m_LocalFrameB);
-
-    PxPhysics* physics = &PxGetPhysics();
-    if (!physics)
-        return false;
-
-    m_PxD6Joint = CreatePxJoint<PxD6Joint>(m_ObjectA.get(), m_ObjectB.get(), m_LocalFrameA, m_LocalFrameB, PxD6JointCreate);
-    if (!m_PxD6Joint)
-        return false;
-
-    m_PxJoint = m_PxD6Joint;
-    return true;
 }
 
 bool PhysicsJoint::CreateHingeJoint()

@@ -41,13 +41,6 @@ public:
     physx::PxJoint* GetPxJoint() const;
 
 protected:
-    bool CreateFixedJoint();
-    bool CreateDistanceJoint();
-    bool CreateSphericalJoint();
-    bool CreateRevoluteJoint();
-    bool CreateRevoluteJoint2();
-    bool CreatePrismaticJoint();
-    bool CreateD6Joint();
     bool CreateHingeJoint();
     bool CreateGearJoint();
     bool CreateRackAndPinionJoint();

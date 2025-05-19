@@ -115,35 +115,25 @@ float4 main(PS_INPUT input) : SV_TARGET
     float3 norm = normalize(input.Normal);
     float3 lightDir = normalize(LightPos.xyz - input.FragPos);
     
-    float diff = max(dot(norm, lightDir), 0.0);
-    
     float3 ambient = AmbientColor.rgb;
     
+    float diff = max(dot(norm, lightDir), 0.0);
     float3 diffuse = diff * DiffuseColor.rgb;
     
     float3 viewDir = normalize(ViewPos.xyz - input.FragPos);
-    float3 reflectDir = reflect(-lightDir, norm);
+    float3 halfwayDir = normalize(lightDir + viewDir);
     float specularStrength = SpecularParams.x;
     float specularShininess = SpecularParams.y;
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), specularShininess);
+    float spec = pow(max(dot(norm, halfwayDir), 0.0), specularShininess);
     float3 specular = specularStrength * spec * float3(1.0, 1.0, 1.0);
-    
-    float rimFactor = SpecularParams.z;
-    float rimThreshold = SpecularParams.w;
-    float rim = 1.0 - max(dot(viewDir, norm), 0.0);
-    rim = smoothstep(0.4, rimThreshold, rim);
-    float3 rimLight = rim * rimFactor * DiffuseColor.rgb;
-    
+
     float distance = length(LightPos.xyz - input.FragPos);
     float constantAtt = LightParams.x;
     float linearAtt = LightParams.y;
     float quadraticAtt = LightParams.z;
-    float minLightThreshold = LightParams.w;
     float attenuation = 1.0 / (constantAtt + linearAtt * distance + quadraticAtt * distance * distance);
     
-    float3 finalColor = ambient + (diffuse + specular + rimLight) * attenuation;
-    
-    finalColor = max(finalColor, float3(minLightThreshold, minLightThreshold, minLightThreshold));
+    float3 finalColor = ambient + (diffuse + specular) * 0.5f;
     
     return float4(finalColor, 1.0);
 }
@@ -225,7 +215,7 @@ struct SimpleRenderUnit::Impl {
     MathLib::HVector3 scale{1, 1, 1};
     float ambientColor[4] = {0.5f, 0.5f, 0.5f, 1.0f};
     float diffuseColor[4] = {0.8f, 0.8f, 0.8f, 1.0f};
-    float specularParams[4] = {0.5f, 32.0f, 0.3f, 0.8f}; 
+    float specularParams[4] = {0.5f, 2.0f, 0.3f, 0.8f}; 
     float lightParams[4] = {1.0f, 0.09f, 0.032f, 0.1f};  
     bool visible = true;
     bool wireframe = false;
@@ -285,7 +275,7 @@ struct SimpleRenderUnit::Impl {
                     
                     MathLib::HVector3 edge1 = meshData.m_Vertices[idx1] - meshData.m_Vertices[idx0];
                     MathLib::HVector3 edge2 = meshData.m_Vertices[idx2] - meshData.m_Vertices[idx0];
-                    MathLib::HVector3 faceNormal = edge1.cross(edge2);
+                    MathLib::HVector3 faceNormal = edge2.cross(edge1);
                     
                     normals[idx0] += faceNormal;
                     normals[idx1] += faceNormal;
@@ -498,7 +488,7 @@ void SimpleRenderUnit::Render(MathLib::GraphicUtils::Camera& camera) {
         dataPtr->specularParams = DirectX::XMFLOAT4(m_impl->specularParams[0], m_impl->specularParams[1], m_impl->specularParams[2], m_impl->specularParams[3]);
         dataPtr->lightParams = DirectX::XMFLOAT4(m_impl->lightParams[0], m_impl->lightParams[1], m_impl->lightParams[2], m_impl->lightParams[3]);
         dataPtr->isWireframe = m_impl->wireframe ? 1 : 0;
-        
+
         g_d3dDeviceContext->Unmap(m_impl->constantBuffer.Get(), 0);
     }
     
@@ -788,7 +778,7 @@ void GizmoRenderUnit::Render(MathLib::GraphicUtils::Camera& camera) {
         dataPtr->view = viewMatrix;
         dataPtr->projection = projMatrix;
         dataPtr->lineColor = DirectX::XMFLOAT4(m_impl->color[0], m_impl->color[1], m_impl->color[2], m_impl->color[3]);
-        
+       
         g_d3dDeviceContext->Unmap(m_impl->constantBuffer.Get(), 0);
     }
     
