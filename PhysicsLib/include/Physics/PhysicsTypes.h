@@ -51,6 +51,9 @@ PhysXPtr<T> make_physx_ptr(T *ptr)
 	return PhysXPtr<T>(ptr);
 }
 
+class IColliderGeometry;
+class IPhysicsObject;
+
 namespace MathLib {
     class HRay3D
     {
@@ -492,4 +495,13 @@ enum class ProfileChartExportFormat
     CSV,
     JSON,
     HTML
+};
+
+struct PhysicsRaycastHit
+{
+    PhysicsPtr<IPhysicsObject> m_Object;
+    MathLib::HVector3 m_Position;
+    MathLib::HVector3 m_Normal;
+    MathLib::HReal m_Distance;
+    PhysicsPtr<IColliderGeometry> m_Collider;
 };

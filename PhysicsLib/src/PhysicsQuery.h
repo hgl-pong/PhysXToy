@@ -14,7 +14,7 @@ class ISceneQueryFilterCallback
 public:
     virtual ~ISceneQueryFilterCallback() = default;
     virtual bool PreFilter(const PhysicsPtr<IPhysicsObject>& object) = 0;
-    virtual bool PostFilter(const PhysicsPtr<IPhysicsObject>& object, const RaycastHit& hit) = 0;
+    virtual bool PostFilter(const PhysicsPtr<IPhysicsObject>& object, const PhysicsRaycastHit& hit) = 0;
 };
 
 struct SceneQueryOptions
@@ -54,7 +54,7 @@ struct RaycastOptions : public SceneQueryOptions
 struct BatchRaycastData
 {
     MathLib::HRay3D ray;
-    RaycastHit hit;
+    PhysicsRaycastHit hit;
     bool hasHit = false;
 };
 
@@ -70,17 +70,17 @@ struct BatchSweepData
     PhysicsPtr<IColliderGeometry> geometry;
     MathLib::HTransform3 startTransform;
     MathLib::HVector3 direction;
-    RaycastHit hit;
+    PhysicsRaycastHit hit;
     bool hasHit = false;
 };
 
 class SceneQuery
 {
 public:
-    static bool RaycastSingle(const RaycastOptions& options, RaycastHit& hit);
-    static bool RaycastAll(const RaycastOptions& options, std::vector<RaycastHit>& hits);
-    static bool SweepSingle(const SweepOptions& options, RaycastHit& hit);
-    static bool SweepAll(const SweepOptions& options, std::vector<RaycastHit>& hits);
+    static bool RaycastSingle(const RaycastOptions& options, PhysicsRaycastHit& hit);
+    static bool RaycastAll(const RaycastOptions& options, std::vector<PhysicsRaycastHit>& hits);
+    static bool SweepSingle(const SweepOptions& options, PhysicsRaycastHit& hit);
+    static bool SweepAll(const SweepOptions& options, std::vector<PhysicsRaycastHit>& hits);
     static bool OverlapSphere(const OverlapSphereOptions& options, std::vector<PhysicsPtr<IPhysicsObject>>& overlappingObjects);
     static bool OverlapBox(const OverlapBoxOptions& options, std::vector<PhysicsPtr<IPhysicsObject>>& overlappingObjects);
     static bool OverlapCapsule(const OverlapCapsuleOptions& options, std::vector<PhysicsPtr<IPhysicsObject>>& overlappingObjects);
@@ -93,5 +93,5 @@ private:
     static physx::PxScene* GetActiveScene();
     static void ConfigureQueryFilterData(physx::PxQueryFilterData& filterData, const SceneQueryOptions& options);
     static physx::PxQueryFilterCallback* CreateFilterCallback(ISceneQueryFilterCallback* callback);
-    static void FillHitResult(const physx::PxRaycastHit& pxHit, RaycastHit& hit);
+    static void FillHitResult(const physx::PxRaycastHit& pxHit, PhysicsRaycastHit& hit);
 };

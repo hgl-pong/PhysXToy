@@ -369,13 +369,13 @@ uint32_t PhysicsScene::GetJointCount() const
     return m_Joints.size();
 }
 
-void PhysicsScene::RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, RaycastHit& hit)
+void PhysicsScene::RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, PhysicsRaycastHit& hit)
 {
-    hit.object = nullptr;
-    hit.collider = nullptr;
-    hit.distance = maxDistance;
-    hit.position = MathLib::HVector3(0, 0, 0);
-    hit.normal = MathLib::HVector3(0, 1, 0);
+    hit.m_Object = nullptr;
+    hit.m_Collider = nullptr;
+    hit.m_Distance = maxDistance;
+    hit.m_Position = MathLib::HVector3(0, 0, 0);
+    hit.m_Normal = MathLib::HVector3(0, 1, 0);
     
     PxVec3 origin(ray.GetOrigin()[0], ray.GetOrigin()[1], ray.GetOrigin()[2]);
     PxVec3 direction(ray.GetDirection()[0], ray.GetDirection()[1], ray.GetDirection()[2]);
@@ -390,9 +390,9 @@ void PhysicsScene::RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxD
     {
         auto& closest = raycastHit.block;
         
-        hit.distance = closest.distance;
-        hit.position = MathLib::HVector3(closest.position.x, closest.position.y, closest.position.z);
-        hit.normal = MathLib::HVector3(closest.normal.x, closest.normal.y, closest.normal.z);
+        hit.m_Distance = closest.distance;
+        hit.m_Position = MathLib::HVector3(closest.position.x, closest.position.y, closest.position.z);
+        hit.m_Normal = MathLib::HVector3(closest.normal.x, closest.normal.y, closest.normal.z);
         
         if (closest.actor)
         {
@@ -402,37 +402,37 @@ void PhysicsScene::RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxD
             {
                 if (object->GetUserData() == userData)
                 {
-                    hit.object = object;
+                    hit.m_Object = object;
                     break;
                 }
             }
             
-            if (!hit.object)
+            if (!hit.m_Object)
             {
                 for (auto& object : m_PhysicsRigidDynamics)
                 {
                     if (object->GetUserData() == userData)
                     {
-                        hit.object = object;
+                        hit.m_Object = object;
                         break;
                     }
                 }
             }
             
-            if (hit.object)
+            if (hit.m_Object)
             {
                 std::vector<PhysicsPtr<IColliderGeometry>> geometries;
-                hit.object->GetColliderGeometries(geometries);
+                hit.m_Object->GetColliderGeometries(geometries);
                 if (!geometries.empty())
                 {
-                    hit.collider = geometries[0];
+                    hit.m_Collider = geometries[0];
                 }
             }
         }
     }
 }
 
-void PhysicsScene::RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, std::vector<RaycastHit>& hits)
+void PhysicsScene::RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, std::vector<PhysicsRaycastHit>& hits)
 {
     hits.clear();
     
@@ -449,10 +449,10 @@ void PhysicsScene::RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDist
     {
         auto& closest = raycastHits.block;
         
-        RaycastHit hit;
-        hit.distance = closest.distance;
-        hit.position = MathLib::HVector3(closest.position.x, closest.position.y, closest.position.z);
-        hit.normal = MathLib::HVector3(closest.normal.x, closest.normal.y, closest.normal.z);
+        PhysicsRaycastHit hit;
+        hit.m_Distance = closest.distance;
+        hit.m_Position = MathLib::HVector3(closest.position.x, closest.position.y, closest.position.z);
+        hit.m_Normal = MathLib::HVector3(closest.normal.x, closest.normal.y, closest.normal.z);
         
         if (closest.actor)
         {
@@ -462,30 +462,30 @@ void PhysicsScene::RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDist
             {
                 if (object->GetUserData() == userData)
                 {
-                    hit.object = object;
+                    hit.m_Object = object;
                     break;
                 }
             }
             
-            if (!hit.object)
+            if (!hit.m_Object)
             {
                 for (auto& object : m_PhysicsRigidDynamics)
                 {
                     if (object->GetUserData() == userData)
                     {
-                        hit.object = object;
+                        hit.m_Object = object;
                         break;
                     }
                 }
             }
             
-            if (hit.object)
+            if (hit.m_Object)
             {
                 std::vector<PhysicsPtr<IColliderGeometry>> geometries;
-                hit.object->GetColliderGeometries(geometries);
+                hit.m_Object->GetColliderGeometries(geometries);
                 if (!geometries.empty())
                 {
-                    hit.collider = geometries[0];
+                    hit.m_Collider = geometries[0];
                 }
             }
             

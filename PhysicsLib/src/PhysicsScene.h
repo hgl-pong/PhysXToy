@@ -29,8 +29,8 @@ public:
 	uint32_t GetPhysicsRigidDynamicCount() const override;
 	uint32_t GetPhysicsRigidStaticCount() const override;
 	uint32_t GetJointCount() const override;
-	void RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, RaycastHit& hit) override;
-	void RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, std::vector<RaycastHit>& hits) override;
+	void RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, PhysicsRaycastHit& hit) override;
+	void RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, std::vector<PhysicsRaycastHit>& hits) override;
 	void SetGravity(const MathLib::HVector3& gravity) override;
 	MathLib::HVector3 GetGravity() const override;
 	void DebugDraw() override;

@@ -50,15 +50,6 @@ public:
 	virtual void OnCollisionExit(const CollisionEventData& eventData) = 0;
 };
 
-struct RaycastHit
-{
-	PhysicsPtr<IPhysicsObject> object;
-	MathLib::HVector3 position;
-	MathLib::HVector3 normal;
-	MathLib::HReal distance;
-	PhysicsPtr<IColliderGeometry> collider;
-};
-
 struct JointCreateOptions
 {
 	JointType type;
@@ -138,8 +129,8 @@ public:
 	virtual uint32_t GetPhysicsRigidDynamicCount() const = 0;
 	virtual uint32_t GetPhysicsRigidStaticCount() const = 0;
 	virtual uint32_t GetJointCount() const = 0;
-	virtual void RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, RaycastHit& hit) = 0;
-	virtual void RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, std::vector<RaycastHit>& hits) = 0;
+	virtual void RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, PhysicsRaycastHit& hit) = 0;
+	virtual void RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, std::vector<PhysicsRaycastHit>& hits) = 0;
 	virtual void SetGravity(const MathLib::HVector3& gravity) = 0;
 	virtual MathLib::HVector3 GetGravity() const = 0;
 	virtual void DebugDraw() = 0;
@@ -369,10 +360,10 @@ public:
 	static void BuildConvexMesh(const std::vector<MathLib::HVector3> &vertices, const std::vector<uint32_t> &indices, PhysicsMeshData &meshdata);
 	static bool ConvexDecomposition(const PhysicsMeshData &meshData, const ConvexDecomposeOptions &params, std::vector<PhysicsMeshData> &convexMeshesData);
 	
-	static bool RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, RaycastHit& hit);
-	static bool RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, std::vector<RaycastHit>& hits);
+	static bool RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, PhysicsRaycastHit& hit);
+	static bool RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, std::vector<PhysicsRaycastHit>& hits);
 	static bool SweepTest(PhysicsPtr<IColliderGeometry> geometry, const MathLib::HTransform3& startTransform, 
-						 const MathLib::HVector3& direction, MathLib::HReal maxDistance, RaycastHit& hit);
+						 const MathLib::HVector3& direction, MathLib::HReal maxDistance, PhysicsRaycastHit& hit);
 	static bool BoxOverlap(const MathLib::HVector3& center, const MathLib::HVector3& halfExtents, 
 						  std::vector<PhysicsPtr<IPhysicsObject>>& overlappingObjects);
 	static bool SphereOverlap(const MathLib::HVector3& center, MathLib::HReal radius, 

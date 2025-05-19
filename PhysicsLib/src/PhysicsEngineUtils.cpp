@@ -84,18 +84,18 @@ void PhysicsEngineUtils::BuildConvexMesh(const std::vector<MathLib::HVector3>& v
 	PhysicsConvexUtils::BuildConvexMesh(vertices, indices, meshdata);
 }
 
-bool PhysicsEngineUtils::RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, RaycastHit& hit)
+bool PhysicsEngineUtils::RaycastSingle(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, PhysicsRaycastHit& hit)
 {
 	PhysicsPtr<IPhysicsScene> activeScene = gPhysicsEngine ? dynamic_cast<PhysicsEngine*>(gPhysicsEngine)->GetActiveScene() : nullptr;
 	if (activeScene)
 	{
 		activeScene->RaycastSingle(ray, maxDistance, hit);
-		return hit.object != nullptr;
+		return hit.m_Object != nullptr;
 	}
 	return false;
 }
 
-bool PhysicsEngineUtils::RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, std::vector<RaycastHit>& hits)
+bool PhysicsEngineUtils::RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal maxDistance, std::vector<PhysicsRaycastHit>& hits)
 {
 	PhysicsPtr<IPhysicsScene> activeScene = gPhysicsEngine ? dynamic_cast<PhysicsEngine*>(gPhysicsEngine)->GetActiveScene() : nullptr;
 	if (activeScene)
@@ -107,7 +107,7 @@ bool PhysicsEngineUtils::RaycastAll(const MathLib::HRay3D& ray, MathLib::HReal m
 }
 
 bool PhysicsEngineUtils::SweepTest(PhysicsPtr<IColliderGeometry> geometry, const MathLib::HTransform3& startTransform, 
-								 const MathLib::HVector3& direction, MathLib::HReal maxDistance, RaycastHit& hit)
+								 const MathLib::HVector3& direction, MathLib::HReal maxDistance, PhysicsRaycastHit& hit)
 {
 	if (!gPhysicsEngine || !geometry)
 		return false;
@@ -120,7 +120,7 @@ bool PhysicsEngineUtils::SweepTest(PhysicsPtr<IColliderGeometry> geometry, const
 	MathLib::HRay3D ray(center, direction.normalized());
 	
 	activeScene->RaycastSingle(ray, maxDistance, hit);
-	return hit.object != nullptr;
+	return hit.m_Object != nullptr;
 }
 
 bool PhysicsEngineUtils::BoxOverlap(const MathLib::HVector3& center, const MathLib::HVector3& halfExtents, 

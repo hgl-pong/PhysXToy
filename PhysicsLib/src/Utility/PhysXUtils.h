@@ -3,7 +3,7 @@
 #include "Physics/PhysicsTypes.h"
 #include <memory>
 
-inline physx::PxSimulationFilterShader GetFilterShader(const PhysicsSceneFilterShaderType& type)
+PHYSICS_INLINE physx::PxSimulationFilterShader GetFilterShader(const PhysicsSceneFilterShaderType& type)
 {
 	switch (type)
 	{
@@ -20,17 +20,17 @@ inline physx::PxSimulationFilterShader GetFilterShader(const PhysicsSceneFilterS
 
 namespace ConvertUtils
 {
-	inline physx::PxVec3 ToPx(const MathLib::HVector3& vector)
+	PHYSICS_INLINE physx::PxVec3 ToPx(const MathLib::HVector3& vector)
 	{
 		return physx::PxVec3(vector[0],vector[1],vector[2]);
 	}
 
-	inline MathLib::HVector3 FromPx(const physx::PxVec3& vector)
+	PHYSICS_INLINE MathLib::HVector3 FromPx(const physx::PxVec3& vector)
 	{
 		return MathLib::HVector3(vector.x, vector.y, vector.z);
 	}
 
-	inline physx::PxTransform ToPx(const MathLib::HTransform3& transform)
+	PHYSICS_INLINE physx::PxTransform ToPx(const MathLib::HTransform3& transform)
 	{
 		MathLib::HVector3 translation = transform.translation();
 		MathLib::HMatrix3 rotationMatrix = transform.rotation();
@@ -43,7 +43,7 @@ namespace ConvertUtils
 		return physx::PxTransform(pxTranslation, pxRotation);
 	}
 
-	inline MathLib::HTransform3 FromPx(const physx::PxTransform& pxTransform)
+	PHYSICS_INLINE MathLib::HTransform3 FromPx(const physx::PxTransform& pxTransform)
 	{
 		physx::PxVec3 pxTranslation = pxTransform.p;
 		physx::PxQuat pxRotation = pxTransform.q;
@@ -58,17 +58,17 @@ namespace ConvertUtils
 		return eigenTransform;
 	}
 
-	inline MathLib::HAABBox3D FromPx(const physx::PxBounds3& bounds)
+	PHYSICS_INLINE MathLib::HAABBox3D FromPx(const physx::PxBounds3& bounds)
 	{
 		return MathLib::HAABBox3D(FromPx(bounds.minimum), FromPx(bounds.maximum));
 	}
 
-	inline physx::PxBounds3 ToPx(const MathLib::HAABBox3D& bounds)
+	PHYSICS_INLINE physx::PxBounds3 ToPx(const MathLib::HAABBox3D& bounds)
 	{
 		return physx::PxBounds3(ToPx(bounds.min()), ToPx(bounds.max()));
 	}
 
-	inline MathLib::HMatrix3 FromPx(const physx::PxMat33& mat)
+	PHYSICS_INLINE MathLib::HMatrix3 FromPx(const physx::PxMat33& mat)
 	{
 		MathLib::HMatrix3 result;
 		for (int i = 0; i < 3; ++i)
@@ -77,13 +77,39 @@ namespace ConvertUtils
 		return result;
 	}
 
-	inline physx::PxMat33 ToPx(const MathLib::HMatrix3& mat)
+	PHYSICS_INLINE physx::PxMat33 ToPx(const MathLib::HMatrix3& mat)
 	{
 		physx::PxMat33 result;
 		for (int i = 0; i < 3; ++i)
 			for (int j = 0; j < 3; ++j)
 				result(i, j) = mat(i, j);
 		return result;
+	}
+
+	PHYSICS_INLINE void PxLocationHitToRaycastHit(const physx::PxLocationHit& hit, PhysicsRaycastHit& outHit)
+	{
+		outHit.m_Position = MathLib::HVector3(hit.position.x, hit.position.y, hit.position.z);
+		outHit.m_Normal = MathLib::HVector3(hit.normal.x, hit.normal.y, hit.normal.z);
+		outHit.m_Distance = hit.distance;
+	}
+
+	PHYSICS_INLINE void FromPx(const physx::PxRaycastHit& hit, PhysicsRaycastHit& outHit)
+	{
+		PxLocationHitToRaycastHit(hit, outHit);
+	}
+
+	PHYSICS_INLINE void FromPx(const physx::PxSweepHit& hit, PhysicsRaycastHit& outHit)
+	{
+		PxLocationHitToRaycastHit(hit, outHit);
+
+		// For shapes that overlap with the query primitive at the origin PhysX returns undefined position.
+		// Here we fix it by setting the position to zero.
+		// Note, the normal is not undefined, it's actually opposite to the query direction.
+		// Refer to PhysX Guide, Scene Queries section, around "Sweeps with Initial Overlap".
+		if (hit.hadInitialOverlap())
+		{
+			outHit.m_Position.setZero();
+		}
 	}
 };
 

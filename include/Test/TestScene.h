@@ -16,7 +16,7 @@ public:
     void Initialize() override;
     void Update(float deltaTime) override;
     void Render() override;
-    
+
     void Reset() override;
     void Pause() override;
     void Resume() override;

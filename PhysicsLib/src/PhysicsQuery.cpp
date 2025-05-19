@@ -1,6 +1,7 @@
 #include "PhysicsQuery.h"
 #include "PhysicsEngine.h"
 #include "PhysicsScene.h"
+#include "Utility/PhysX/QueryCallback.h"
 
 #include <PxPhysicsAPI.h>
 #include <extensions/PxDefaultAllocator.h>
@@ -50,7 +51,7 @@ public:
         if (!object)
             return PxQueryHitType::eNONE;
 
-        RaycastHit rayHit;
+        PhysicsRaycastHit rayHit;
         bool shouldProcess = m_UserCallback->PostFilter(object, rayHit);
         return shouldProcess ? PxQueryHitType::eBLOCK : PxQueryHitType::eNONE;
     }
@@ -110,30 +111,30 @@ PhysicsPtr<IPhysicsObject> SceneQuery::FindObjectFromActor(void* userData)
     return PhysicsPtr<IPhysicsObject>(static_cast<IPhysicsObject*>(userData), PhysicsDeleter<IPhysicsObject>());
 }
 
-void SceneQuery::FillHitResult(const PxRaycastHit& pxHit, RaycastHit& hit)
+void SceneQuery::FillHitResult(const PxRaycastHit& pxHit, PhysicsRaycastHit& hit)
 {
-    hit.distance = pxHit.distance;
-    hit.position = MathLib::HVector3(pxHit.position.x, pxHit.position.y, pxHit.position.z);
-    hit.normal = MathLib::HVector3(pxHit.normal.x, pxHit.normal.y, pxHit.normal.z);
+    hit.m_Distance = pxHit.distance;
+    hit.m_Position = MathLib::HVector3(pxHit.position.x, pxHit.position.y, pxHit.position.z);
+    hit.m_Normal = MathLib::HVector3(pxHit.normal.x, pxHit.normal.y, pxHit.normal.z);
 
     if (pxHit.actor)
     {
-        hit.object = FindObjectFromActor(pxHit.actor->userData);
+        hit.m_Object = FindObjectFromActor(pxHit.actor->userData);
         
-        if (hit.object && pxHit.shape)
+        if (hit.m_Object && pxHit.shape)
         {
             std::vector<PhysicsPtr<IColliderGeometry>> geometries;
-            hit.object->GetColliderGeometries(geometries);
+            hit.m_Object->GetColliderGeometries(geometries);
             
             if (!geometries.empty())
             {
-                hit.collider = geometries[0];
+                hit.m_Collider = geometries[0];
             }
         }
     }
 }
 
-bool SceneQuery::RaycastSingle(const RaycastOptions& options, RaycastHit& hit)
+bool SceneQuery::RaycastSingle(const RaycastOptions& options, PhysicsRaycastHit& hit)
 {
     PxScene* scene = GetActiveScene();
     if (!scene)
@@ -170,7 +171,7 @@ bool SceneQuery::RaycastSingle(const RaycastOptions& options, RaycastHit& hit)
     return false;
 }
 
-bool SceneQuery::RaycastAll(const RaycastOptions& options, std::vector<RaycastHit>& hits)
+bool SceneQuery::RaycastAll(const RaycastOptions& options, std::vector<PhysicsRaycastHit>& hits)
 {
     hits.clear();
 
@@ -207,7 +208,7 @@ bool SceneQuery::RaycastAll(const RaycastOptions& options, std::vector<RaycastHi
     {
         if (raycastHit.hasBlock)
         {
-            RaycastHit hit;
+            PhysicsRaycastHit hit;
             FillHitResult(raycastHit.block, hit);
             hits.push_back(hit);
         }
@@ -215,7 +216,7 @@ bool SceneQuery::RaycastAll(const RaycastOptions& options, std::vector<RaycastHi
         const PxU32 nbTouches = raycastHit.nbTouches;
         for (PxU32 i = 0; i < nbTouches; i++)
         {
-            RaycastHit hit;
+            PhysicsRaycastHit hit;
             FillHitResult(raycastHit.touches[i], hit);
             hits.push_back(hit);
         }
@@ -246,7 +247,7 @@ void SceneQuery::BatchRaycast(std::vector<BatchRaycastData>& batchData, const Sc
     }
 }
 
-bool SceneQuery::SweepSingle(const SweepOptions& options, RaycastHit& hit)
+bool SceneQuery::SweepSingle(const SweepOptions& options, PhysicsRaycastHit& hit)
 {
     PxScene* scene = GetActiveScene();
     if (!scene || !options.geometry)
@@ -274,22 +275,22 @@ bool SceneQuery::SweepSingle(const SweepOptions& options, RaycastHit& hit)
     {
         const PxSweepHit& closest = sweepHit.block;
         
-        hit.distance = closest.distance;
-        hit.position = MathLib::HVector3(closest.position.x, closest.position.y, closest.position.z);
-        hit.normal = MathLib::HVector3(closest.normal.x, closest.normal.y, closest.normal.z);
+        hit.m_Distance = closest.distance;
+        hit.m_Position = MathLib::HVector3(closest.position.x, closest.position.y, closest.position.z);
+        hit.m_Normal = MathLib::HVector3(closest.normal.x, closest.normal.y, closest.normal.z);
         
         if (closest.actor)
         {
-            hit.object = FindObjectFromActor(closest.actor->userData);
+            hit.m_Object = FindObjectFromActor(closest.actor->userData);
             
-            if (hit.object && closest.shape)
+            if (hit.m_Object && closest.shape)
             {
                 std::vector<PhysicsPtr<IColliderGeometry>> geometries;
-                hit.object->GetColliderGeometries(geometries);
+                hit.m_Object->GetColliderGeometries(geometries);
                 
                 if (!geometries.empty())
                 {
-                    hit.collider = geometries[0];
+                    hit.m_Collider = geometries[0];
                 }
             }
         }
@@ -300,7 +301,7 @@ bool SceneQuery::SweepSingle(const SweepOptions& options, RaycastHit& hit)
     return false;
 }
 
-bool SceneQuery::SweepAll(const SweepOptions& options, std::vector<RaycastHit>& hits)
+bool SceneQuery::SweepAll(const SweepOptions& options, std::vector<PhysicsRaycastHit>& hits)
 {
     hits.clear();
 
@@ -333,25 +334,25 @@ bool SceneQuery::SweepAll(const SweepOptions& options, std::vector<RaycastHit>& 
     {
         if (sweepHits.hasBlock)
         {
-            RaycastHit hit;
+            PhysicsRaycastHit hit;
             const PxSweepHit& closest = sweepHits.block;
             
-            hit.distance = closest.distance;
-            hit.position = MathLib::HVector3(closest.position.x, closest.position.y, closest.position.z);
-            hit.normal = MathLib::HVector3(closest.normal.x, closest.normal.y, closest.normal.z);
+            hit.m_Distance = closest.distance;
+            hit.m_Position = MathLib::HVector3(closest.position.x, closest.position.y, closest.position.z);
+            hit.m_Normal = MathLib::HVector3(closest.normal.x, closest.normal.y, closest.normal.z);
             
             if (closest.actor)
             {
-                hit.object = FindObjectFromActor(closest.actor->userData);
+                hit.m_Object = FindObjectFromActor(closest.actor->userData);
                 
-                if (hit.object && closest.shape)
+                if (hit.m_Object && closest.shape)
                 {
                     std::vector<PhysicsPtr<IColliderGeometry>> geometries;
-                    hit.object->GetColliderGeometries(geometries);
+                    hit.m_Object->GetColliderGeometries(geometries);
                     
                     if (!geometries.empty())
                     {
-                        hit.collider = geometries[0];
+                        hit.m_Collider = geometries[0];
                     }
                 }
             }
@@ -362,25 +363,25 @@ bool SceneQuery::SweepAll(const SweepOptions& options, std::vector<RaycastHit>& 
         const PxU32 nbTouches = sweepHits.nbTouches;
         for (PxU32 i = 0; i < nbTouches; i++)
         {
-            RaycastHit hit;
+            PhysicsRaycastHit hit;
             const PxSweepHit& touch = sweepHits.touches[i];
             
-            hit.distance = touch.distance;
-            hit.position = MathLib::HVector3(touch.position.x, touch.position.y, touch.position.z);
-            hit.normal = MathLib::HVector3(touch.normal.x, touch.normal.y, touch.normal.z);
+            hit.m_Distance = touch.distance;
+            hit.m_Position = MathLib::HVector3(touch.position.x, touch.position.y, touch.position.z);
+            hit.m_Normal = MathLib::HVector3(touch.normal.x, touch.normal.y, touch.normal.z);
             
             if (touch.actor)
             {
-                hit.object = FindObjectFromActor(touch.actor->userData);
+                hit.m_Object = FindObjectFromActor(touch.actor->userData);
                 
-                if (hit.object && touch.shape)
+                if (hit.m_Object && touch.shape)
                 {
                     std::vector<PhysicsPtr<IColliderGeometry>> geometries;
-                    hit.object->GetColliderGeometries(geometries);
+                    hit.m_Object->GetColliderGeometries(geometries);
                     
                     if (!geometries.empty())
                     {
-                        hit.collider = geometries[0];
+                        hit.m_Collider = geometries[0];
                     }
                 }
             }
