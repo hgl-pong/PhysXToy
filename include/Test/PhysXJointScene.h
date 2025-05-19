@@ -18,10 +18,10 @@ public:
     virtual void KeyBoardCallback(int key, int scancode, int action, int mods) override;
 
 private:
+    using JointCreateFunction = std::function<PhysicsPtr<IPhysicsJoint>(PhysicsPtr<IPhysicsObject>, const MathLib::HTransform3&,
+                                                                       PhysicsPtr<IPhysicsObject>, const MathLib::HTransform3&)>;
     void CreateGround();
-    void CreateLimitedSphericalChain(const MathLib::HTransform3& t, uint32_t length, const MathLib::HVector3& boxSize, MathLib::HReal separation);
-    void CreateBreakableFixedChain(const MathLib::HTransform3& t, uint32_t length, const MathLib::HVector3& boxSize, MathLib::HReal separation);
-    void CreateDampedD6Chain(const MathLib::HTransform3& t, uint32_t length, const MathLib::HVector3& boxSize, MathLib::HReal separation);
+    void CreateChain(const MathLib::HTransform3& t, uint32_t length, PhysicsPtr<IColliderGeometry>& geometry, MathLib::HReal separation, JointCreateFunction createJoint);
     
     PhysicsPtr<IPhysicsJoint> CreateLimitedSphericalJoint(PhysicsPtr<IPhysicsObject> objA, const MathLib::HTransform3& localA,
                                                          PhysicsPtr<IPhysicsObject> objB, const MathLib::HTransform3& localB);

@@ -324,6 +324,7 @@ enum class JointType
     RACK_AND_PINION,
     CHAIN,
     PORTAL,
+    REVOLUTE2,
     RESOLUTION,
     COUNT
 };

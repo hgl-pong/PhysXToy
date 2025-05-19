@@ -35,8 +35,8 @@ public:
     bool IsBroken() const override;
     size_t GetOffset() const override;
 
-    virtual void SetJointLimits(const JointLimitOptions& limitOptions);
-    virtual JointLimitOptions GetJointLimits() const;
+    void SetJointLimits(const JointLimitOptions& limitOptions) override;
+    JointLimitOptions GetJointLimits() const override;
 
     physx::PxJoint* GetPxJoint() const;
 
@@ -45,6 +45,7 @@ protected:
     bool CreateDistanceJoint();
     bool CreateSphericalJoint();
     bool CreateRevoluteJoint();
+    bool CreateRevoluteJoint2();
     bool CreatePrismaticJoint();
     bool CreateD6Joint();
     bool CreateHingeJoint();

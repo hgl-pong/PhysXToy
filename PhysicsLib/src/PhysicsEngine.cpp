@@ -92,7 +92,9 @@ PhysicsPtr<IPhysicsObject> PhysicsEngine::CreateObject(const PhysicsObjectCreate
 	}
 	case PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC:
 	{
-		object = new PhysicsRigidDynamic(material);
+		PhysicsRigidDynamic* pDynamic = new PhysicsRigidDynamic(material);
+		pDynamic->SetKinematic(options.m_IsKinematic);
+		object = pDynamic;
 		object->SetTransform(options.m_Transform);
 		break;
 	}

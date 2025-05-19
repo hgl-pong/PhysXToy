@@ -169,7 +169,7 @@ namespace PhysXConstructTools
 		physx::PxTriangleMeshDesc meshDesc;
 		meshDesc.points.count = numVerts;
 		meshDesc.points.stride = sizeof(physx::PxVec3);
-		meshDesc.points.data = reinterpret_cast<const physx::PxVec3*>(verts); // ����ת��
+		meshDesc.points.data = reinterpret_cast<const physx::PxVec3*>(verts);
 
 		meshDesc.triangles.count = numTris;
 		meshDesc.triangles.stride = 3 * sizeof(physx::PxU32);

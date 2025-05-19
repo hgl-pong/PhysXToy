@@ -96,6 +96,7 @@ private:
 	bool m_imguiInitialized = false;
 	bool m_showDemoWindow = false;
 	bool m_showStatsWindow = true;
+	bool m_showBoundingBox = false;
 	
 	// Track if dockspace layout has been initialized
 	bool m_dockspaceInitialized = false;
@@ -454,6 +455,7 @@ void Renderer::Render() {
 
 	for (auto& obj : m_renderObjects) {
 		if (obj) {
+			obj->ShowBoundingBox(m_showBoundingBox);
 			obj->Render(*m_camera);
 		}
 	}
@@ -807,7 +809,6 @@ void Renderer::RenderImGui() {
         
 		if (ImGui::BeginMenu("View")) {
 			ImGui::MenuItem("Stats Window", nullptr, &m_showStatsWindow);
-			ImGui::MenuItem("Demo Window", nullptr, &m_showDemoWindow);
 			ImGui::EndMenu();
 		}
 		
@@ -815,9 +816,6 @@ void Renderer::RenderImGui() {
 	}
 
 	ImGui::End(); // End of DockSpace window
-
-	if (m_showDemoWindow)
-		ImGui::ShowDemoWindow(&m_showDemoWindow);
 
 	if (m_showStatsWindow) {
 		ImGui::Begin("Renderer Stats", &m_showStatsWindow);
@@ -846,7 +844,7 @@ void Renderer::RenderImGui() {
 
 		ImGui::Separator();
 		ImGui::ColorEdit3("Background Color", &m_clearColor.x);
-		ImGui::Checkbox("Show ImGui Demo Window", &m_showDemoWindow);
+		ImGui::Checkbox("Show Bounding Box", &m_showBoundingBox);
 
 		ImGui::End();
 	}

@@ -36,15 +36,22 @@ void PhysXJointScene::Initialize()
 
     MathLib::HVector3 boxSize(2.0f, 0.5f, 0.5f);
 
-    CreateLimitedSphericalChain(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0.0f, 20.0f, 0.0f))), 
-                                5, boxSize, 4.0f);
+    CollisionGeometryCreateOptions options;
+    options.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX;
+    options.m_BoxParams.m_HalfExtents = boxSize;
+
+    PhysicsPtr<IColliderGeometry> box = PhysicsEngineUtils::CreateColliderGeometry(options);
+
+    MathLib::HTransform3 transform = MathLib::HTransform3::Identity();
+    transform.translate(MathLib::HVector3(0.0f, 20.0f, 0.0f));
+	CreateChain(transform, 5, box, 4.0f, std::bind(&PhysXJointScene::CreateLimitedSphericalJoint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+	
+    transform.translate(MathLib::HVector3(0.0f, 0.0f, -10.0f));
+    CreateChain(transform, 5, box, 4.0f, std::bind(&PhysXJointScene::CreateBreakableFixedJoint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+	
+    transform.translate(MathLib::HVector3(0.0f, 0.0f, -10.0f));
+    CreateChain(transform, 5, box, 4.0f, std::bind(&PhysXJointScene::CreateDampedD6Joint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
     
-    CreateBreakableFixedChain(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0.0f, 20.0f, -10.0f))),
-                             5, boxSize, 4.0f);
-
-    CreateDampedD6Chain(MathLib::HTransform3(MathLib::HTranslation3(MathLib::HVector3(0.0f, 20.0f, -20.0f))),
-                       5, boxSize, 4.0f);
-
     m_initialized = true;
 }
 
@@ -120,147 +127,31 @@ void PhysXJointScene::CreateGround()
     AddObject(groundPlaneObject, false);
 }
 
-void PhysXJointScene::CreateLimitedSphericalChain(const MathLib::HTransform3& t, uint32_t length, const MathLib::HVector3& boxSize, MathLib::HReal separation)
+void PhysXJointScene::CreateChain(const MathLib::HTransform3& t, uint32_t length, PhysicsPtr<IColliderGeometry>& geometry, MathLib::HReal separation, JointCreateFunction createJoint)
 {
-    MathLib::HVector3 offset(separation/2, 0, 0);
+	MathLib::HVector3 offset(separation/2, 0, 0);
     MathLib::HTransform3 localTm = MathLib::HTransform3::Identity();
-    localTm.translate(offset);
-    PhysicsPtr<IPhysicsObject> prev = nullptr;
 
-    // 创建箱子链
-    for(uint32_t i=0; i<length; i++)
-    {
-        CollisionGeometryCreateOptions geomOptions;
-        geomOptions.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX;
-        geomOptions.m_BoxParams.m_HalfExtents = boxSize / 2.0f;
-        PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(geomOptions);
-
-        PhysicsObjectCreateOptions objOptions;
+	PhysicsPtr<IPhysicsObject> prev = nullptr;
+    PhysicsObjectCreateOptions objOptions;
+	for(uint32_t i=0;i<length;i++)
+	{
         objOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
         objOptions.m_Transform = t * localTm;
-        PhysicsPtr<IPhysicsObject> current = PhysicsEngineUtils::CreateObject(objOptions);
+        objOptions.m_IsKinematic = i == 0;
+        objOptions.m_MaterialOptions.m_Density = 1.f;
+		PhysicsPtr<IPhysicsObject> current = PhysicsEngineUtils::CreateObject(objOptions);
         current->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
-        
+        MathLib::HTransform3 localA = MathLib::HTransform3::Identity();
+        localA.translate(offset);
+        MathLib::HTransform3 localB = MathLib::HTransform3::Identity();
+        localB.translate(-offset);
+        if(i != 0)
+            createJoint(prev, prev ? localA : t, current, localB);
         AddObject(current);
-
-        if (prev)
-        {   
-            MathLib::HTransform3 localA = MathLib::HTransform3::Identity();
-            localA.translate(offset);
-            MathLib::HTransform3 localB = MathLib::HTransform3::Identity();
-            localB.translate(-offset);
-            
-            JointCreateOptions jointOptions;
-            jointOptions.type = JointType::SPHERICAL;
-            jointOptions.objectA = prev;
-            jointOptions.objectB = current;
-            jointOptions.localFrameA = localA;
-            jointOptions.localFrameB = localB;
-            jointOptions.collisionEnabled = false;
-            
-            PhysicsPtr<IPhysicsJoint> joint = PhysicsEngineUtils::CreateJoint(jointOptions);
-            m_Scene->AddJoint(joint);
-        }
-        
-        prev = current;
-        localTm.translate(MathLib::HVector3(separation, 0, 0));
-    }
-}
-
-void PhysXJointScene::CreateBreakableFixedChain(const MathLib::HTransform3& t, uint32_t length, const MathLib::HVector3& boxSize, MathLib::HReal separation)
-{
-    MathLib::HVector3 offset(separation/2, 0, 0);
-    MathLib::HTransform3 localTm = MathLib::HTransform3::Identity();
-    localTm.translate(offset);
-    PhysicsPtr<IPhysicsObject> prev = nullptr;
-
-    for(uint32_t i=0; i<length; i++)
-    {
-        CollisionGeometryCreateOptions geomOptions;
-        geomOptions.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX;
-        geomOptions.m_BoxParams.m_HalfExtents = boxSize / 2.0f;
-        PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(geomOptions);
-
-        PhysicsObjectCreateOptions objOptions;
-        objOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
-        objOptions.m_Transform = t * localTm;
-        PhysicsPtr<IPhysicsObject> current = PhysicsEngineUtils::CreateObject(objOptions);
-        current->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
-        
-        AddObject(current);
-
-        if (prev)
-        {   
-            MathLib::HTransform3 localA = MathLib::HTransform3::Identity();
-            localA.translate(offset);
-            MathLib::HTransform3 localB = MathLib::HTransform3::Identity();
-            localB.translate(-offset);
-            
-            JointCreateOptions jointOptions;
-            jointOptions.type = JointType::FIXED;
-            jointOptions.objectA = prev;
-            jointOptions.objectB = current;
-            jointOptions.localFrameA = localA;
-            jointOptions.localFrameB = localB;
-            jointOptions.collisionEnabled = false;
-            
-            PhysicsPtr<IPhysicsJoint> joint = PhysicsEngineUtils::CreateJoint(jointOptions);
-            
-            joint->SetBreakForce(1000.0f);
-            joint->SetBreakTorque(100000.0f);
-            
-            m_Scene->AddJoint(joint);
-        }
-        
-        prev = current;
-        localTm.translate(MathLib::HVector3(separation, 0, 0));
-    }
-}
-
-void PhysXJointScene::CreateDampedD6Chain(const MathLib::HTransform3& t, uint32_t length, const MathLib::HVector3& boxSize, MathLib::HReal separation)
-{
-    MathLib::HVector3 offset(separation/2, 0, 0);
-    MathLib::HTransform3 localTm = MathLib::HTransform3::Identity();
-    localTm.translate(offset);
-    PhysicsPtr<IPhysicsObject> prev = nullptr;
-
-    for(uint32_t i=0; i<length; i++)
-    {
-        CollisionGeometryCreateOptions geomOptions;
-        geomOptions.m_GeometryType = CollierGeometryType::COLLIER_GEOMETRY_TYPE_BOX;
-        geomOptions.m_BoxParams.m_HalfExtents = boxSize / 2.0f;
-        PhysicsPtr<IColliderGeometry> geometry = PhysicsEngineUtils::CreateColliderGeometry(geomOptions);
-
-        PhysicsObjectCreateOptions objOptions;
-        objOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
-        objOptions.m_Transform = t * localTm;
-        PhysicsPtr<IPhysicsObject> current = PhysicsEngineUtils::CreateObject(objOptions);
-        current->AddColliderGeometry(geometry, MathLib::HTransform3::Identity());
-        
-        AddObject(current);
-
-        if (prev)
-        {   
-            MathLib::HTransform3 localA = MathLib::HTransform3::Identity();
-            localA.translate(offset);
-            MathLib::HTransform3 localB = MathLib::HTransform3::Identity();
-            localB.translate(-offset);
-            
-            JointCreateOptions jointOptions;
-            jointOptions.type = JointType::D6;
-            jointOptions.objectA = prev;
-            jointOptions.objectB = current;
-            jointOptions.localFrameA = localA;
-            jointOptions.localFrameB = localB;
-            jointOptions.collisionEnabled = false;
-            
-            PhysicsPtr<IPhysicsJoint> joint = PhysicsEngineUtils::CreateJoint(jointOptions);
-            m_Scene->AddJoint(joint);
-        }
-        
-        prev = current;
-        localTm.translate(MathLib::HVector3(separation, 0, 0));
-    }
+		prev = current;
+		localTm.translate(MathLib::HVector3(separation, 0.f, 0.f));
+	}
 }
 
 PhysicsPtr<IPhysicsJoint> PhysXJointScene::CreateLimitedSphericalJoint(PhysicsPtr<IPhysicsObject> objA, const MathLib::HTransform3& localA,
@@ -276,6 +167,15 @@ PhysicsPtr<IPhysicsJoint> PhysXJointScene::CreateLimitedSphericalJoint(PhysicsPt
     
     PhysicsPtr<IPhysicsJoint> joint = PhysicsEngineUtils::CreateJoint(options);
     
+    JointLimitOptions limitOptions;
+    limitOptions.m_Swing1.m_IsLimited = true;
+    limitOptions.m_Swing1.m_UpperLimit = MathLib::H_PI / 4;
+
+    limitOptions.m_Swing2.m_IsLimited = true;
+    limitOptions.m_Swing2.m_UpperLimit = MathLib::H_PI / 4;
+
+    joint->SetJointLimits(limitOptions);
+
     if (m_Scene) {
         m_Scene->AddJoint(joint);
     }
@@ -299,6 +199,9 @@ PhysicsPtr<IPhysicsJoint> PhysXJointScene::CreateBreakableFixedJoint(PhysicsPtr<
     joint->SetBreakForce(1000.0f);
     joint->SetBreakTorque(100000.0f);
     
+    JointLimitOptions limitOptions;
+    joint->SetJointLimits(limitOptions);
+
     if (m_Scene) {
         m_Scene->AddJoint(joint);
     }
@@ -319,6 +222,9 @@ PhysicsPtr<IPhysicsJoint> PhysXJointScene::CreateDampedD6Joint(PhysicsPtr<IPhysi
     
     PhysicsPtr<IPhysicsJoint> joint = PhysicsEngineUtils::CreateJoint(options);
     
+    JointLimitOptions limitOptions;
+    joint->SetJointLimits(limitOptions);
+
     if (m_Scene) {
         m_Scene->AddJoint(joint);
     }

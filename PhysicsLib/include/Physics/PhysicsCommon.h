@@ -323,6 +323,8 @@ public:
 	virtual MathLib::HTransform3 GetLocalPose(bool isObjectA) const = 0;
 	virtual bool IsBroken() const = 0;
 	virtual size_t GetOffset() const = 0;
+	virtual void SetJointLimits(const JointLimitOptions& limitOptions) = 0;
+	virtual JointLimitOptions GetJointLimits() const = 0;
 };
 
 class PHYSICSLIB_API IPhysicsDebugRenderer
