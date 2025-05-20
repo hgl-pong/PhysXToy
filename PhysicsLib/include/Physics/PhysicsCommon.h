@@ -343,6 +343,26 @@ public:
 	virtual void Flush() = 0;
 };
 
+class IPhysicsContactCallback
+{
+	public:
+	// True to buffer contacts and send them after simulation is completed,
+	// false to send contacts as soon as they're available.
+	virtual	bool	BufferContacts()		const												= 0;
+
+	enum _
+	{
+		CONTACT_FOUND	= (1<<0),
+		CONTACT_PERSIST	= (1<<1),
+		CONTACT_LOST	= (1<<2),
+		CONTACT_ALL		= CONTACT_FOUND|CONTACT_PERSIST|CONTACT_LOST
+	};
+	virtual	uint32_t	GetContactFlags()		const												= 0;
+
+	virtual	float	GetContactThreshold()	const												= 0;
+	virtual	void	OnContact(uint32_t nb_contacts, const PhysicsContactData* contacts)	= 0;
+};
+
 class PHYSICSLIB_API PhysicsEngineUtils
 {
 public:

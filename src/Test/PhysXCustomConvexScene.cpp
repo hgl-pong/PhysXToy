@@ -73,13 +73,16 @@ void PhysXCustomConvexScene::Initialize()
 
 void PhysXCustomConvexScene::Update(float deltaTime)
 {
-    if (!m_paused)
+    if (!m_initialized || m_paused)
+        return;
+
+    m_elapsedTime += deltaTime;
+    PerformRaycastTests();
+    PerformSweepTests();
+    PerformOverlapTests();
+    if (m_Scene)
     {
-        m_elapsedTime += deltaTime;
-        
-        PerformRaycastTests();
-        PerformSweepTests();
-        PerformOverlapTests();
+        m_Scene->Tick(deltaTime);
     }
 }
 

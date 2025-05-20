@@ -3,6 +3,7 @@
 #include "PhysicsScene.h"
 #include "Utility/PhysX/QueryCallback.h"
 #include "Utility/PhysX/CastFilter.h"
+#include "Utility/PhysX/SimulationEventCallback.h"
 
 #include <PxPhysicsAPI.h>
 #include <extensions/PxDefaultAllocator.h>
@@ -71,7 +72,6 @@ PxScene* SceneQuery::GetActiveScene()
     return static_cast<PxScene*>(activeScene->GetNativeScene());
 }
 
-// 配置查询过滤数据
 void SceneQuery::ConfigureQueryFilterData(PxQueryFilterData& filterData, const SceneQueryOptions& options)
 {
     filterData.data.word0 = options.filterMask;
@@ -81,13 +81,12 @@ void SceneQuery::ConfigureQueryFilterData(PxQueryFilterData& filterData, const S
         filterData.flags |= PxQueryFlag::eNO_BLOCK;
 
     if (options.hitTriggers)
-        filterData.flags |= PxQueryFlag::eANY_HIT; // 使用eANY_HIT替代eTRIGGER
+        filterData.flags |= PxQueryFlag::eANY_HIT;
 
     if (options.filterCallback)
         filterData.flags |= PxQueryFlag::ePOSTFILTER;
 }
 
-// 创建过滤回调
 PxQueryFilterCallback* SceneQuery::CreateFilterCallback(ISceneQueryFilterCallback* callback)
 {
     if (!callback)
