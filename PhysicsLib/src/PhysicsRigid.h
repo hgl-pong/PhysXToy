@@ -76,6 +76,7 @@ public:
 	void* GetNativeActor() const override;
 	void EnableGyroscopicForces(bool enable) override;
 	bool IsGyroscopicForcesEnabled() const override;
+	bool IsEmpty() const override;
 
 private:
 	PhysicsObjectType m_Type;
@@ -151,6 +152,7 @@ public:
 	void SetAngularDamping(const MathLib::HReal& damping) override;
 	MathLib::HReal GetAngularDamping() const override;
 	void* GetNativeActor() const override;
+	bool IsEmpty() const override;
 
 private:
 	PhysicsObjectType m_Type;

@@ -2,6 +2,7 @@
 #include "PhysicsEngine.h"
 #include "PhysicsScene.h"
 #include "Utility/PhysX/QueryCallback.h"
+#include "Utility/PhysX/CastFilter.h"
 
 #include <PxPhysicsAPI.h>
 #include <extensions/PxDefaultAllocator.h>

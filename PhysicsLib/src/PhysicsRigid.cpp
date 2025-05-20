@@ -577,6 +577,10 @@ PhysicsObjectType PhysicsRigidDynamic::GetRigidBodyType() const
 	return PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
 }
 
+bool PhysicsRigidDynamic::IsEmpty() const
+{
+	return m_ColliderGeometries.empty();
+}
 
 /////////////////RigidStatic////////////////////////
 PhysicsRigidStatic::PhysicsRigidStatic(PhysicsPtr<IPhysicsMaterial> &material)
@@ -787,3 +791,9 @@ PhysicsObjectType PhysicsRigidStatic::GetRigidBodyType() const
 {
 	return PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
 }
+
+bool PhysicsRigidStatic::IsEmpty() const
+{
+	return m_ColliderGeometries.empty();
+}
+

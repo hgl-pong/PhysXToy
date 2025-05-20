@@ -1,5 +1,5 @@
 #pragma once
-#include "Physics/PhysicsTypes.h"
+#include "PhysicsTypes.h"
 #include "PhysicsMacro.h"
 #include <memory>
 #include <unordered_set>
@@ -207,6 +207,8 @@ public:
 	virtual void SetAngularDamping(const MathLib::HReal& damping) = 0;
 	virtual MathLib::HReal GetAngularDamping() const = 0;
 	
+	virtual bool IsEmpty() const = 0;
+
 	virtual void* GetNativeActor() const = 0;
 };
 
