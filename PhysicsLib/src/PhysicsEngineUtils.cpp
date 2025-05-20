@@ -14,6 +14,7 @@ IPhysicsEngine* PhysicsEngineUtils::CreatePhysicsEngine(const PhysicsEngineOptio
 {
 	_ASSERT(!gPhysicsEngine);
 	gPhysicsEngine = new PhysicsEngine(options);
+	gPhysicsEngine->Initialize();
 	if(createConvexDecomposer)
 		gConvexMeshDecomposer =new ConvexMeshDecomposer();
 	return gPhysicsEngine;

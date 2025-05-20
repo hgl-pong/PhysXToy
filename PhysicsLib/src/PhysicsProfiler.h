@@ -63,8 +63,12 @@ public:
             m_FrameHistory.erase(m_FrameHistory.begin());
         }
         
+        auto memoryUsagePre = m_CurrentFrame.memoryUsage;
+
         // Reset current frame data for next frame
         m_CurrentFrame = PhysicsStatisticsData::FrameStats();
+
+        m_CurrentFrame.memoryUsage = memoryUsagePre;
     }
     
     // Record the start of a physics engine stage
@@ -1087,7 +1091,38 @@ public:
     virtual void EndFrame() override
     {
         m_Statistic.EndFrame();
+        
+        UpdateObjectCounts();
+        UpdateCollisionStats();
+        
     }
+
+	virtual void SetMemoryUsage(uint64_t bytes) override
+	{
+		m_Statistic.SetMemoryUsage(bytes);
+	}
+
+	virtual void AddMemoryUsage(uint64_t bytes) override
+	{
+		std::lock_guard<std::mutex> lock(m_Mutex);
+		m_Statistic.GetCurrentFrame().memoryUsage += bytes;
+	}
+	
+	virtual void SubtractMemoryUsage(uint64_t bytes) override
+	{
+		std::lock_guard<std::mutex> lock(m_Mutex);
+		auto& currentMemory = m_Statistic.GetCurrentFrame().memoryUsage;
+		if (currentMemory >= bytes) {
+			currentMemory -= bytes;
+		} else {
+			currentMemory = 0;
+		}
+	}
+	
+	virtual uint64_t GetMemoryUsage() const override
+	{
+		return m_Statistic.GetLatestFrameStats().memoryUsage;
+	}
 
 private:
 	uint64_t getCurrentTimeMicroseconds() const 
@@ -1143,7 +1178,11 @@ private:
     int32_t m_LastCollisionPairs = 0;
 };
 
-#if _DEBUG
+#ifdef _DEBUG
+    #define ENABLE_PHYSICS_PROFILER
+#endif
+
+#ifdef ENABLE_PHYSICS_PROFILER
 	#define PHYSICS_PROFILE_ZONE(x, y)										\
 		PhysicsProfilerScope PHYSICS_CONCAT(_scoped, __LINE__)(x, false, (size_t)y)
 	#define PHYSICS_PROFILE_START_CROSSTHREAD(x, y)							\
@@ -1161,6 +1200,12 @@ private:
 	#define PHYSICS_PROFILE_END_FRAME()                                                                                                         \
 		if(PhysicsEngineUtils::GetProfiler())                                                                                                        \
 			PhysicsEngineUtils::GetProfiler()->EndFrame()
+    #define PHYSICS_PROFILE_ADD_MEMORY_USAGE(x)                                                                                                         \
+		if(PhysicsEngineUtils::GetProfiler())                                                                                                        \
+			PhysicsEngineUtils::GetProfiler()->AddMemoryUsage(x)
+    #define PHYSICS_PROFILE_SUBTRACT_MEMORY_USAGE(x)                                                                                                         \
+		if(PhysicsEngineUtils::GetProfiler())                                                                                                        \
+			PhysicsEngineUtils::GetProfiler()->SubtractMemoryUsage(x)
 #else
 	#define PHYSICS_PROFILE_ZONE(x, y)
 	#define PHYSICS_PROFILE_START_CROSSTHREAD(x, y)
@@ -1168,6 +1213,8 @@ private:
 	#define PHYSICS_PROFILE_VALUE(x, y, z)
 	#define PHYSICS_PROFILE_FRAME(x, y)
 	#define PHYSICS_PROFILE_END_FRAME()
+	#define PHYSICS_PROFILE_ADD_MEMORY_USAGE(x)
+	#define PHYSICS_PROFILE_SUBTRACT_MEMORY_USAGE(x)
 #endif
 
 #include "PhysicsProfilerChart.h"

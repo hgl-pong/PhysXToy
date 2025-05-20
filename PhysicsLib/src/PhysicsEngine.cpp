@@ -12,6 +12,7 @@
 #include "PhysicsProfiler.h"
 #include "Utility/PhysicsUtils.h"
 #include "Utility/PhysX/ErrorCallback.h"
+#include "Utility/PhysX/Allocator.h"
 
 #include <assert.h>
 
@@ -38,15 +39,19 @@ PhysicsEngine::PhysicsEngine(const PhysicsEngineOptions &options)
 #else
 	m_Options.m_bEnablePVD = false;
 #endif
+}
 
+void PhysicsEngine::Initialize()
+{
 	// Init Physx
 	{
-		m_AllocatorCallback = std::make_unique<PxDefaultAllocator>();
+		m_AllocatorCallback = std::make_unique<PhysXAllocator>();
 		m_ErrorCallback = std::make_unique<PhysXErrorCallback>();
 
 		m_Foundation = make_physx_ptr(PxCreateFoundation(PX_PHYSICS_VERSION, *m_AllocatorCallback, *m_ErrorCallback));
 
 		m_Profiler = std::make_unique<PhysicsProfiler>(m_Options.m_bEnablePVD);
+
 		PxTolerancesScale toleranceScale;
 		m_Physics = make_physx_ptr(PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, toleranceScale, false, m_Profiler->GetPVD()));
 		m_CpuDispatcher = std::unique_ptr<physx::PxCpuDispatcher>(PxDefaultCpuDispatcherCreate(m_Options.m_NumThreads));
@@ -67,6 +72,23 @@ PhysicsEngine::~PhysicsEngine()
 {
 	ColliderGeometryCache::GetInstance().Clear();
 	PhysicsMaterialCache::GetInstance().Clear();
+
+	if (m_AllocatorCallback && m_Profiler)
+	{
+		PhysXAllocator* allocator = static_cast<PhysXAllocator*>(m_AllocatorCallback.get());
+		uint64_t totalMemory = m_Profiler->GetMemoryUsage();
+		size_t allocationCount = allocator? allocator->GetActiveAllocationCount() : 0;
+		
+		PHYSICS_PROFILE_VALUE("PhysX.FinalTotalMemory", static_cast<int32_t>(totalMemory / 1024), 0);
+		PHYSICS_PROFILE_VALUE("PhysX.FinalAllocationCount", static_cast<int32_t>(allocationCount), 0);
+		
+#ifdef _DEBUG
+		printf("PhysX Final Memory Statistics:\n");
+		printf("  Total Memory: %.2f MB\n", totalMemory / (1024.0 * 1024.0));
+		printf("  Profiler Memory: %.2f MB\n", m_Profiler->GetMemoryUsage() / (1024.0 * 1024.0));
+		printf("  Active Allocations: %zu\n", allocationCount);
+#endif
+	}
 
 	m_CpuDispatcher.reset();
 	m_Physics.reset();

@@ -27,6 +27,7 @@ private:
 	~PhysicsEngine();
 
 public:
+	void Initialize();
 	PhysicsPtr<IPhysicsObject> CreateObject(const PhysicsObjectCreateOptions &options) override;
 	PhysicsPtr<IPhysicsMaterial> CreateMaterial(const PhysicsMaterialCreateOptions &options) override;
 	PhysicsPtr<IPhysicsScene> CreateScene(const PhysicsSceneCreateOptions &options) override;

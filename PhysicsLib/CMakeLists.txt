@@ -14,6 +14,7 @@ add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 file(GLOB PHYSICS_SOURCE_FILES
     src/VHACD/*.cpp
     src/Utility/*.cpp
+    src/Utility/PhysX/*.cpp
     src/Base/*.cpp
     src/*.cpp
 )

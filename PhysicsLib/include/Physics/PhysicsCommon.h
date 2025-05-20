@@ -92,6 +92,11 @@ public:
     virtual bool ExportStatisticsToCSV(const std::string& filename) = 0;
     virtual bool ExportStatisticsToJSON(const std::string& filename) = 0;
     virtual bool ExportStatisticsToHTML(const std::string& filename) = 0;
+    
+    virtual void SetMemoryUsage(uint64_t bytes) = 0;
+    virtual void AddMemoryUsage(uint64_t bytes) = 0;
+    virtual void SubtractMemoryUsage(uint64_t bytes) = 0;
+    virtual uint64_t GetMemoryUsage() const = 0;
 }; 
 
 class PHYSICSLIB_API IPhysicsEngine
