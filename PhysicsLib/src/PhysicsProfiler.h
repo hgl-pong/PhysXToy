@@ -202,57 +202,57 @@ public:
     // Print detailed statistics
     void PrintDetailedStats() const
     {
-        printf("\n==== Physics Engine Detailed Statistics ====\n");
+        PHYSICS_PRINT("\n==== Physics Engine Detailed Statistics ====\n");
         
         // Frame time statistics
         const auto& latest = GetLatestFrameStats();
-        printf("Frame Time: %.2f ms\n", latest.frameDuration / 1000.0);
-        printf("Average Frame Time: %.2f ms\n", GetAverageFrameTime() / 1000.0);
-        printf("Peak Frame Time: %.2f ms\n", GetPeakFrameTime() / 1000.0);
+        PHYSICS_PRINT("Frame Time: %.2f ms\n", latest.frameDuration / 1000.0);
+        PHYSICS_PRINT("Average Frame Time: %.2f ms\n", GetAverageFrameTime() / 1000.0);
+        PHYSICS_PRINT("Peak Frame Time: %.2f ms\n", GetPeakFrameTime() / 1000.0);
         
-        printf("\nPhysics Time: %.2f ms (%.1f%% of frame)\n", 
+        PHYSICS_PRINT("\nPhysics Time: %.2f ms (%.1f%% of frame)\n", 
             latest.physicsStepTime / 1000.0, 
             GetPhysicsTimePercentage());
         
-        printf("  Collision Detection: %.2f ms\n", latest.collisionDetectionTime / 1000.0);
-        printf("  Solver: %.2f ms\n", latest.solverTime / 1000.0);
-        printf("  Integration: %.2f ms\n", latest.integrateTime / 1000.0);
+        PHYSICS_PRINT("  Collision Detection: %.2f ms\n", latest.collisionDetectionTime / 1000.0);
+        PHYSICS_PRINT("  Solver: %.2f ms\n", latest.solverTime / 1000.0);
+        PHYSICS_PRINT("  Integration: %.2f ms\n", latest.integrateTime / 1000.0);
         
-        printf("\nObject Counts:\n");
-        printf("  Total Objects: %u\n", latest.activeObjects);
-        printf("  Dynamic Objects: %u\n", latest.activeDynamicObjects);
-        printf("  Static Objects: %u\n", latest.activeStaticObjects);
-        printf("  Soft Bodies: %u\n", latest.activeSoftBodies);
-        printf("  Joints: %u\n", latest.activeJoints);
+        PHYSICS_PRINT("\nObject Counts:\n");
+        PHYSICS_PRINT("  Total Objects: %u\n", latest.activeObjects);
+        PHYSICS_PRINT("  Dynamic Objects: %u\n", latest.activeDynamicObjects);
+        PHYSICS_PRINT("  Static Objects: %u\n", latest.activeStaticObjects);
+        PHYSICS_PRINT("  Soft Bodies: %u\n", latest.activeSoftBodies);
+        PHYSICS_PRINT("  Joints: %u\n", latest.activeJoints);
         
-        printf("\nCollision Statistics:\n");
-        printf("  Contact Points: %u\n", latest.contactPoints);
-        printf("  Collision Pairs: %u\n", latest.collisionPairs);
+        PHYSICS_PRINT("\nCollision Statistics:\n");
+        PHYSICS_PRINT("  Contact Points: %u\n", latest.contactPoints);
+        PHYSICS_PRINT("  Collision Pairs: %u\n", latest.collisionPairs);
         
         // Print memory usage
-        printf("\nMemory Usage:\n");
-        printf("  CPU Memory: %.2f MB\n", latest.memoryUsage / (1024.0 * 1024.0));
-        printf("  GPU Memory: %.2f MB\n", latest.totalGPUMemory / (1024.0 * 1024.0));
+        PHYSICS_PRINT("\nMemory Usage:\n");
+        PHYSICS_PRINT("  CPU Memory: %.2f MB\n", latest.memoryUsage / (1024.0 * 1024.0));
+        PHYSICS_PRINT("  GPU Memory: %.2f MB\n", latest.totalGPUMemory / (1024.0 * 1024.0));
         
         // Print GPU memory details
         if (latest.totalGPUMemory > 0)
         {
-            printf("\nGPU Memory Details:\n");
-            printf("  Particles: %.2f MB\n", latest.gpuMemParticles / (1024.0 * 1024.0));
-            printf("  Soft Bodies: %.2f MB\n", latest.gpuMemSoftBodies / (1024.0 * 1024.0));
-            printf("  FEM Cloths: %.2f MB\n", latest.gpuMemFEMCloths / (1024.0 * 1024.0));
-            printf("  Hair Systems: %.2f MB\n", latest.gpuMemHairSystems / (1024.0 * 1024.0));
-            printf("  Heap Memory: %.2f MB\n", latest.gpuMemHeap / (1024.0 * 1024.0));
+            PHYSICS_PRINT("\nGPU Memory Details:\n");
+            PHYSICS_PRINT("  Particles: %.2f MB\n", latest.gpuMemParticles / (1024.0 * 1024.0));
+            PHYSICS_PRINT("  Soft Bodies: %.2f MB\n", latest.gpuMemSoftBodies / (1024.0 * 1024.0));
+            PHYSICS_PRINT("  FEM Cloths: %.2f MB\n", latest.gpuMemFEMCloths / (1024.0 * 1024.0));
+            PHYSICS_PRINT("  Hair Systems: %.2f MB\n", latest.gpuMemHairSystems / (1024.0 * 1024.0));
+            PHYSICS_PRINT("  Heap Memory: %.2f MB\n", latest.gpuMemHeap / (1024.0 * 1024.0));
             
-            printf("\nGPU Heap Details:\n");
-            printf("  Broad Phase: %.2f MB\n", latest.gpuMemHeapBroadPhase / (1024.0 * 1024.0));
-            printf("  Narrow Phase: %.2f MB\n", latest.gpuMemHeapNarrowPhase / (1024.0 * 1024.0));
-            printf("  Solver: %.2f MB\n", latest.gpuMemHeapSolver / (1024.0 * 1024.0));
-            printf("  Articulation: %.2f MB\n", latest.gpuMemHeapArticulation / (1024.0 * 1024.0));
-            printf("  Simulation: %.2f MB\n", latest.gpuMemHeapSimulation / (1024.0 * 1024.0));
+            PHYSICS_PRINT("\nGPU Heap Details:\n");
+            PHYSICS_PRINT("  Broad Phase: %.2f MB\n", latest.gpuMemHeapBroadPhase / (1024.0 * 1024.0));
+            PHYSICS_PRINT("  Narrow Phase: %.2f MB\n", latest.gpuMemHeapNarrowPhase / (1024.0 * 1024.0));
+            PHYSICS_PRINT("  Solver: %.2f MB\n", latest.gpuMemHeapSolver / (1024.0 * 1024.0));
+            PHYSICS_PRINT("  Articulation: %.2f MB\n", latest.gpuMemHeapArticulation / (1024.0 * 1024.0));
+            PHYSICS_PRINT("  Simulation: %.2f MB\n", latest.gpuMemHeapSimulation / (1024.0 * 1024.0));
         }
         
-        printf("==========================================\n");
+        PHYSICS_PRINT("==========================================\n");
     }
     
     // Reset all statistics
@@ -336,7 +336,7 @@ public:
 			m_DataRecords.push_back(record);
 			
 			if (m_bVerboseOutput)
-				printf("Data: %s = %f (context ID %llu)\n", name, value, contextId);
+				PHYSICS_PRINT("Data: %s = %f (context ID %llu)\n", name, value, contextId);
             
             // Update statistics based on data records
             if (strcmp(name, "ActiveObjects") == 0)
@@ -591,7 +591,7 @@ public:
 			m_DataRecords.push_back(record);
 			
 			if (m_bVerboseOutput)
-				printf("Data: %s = %d (context ID %llu)\n", name, value, contextId);
+				PHYSICS_PRINT("Data: %s = %d (context ID %llu)\n", name, value, contextId);
             
             // Update statistics based on data records
             if (strcmp(name, "ActiveObjects") == 0)
@@ -836,7 +836,7 @@ public:
 			std::lock_guard<std::mutex> lock(m_Mutex);
 			
 			if (m_bVerboseOutput)
-				printf("Frame: %s (context ID %llu)\n", name, contextId);
+				PHYSICS_PRINT("Frame: %s (context ID %llu)\n", name, contextId);
             
             // Begin a new frame in the statistics object
             m_Statistic.BeginFrame();
@@ -858,7 +858,7 @@ public:
 			m_ActiveEvents[contextId] = event;
 			
 			if (m_bVerboseOutput)
-				printf("Start: %s (context ID %llu) @ %llu us\n", eventName, contextId, currentTime);
+				PHYSICS_PRINT("Start: %s (context ID %llu) @ %llu us\n", eventName, contextId, currentTime);
             
             // Record physics engine stage start
             if (strcmp(eventName, "PhysicsStep") == 0) {
@@ -915,7 +915,7 @@ public:
 				m_ActiveEvents.erase(it);
 				
 				if (m_bVerboseOutput)
-					printf("End: %s (context ID %llu) @ %llu us, duration: %llu us\n", 
+					PHYSICS_PRINT("End: %s (context ID %llu) @ %llu us, duration: %llu us\n", 
 						eventName, contextId, currentTime, event.duration);
                 
                 // Record physics engine stage end
@@ -940,12 +940,12 @@ public:
 		if (!m_bEnableCustomProfiler) 
 			return;
 			
-		printf("==================================\n");
-		printf("Physics Profiler Statistics\n");
-		printf("==================================\n");
-		printf("%-26s | %5s | %11s | %11s | %11s | %11s |\n",
+		PHYSICS_PRINT("==================================\n");
+		PHYSICS_PRINT("Physics Profiler Statistics\n");
+		PHYSICS_PRINT("==================================\n");
+		PHYSICS_PRINT("%-26s | %5s | %11s | %11s | %11s | %11s |\n",
 			"Event Name", "Count", "Total Time", "Avg Time", "Min Time", "Max Time");
-		printf("---------------------------------+-------+-------------+-------------+-------------+-------------|\n");
+		PHYSICS_PRINT("---------------------------------+-------+-------------+-------------+-------------+-------------|\n");
 		
 		for (const auto& pair : m_EventStats)
 		{
@@ -953,11 +953,11 @@ public:
 			const ProfileEventStats& stats = pair.second;
 			double avgTime = stats.count > 0 ? static_cast<double>(stats.totalTime) / stats.count : 0.0;
 			
-			printf("%-26s | %5u | %11llu | %11.2f | %11llu | %11llu |\n",
+			PHYSICS_PRINT("%-26s | %5u | %11llu | %11.2f | %11llu | %11llu |\n",
 				name.c_str(), stats.count, stats.totalTime, avgTime, stats.minTime, stats.maxTime);
 		}
 		
-		printf("==================================\n");
+		PHYSICS_PRINT("==================================\n");
 	}
     
     // Print detailed physics engine statistics

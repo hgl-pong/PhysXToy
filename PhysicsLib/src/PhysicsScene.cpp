@@ -15,7 +15,7 @@
 #define PHYSX_PVD_HOST "127.0.0.1"
 using namespace physx;
 
-PhysicsScene::PhysicsScene(const PhysicsSceneCreateOptions &options, physx::PxCpuDispatcher *cpuDispatch)
+PhysicsScene::PhysicsScene(const PhysicsSceneCreateOptions &options, physx::PxCpuDispatcher *cpuDispatch, physx::PxCudaContextManager *cudaContextManager)
 {
     auto &physics = PxGetPhysics();
     PxSceneDesc sceneDesc(physics.getTolerancesScale());
@@ -23,6 +23,24 @@ PhysicsScene::PhysicsScene(const PhysicsSceneCreateOptions &options, physx::PxCp
     m_Gravity = options.m_Gravity;
     sceneDesc.cpuDispatcher = cpuDispatch;
     sceneDesc.filterShader = GetFilterShader(options.m_FilterShaderType);
+
+    if(cudaContextManager)
+    {
+        sceneDesc.cudaContextManager = cudaContextManager;
+        sceneDesc.flags |= PxSceneFlag::eENABLE_GPU_DYNAMICS;
+        sceneDesc.broadPhaseType = PxBroadPhaseType::eGPU;
+        sceneDesc.gpuMaxNumPartitions = 8;
+
+        sceneDesc.gpuDynamicsConfig.maxRigidContactCount *= 2;
+        sceneDesc.gpuDynamicsConfig.maxRigidPatchCount *= 2;
+
+        sceneDesc.gpuDynamicsConfig.tempBufferCapacity *= 2;
+        sceneDesc.gpuDynamicsConfig.heapCapacity *= 2;
+        sceneDesc.gpuDynamicsConfig.foundLostPairsCapacity *= 2;
+
+		sceneDesc.gpuDynamicsConfig.maxParticleContacts *= 2;
+    }
+
     m_Scene = make_physx_ptr<PxScene>(physics.createScene(sceneDesc));
 #ifdef ENABLE_PVD
     _ASSERT(m_Scene.get());

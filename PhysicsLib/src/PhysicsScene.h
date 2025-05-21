@@ -6,6 +6,7 @@ namespace physx
 	class PxPhysics;
 	class PxScene;
 	class PxCpuDispatcher;
+	class PxCudaContextManager;
 }
 
 class PhysicsEngine;
@@ -15,7 +16,7 @@ class PhysicsRigidStatic;
 class PhysicsScene : public IPhysicsScene
 {
 public:
-	PhysicsScene(const PhysicsSceneCreateOptions &options, physx::PxCpuDispatcher *cpuDispatch);
+	PhysicsScene(const PhysicsSceneCreateOptions &options, physx::PxCpuDispatcher *cpuDispatch, physx::PxCudaContextManager *cudaContextManager);
 
 	void Release() override;
 	void Tick(MathLib::HReal deltaTime) override;

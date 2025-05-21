@@ -81,6 +81,7 @@ struct PhysicsEngineOptions
     bool m_EnableCCD = false;               
     bool m_EnableDebugVisualization = false;
     bool m_EnableProfiler = false;
+    bool m_EnableGPU = true;
 };
 
 enum class PhysicsSceneFilterShaderType

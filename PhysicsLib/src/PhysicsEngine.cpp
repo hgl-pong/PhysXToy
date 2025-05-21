@@ -56,12 +56,16 @@ void PhysicsEngine::Initialize()
 		m_Physics = make_physx_ptr(PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, toleranceScale, false, m_Profiler->GetPVD()));
 		m_CpuDispatcher = std::unique_ptr<physx::PxCpuDispatcher>(PxDefaultCpuDispatcherCreate(m_Options.m_NumThreads));
 	
-		physx::PxCudaContextManagerDesc cudaContextManagerDesc;
-		m_CudaContextManager = make_physx_ptr(PxCreateCudaContextManager(*m_Foundation, cudaContextManagerDesc, PxGetProfilerCallback()));
-		
-		if (!m_CudaContextManager || !m_CudaContextManager->contextIsValid())
+		if(m_Options.m_EnableGPU)
 		{
-			PHYSX_PRINT_WARNING("CUDA initialization failed. SoftBody features will be unavailable.");
+			physx::PxCudaContextManagerDesc cudaContextManagerDesc;
+			m_CudaContextManager = make_physx_ptr(PxCreateCudaContextManager(*m_Foundation, cudaContextManagerDesc, PxGetProfilerCallback()));
+			
+			if (!m_CudaContextManager || !m_CudaContextManager->contextIsValid())
+			{
+				PHYSX_PRINT_WARNING("CUDA initialization failed. SoftBody features will be unavailable.");
+				m_CudaContextManager.reset();
+			}
 		}
 	}
 	
@@ -83,10 +87,10 @@ PhysicsEngine::~PhysicsEngine()
 		PHYSICS_PROFILE_VALUE("PhysX.FinalAllocationCount", static_cast<int32_t>(allocationCount), 0);
 		
 #ifdef _DEBUG
-		printf("PhysX Final Memory Statistics:\n");
-		printf("  Total Memory: %.2f MB\n", totalMemory / (1024.0 * 1024.0));
-		printf("  Profiler Memory: %.2f MB\n", m_Profiler->GetMemoryUsage() / (1024.0 * 1024.0));
-		printf("  Active Allocations: %zu\n", allocationCount);
+		PHYSICS_PRINT("PhysX Final Memory Statistics:\n")
+		PHYSICS_PRINT("  Total Memory: %.2f MB\n", totalMemory / (1024.0 * 1024.0))
+		PHYSICS_PRINT("  Profiler Memory: %.2f MB\n", m_Profiler->GetMemoryUsage() / (1024.0 * 1024.0))
+		PHYSICS_PRINT("  Active Allocations: %zu\n", allocationCount)
 #endif
 	}
 
@@ -137,7 +141,7 @@ PhysicsPtr<IPhysicsScene> PhysicsEngine::CreateScene(const PhysicsSceneCreateOpt
 {
 	if (!m_bInitialized)
 		return nullptr;
-	PhysicsPtr<IPhysicsScene> scene = make_physics_ptr(new PhysicsScene(options, m_CpuDispatcher.get()));
+	PhysicsPtr<IPhysicsScene> scene = make_physics_ptr(new PhysicsScene(options, m_CpuDispatcher.get(), m_CudaContextManager.get()));
 	return scene;
 }
 

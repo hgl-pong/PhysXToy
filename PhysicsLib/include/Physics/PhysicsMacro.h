@@ -16,4 +16,6 @@
 #define PHYSICS_CONCAT_HELPER(X, Y) X##Y
 #define PHYSICS_CONCAT(X, Y) PHYSICS_CONCAT_HELPER(X, Y)
 
+#define PHYSICS_PRINT(msg, ...) printf(msg, __VA_ARGS__);
+
 #define ASSERT_MSG(condition, message) if (!(condition)) { PHYSICS_REPORT_ERROR(message, __FILE__, __LINE__); }
