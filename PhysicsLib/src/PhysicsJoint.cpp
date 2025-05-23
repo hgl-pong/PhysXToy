@@ -700,4 +700,358 @@ void PhysicsJoint::UpdateJointPose()
 
     m_PxJoint->setLocalPose(PxJointActorIndex::eACTOR0, pxLocalFrameA);
     m_PxJoint->setLocalPose(PxJointActorIndex::eACTOR1, pxLocalFrameB);
+}
+
+void PhysicsJoint::SetDrive(JointAxis axis, const JointDriveSettings& driveSettings)
+{
+    switch (axis)
+    {
+    case JointAxis::X:
+        m_DriveConfig.m_LinearX = driveSettings;
+        break;
+    case JointAxis::Y:
+        m_DriveConfig.m_LinearY = driveSettings;
+        break;
+    case JointAxis::Z:
+        m_DriveConfig.m_LinearZ = driveSettings;
+        break;
+    case JointAxis::TWIST:
+        m_DriveConfig.m_AngularX = driveSettings;
+        break;
+    case JointAxis::SWING1:
+        m_DriveConfig.m_AngularY = driveSettings;
+        break;
+    case JointAxis::SWING2:
+        m_DriveConfig.m_AngularZ = driveSettings;
+        break;
+    case JointAxis::SLERP:
+        m_DriveConfig.m_SlerpDrive = driveSettings;
+        break;
+    }
+
+    UpdateJointDrive();
+}
+
+JointDriveSettings PhysicsJoint::GetDrive(JointAxis axis) const
+{
+    switch (axis)
+    {
+    case JointAxis::X:
+        return m_DriveConfig.m_LinearX;
+    case JointAxis::Y:
+        return m_DriveConfig.m_LinearY;
+    case JointAxis::Z:
+        return m_DriveConfig.m_LinearZ;
+    case JointAxis::TWIST:
+        return m_DriveConfig.m_AngularX;
+    case JointAxis::SWING1:
+        return m_DriveConfig.m_AngularY;
+    case JointAxis::SWING2:
+        return m_DriveConfig.m_AngularZ;
+    case JointAxis::SLERP:
+        return m_DriveConfig.m_SlerpDrive;
+    default:
+        return JointDriveSettings();
+    }
+}
+
+void PhysicsJoint::SetDriveConfig(const JointDriveConfig& driveConfig)
+{
+    m_DriveConfig = driveConfig;
+    UpdateJointDrive();
+}
+
+JointDriveConfig PhysicsJoint::GetDriveConfig() const
+{
+    return m_DriveConfig;
+}
+
+void PhysicsJoint::SetDriveVelocity(JointAxis axis, MathLib::HReal velocity)
+{
+    JointDriveSettings* driveSettings = nullptr;
+    
+    switch (axis)
+    {
+    case JointAxis::X:
+        driveSettings = &m_DriveConfig.m_LinearX;
+        break;
+    case JointAxis::Y:
+        driveSettings = &m_DriveConfig.m_LinearY;
+        break;
+    case JointAxis::Z:
+        driveSettings = &m_DriveConfig.m_LinearZ;
+        break;
+    case JointAxis::TWIST:
+        driveSettings = &m_DriveConfig.m_AngularX;
+        break;
+    case JointAxis::SWING1:
+        driveSettings = &m_DriveConfig.m_AngularY;
+        break;
+    case JointAxis::SWING2:
+        driveSettings = &m_DriveConfig.m_AngularZ;
+        break;
+    case JointAxis::SLERP:
+        driveSettings = &m_DriveConfig.m_SlerpDrive;
+        break;
+    }
+
+    if (driveSettings)
+    {
+        driveSettings->m_TargetVelocity = velocity;
+        driveSettings->m_DriveType = JointDriveType::VELOCITY;
+        driveSettings->m_Enabled = (velocity != 0.0f);
+
+        UpdateJointDrive();
+    }
+}
+
+void PhysicsJoint::SetDrivePosition(JointAxis axis, MathLib::HReal position)
+{
+    JointDriveSettings* driveSettings = nullptr;
+    
+    switch (axis)
+    {
+    case JointAxis::X:
+        driveSettings = &m_DriveConfig.m_LinearX;
+        break;
+    case JointAxis::Y:
+        driveSettings = &m_DriveConfig.m_LinearY;
+        break;
+    case JointAxis::Z:
+        driveSettings = &m_DriveConfig.m_LinearZ;
+        break;
+    case JointAxis::TWIST:
+        driveSettings = &m_DriveConfig.m_AngularX;
+        break;
+    case JointAxis::SWING1:
+        driveSettings = &m_DriveConfig.m_AngularY;
+        break;
+    case JointAxis::SWING2:
+        driveSettings = &m_DriveConfig.m_AngularZ;
+        break;
+    case JointAxis::SLERP:
+        driveSettings = &m_DriveConfig.m_SlerpDrive;
+        break;
+    }
+
+    if (driveSettings)
+    {
+        driveSettings->m_TargetPosition = position;
+        driveSettings->m_DriveType = JointDriveType::POSITION;
+        driveSettings->m_Enabled = true;
+        UpdateJointDrive();
+    }
+}
+
+void PhysicsJoint::SetDriveForceLimit(JointAxis axis, MathLib::HReal forceLimit)
+{
+    JointDriveSettings* driveSettings = nullptr;
+    
+    switch (axis)
+    {
+    case JointAxis::X:
+        driveSettings = &m_DriveConfig.m_LinearX;
+        break;
+    case JointAxis::Y:
+        driveSettings = &m_DriveConfig.m_LinearY;
+        break;
+    case JointAxis::Z:
+        driveSettings = &m_DriveConfig.m_LinearZ;
+        break;
+    case JointAxis::TWIST:
+        driveSettings = &m_DriveConfig.m_AngularX;
+        break;
+    case JointAxis::SWING1:
+        driveSettings = &m_DriveConfig.m_AngularY;
+        break;
+    case JointAxis::SWING2:
+        driveSettings = &m_DriveConfig.m_AngularZ;
+        break;
+    case JointAxis::SLERP:
+        driveSettings = &m_DriveConfig.m_SlerpDrive;
+        break;
+    }
+
+    if (driveSettings)
+    {
+        driveSettings->m_ForceLimit = forceLimit;
+        UpdateJointDrive();
+    }
+}
+
+void PhysicsJoint::SetDriveEnabled(JointAxis axis, bool enabled)
+{
+    JointDriveSettings* driveSettings = nullptr;
+    
+    switch (axis)
+    {
+    case JointAxis::X:
+        driveSettings = &m_DriveConfig.m_LinearX;
+        break;
+    case JointAxis::Y:
+        driveSettings = &m_DriveConfig.m_LinearY;
+        break;
+    case JointAxis::Z:
+        driveSettings = &m_DriveConfig.m_LinearZ;
+        break;
+    case JointAxis::TWIST:
+        driveSettings = &m_DriveConfig.m_AngularX;
+        break;
+    case JointAxis::SWING1:
+        driveSettings = &m_DriveConfig.m_AngularY;
+        break;
+    case JointAxis::SWING2:
+        driveSettings = &m_DriveConfig.m_AngularZ;
+        break;
+    case JointAxis::SLERP:
+        driveSettings = &m_DriveConfig.m_SlerpDrive;
+        break;
+    }
+
+    if (driveSettings)
+    {
+        driveSettings->m_Enabled = enabled;
+        UpdateJointDrive();
+    }
+}
+
+void PhysicsJoint::UpdateJointDrive()
+{
+    if (!m_PxJoint)
+        return;
+
+    switch (m_Type)
+    {
+    case JointType::REVOLUTE:
+    case JointType::REVOLUTE2:
+        if (m_PxRevoluteJoint)
+        {
+            const JointDriveSettings& twistDrive = m_DriveConfig.m_AngularX;
+            
+            m_PxRevoluteJoint->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_ENABLED, twistDrive.m_Enabled);
+            
+            if (twistDrive.m_Enabled)
+            {
+                if (twistDrive.m_DriveType == JointDriveType::VELOCITY)
+                {
+                    m_PxRevoluteJoint->setDriveVelocity(twistDrive.m_TargetVelocity);
+                }
+                else if (twistDrive.m_DriveType == JointDriveType::POSITION)
+                {
+                    // PhysX revolute joint 不直接支持位置驱动，使用弹簧模拟
+                    // 这里可以通过计算当前角度差来设置速度
+                }
+                
+                m_PxRevoluteJoint->setDriveForceLimit(twistDrive.m_ForceLimit);
+                m_PxRevoluteJoint->setConstraintFlag(PxConstraintFlag::eDRIVE_LIMITS_ARE_FORCES, !twistDrive.m_IsAcceleration);
+            }
+        }
+        break;
+
+    case JointType::PRISMATIC:
+        break;
+
+    case JointType::D6:
+    case JointType::HINGE:
+    case JointType::GEAR:
+    case JointType::RACK_AND_PINION:
+    case JointType::PORTAL:
+        {
+            PxD6Joint* d6Joint = nullptr;
+            
+            if (m_Type == JointType::D6) d6Joint = m_PxD6Joint;
+            else if (m_Type == JointType::HINGE) d6Joint = m_PxHingeJoint;
+            else if (m_Type == JointType::GEAR) d6Joint = static_cast<PxD6Joint*>(m_PxGearJoint);
+            else if (m_Type == JointType::RACK_AND_PINION) d6Joint = static_cast<PxD6Joint*>(m_PxRackAndPinionJoint);
+            else if (m_Type == JointType::PORTAL) d6Joint = static_cast<PxD6Joint*>(m_PxPortalJoint);
+            
+            if (d6Joint)
+            {
+                if (m_DriveConfig.m_LinearX.m_Enabled)
+                {
+                    PxD6JointDrive drive(m_DriveConfig.m_LinearX.m_Stiffness, 
+                                       m_DriveConfig.m_LinearX.m_Damping, 
+                                       m_DriveConfig.m_LinearX.m_ForceLimit, 
+                                       m_DriveConfig.m_LinearX.m_IsAcceleration);
+                    d6Joint->setDrive(PxD6Drive::eX, drive);
+                }
+
+                if (m_DriveConfig.m_LinearY.m_Enabled)
+                {
+                    PxD6JointDrive drive(m_DriveConfig.m_LinearY.m_Stiffness, 
+                                       m_DriveConfig.m_LinearY.m_Damping, 
+                                       m_DriveConfig.m_LinearY.m_ForceLimit, 
+                                       m_DriveConfig.m_LinearY.m_IsAcceleration);
+                    d6Joint->setDrive(PxD6Drive::eY, drive);
+                }
+
+                if (m_DriveConfig.m_LinearZ.m_Enabled)
+                {
+                    PxD6JointDrive drive(m_DriveConfig.m_LinearZ.m_Stiffness, 
+                                       m_DriveConfig.m_LinearZ.m_Damping, 
+                                       m_DriveConfig.m_LinearZ.m_ForceLimit, 
+                                       m_DriveConfig.m_LinearZ.m_IsAcceleration);
+                    d6Joint->setDrive(PxD6Drive::eZ, drive);
+                }
+
+                if (m_DriveConfig.m_AngularX.m_Enabled)
+                {
+                    PxD6JointDrive drive(m_DriveConfig.m_AngularX.m_Stiffness, 
+                                       m_DriveConfig.m_AngularX.m_Damping, 
+                                       m_DriveConfig.m_AngularX.m_ForceLimit, 
+                                       m_DriveConfig.m_AngularX.m_IsAcceleration);
+                    d6Joint->setDrive(PxD6Drive::eTWIST, drive);
+                }
+
+                if (m_DriveConfig.m_AngularY.m_Enabled)
+                {
+                    PxD6JointDrive drive(m_DriveConfig.m_AngularY.m_Stiffness, 
+                                       m_DriveConfig.m_AngularY.m_Damping, 
+                                       m_DriveConfig.m_AngularY.m_ForceLimit, 
+                                       m_DriveConfig.m_AngularY.m_IsAcceleration);
+                    d6Joint->setDrive(PxD6Drive::eSWING, drive);
+                }
+
+                if (m_DriveConfig.m_AngularZ.m_Enabled)
+                {
+                    PxD6JointDrive drive(m_DriveConfig.m_AngularZ.m_Stiffness, 
+                                       m_DriveConfig.m_AngularZ.m_Damping, 
+                                       m_DriveConfig.m_AngularZ.m_ForceLimit, 
+                                       m_DriveConfig.m_AngularZ.m_IsAcceleration);
+                    d6Joint->setDrive(PxD6Drive::eSWING, drive);
+                }
+
+                if (m_DriveConfig.m_SlerpDrive.m_Enabled)
+                {
+                    PxD6JointDrive drive(m_DriveConfig.m_SlerpDrive.m_Stiffness, 
+                                       m_DriveConfig.m_SlerpDrive.m_Damping, 
+                                       m_DriveConfig.m_SlerpDrive.m_ForceLimit, 
+                                       m_DriveConfig.m_SlerpDrive.m_IsAcceleration);
+                    d6Joint->setDrive(PxD6Drive::eSLERP, drive);
+                }
+
+                PxTransform driveTransform(PxIdentity);
+                driveTransform.p = ConvertUtils::ToPx(m_DriveConfig.m_TargetPosition);
+                driveTransform.q = PxQuat(m_DriveConfig.m_TargetOrientation.x(),
+                                        m_DriveConfig.m_TargetOrientation.y(),
+                                        m_DriveConfig.m_TargetOrientation.z(),
+                                        m_DriveConfig.m_TargetOrientation.w());
+
+                d6Joint->setDrivePosition(driveTransform);
+
+                PxVec3 linearVel(m_DriveConfig.m_LinearX.m_TargetVelocity, 
+                               m_DriveConfig.m_LinearY.m_TargetVelocity, 
+                               m_DriveConfig.m_LinearZ.m_TargetVelocity);
+                PxVec3 angularVel(m_DriveConfig.m_AngularX.m_TargetVelocity, 
+                                m_DriveConfig.m_AngularY.m_TargetVelocity, 
+                                m_DriveConfig.m_AngularZ.m_TargetVelocity);
+
+                d6Joint->setDriveVelocity(linearVel, angularVel);
+            }
+        }
+        break;
+
+    default:
+        break;
+    }
 } 

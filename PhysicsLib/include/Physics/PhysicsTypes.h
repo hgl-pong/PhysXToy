@@ -244,6 +244,52 @@ struct JointLimitOptions
     AngularLimit m_Swing2;                           
 };
 
+enum class JointDriveType
+{
+    NONE,           
+    POSITION,       
+    VELOCITY,       
+    FORCE           
+};
+
+enum class JointAxis
+{
+    X,              
+    Y,              
+    Z,              
+    TWIST,          
+    SWING1,         
+    SWING2,         
+    SLERP           
+};
+
+struct JointDriveSettings
+{
+    JointDriveType m_DriveType = JointDriveType::NONE;    
+    MathLib::HReal m_TargetPosition = 0.0f;               
+    MathLib::HReal m_TargetVelocity = 0.0f;               
+    MathLib::HReal m_ForceLimit = 3.402823466e+38f;       
+    MathLib::HReal m_Stiffness = 0.0f;                    
+    MathLib::HReal m_Damping = 0.0f;                      
+    bool m_IsAcceleration = false;                        
+    bool m_Enabled = false;                               
+};
+
+struct JointDriveConfig
+{
+    JointDriveSettings m_LinearX;                         
+    JointDriveSettings m_LinearY;                         
+    JointDriveSettings m_LinearZ;                         
+    JointDriveSettings m_AngularX;                        
+    JointDriveSettings m_AngularY;                        
+    JointDriveSettings m_AngularZ;                        
+    JointDriveSettings m_SlerpDrive;                      
+    
+    // 目标姿态(用于SLERP驱动)
+    MathLib::HQuaternion m_TargetOrientation = MathLib::HQuaternion::Identity();
+    MathLib::HVector3 m_TargetPosition = MathLib::HVector3::Zero();
+};
+
 struct SoftBodyParams
 {
     MathLib::HReal m_YoungModulus = 1e+9f;      

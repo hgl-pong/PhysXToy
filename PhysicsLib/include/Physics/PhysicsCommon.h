@@ -337,6 +337,16 @@ public:
 	virtual size_t GetOffset() const = 0;
 	virtual void SetJointLimits(const JointLimitOptions& limitOptions) = 0;
 	virtual JointLimitOptions GetJointLimits() const = 0;
+	
+	virtual void SetDrive(JointAxis axis, const JointDriveSettings& driveSettings) = 0;
+	virtual JointDriveSettings GetDrive(JointAxis axis) const = 0;
+	virtual void SetDriveConfig(const JointDriveConfig& driveConfig) = 0;
+	virtual JointDriveConfig GetDriveConfig() const = 0;
+	
+	virtual void SetDriveVelocity(JointAxis axis, MathLib::HReal velocity) = 0;
+	virtual void SetDrivePosition(JointAxis axis, MathLib::HReal position) = 0;
+	virtual void SetDriveForceLimit(JointAxis axis, MathLib::HReal forceLimit) = 0;
+	virtual void SetDriveEnabled(JointAxis axis, bool enabled) = 0;
 };
 
 class PHYSICSLIB_API IPhysicsDebugRenderer

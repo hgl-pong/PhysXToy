@@ -37,6 +37,16 @@ public:
 
     void SetJointLimits(const JointLimitOptions& limitOptions) override;
     JointLimitOptions GetJointLimits() const override;
+    
+    void SetDrive(JointAxis axis, const JointDriveSettings& driveSettings) override;
+    JointDriveSettings GetDrive(JointAxis axis) const override;
+    void SetDriveConfig(const JointDriveConfig& driveConfig) override;
+    JointDriveConfig GetDriveConfig() const override;
+    
+    void SetDriveVelocity(JointAxis axis, MathLib::HReal velocity) override;
+    void SetDrivePosition(JointAxis axis, MathLib::HReal position) override;
+    void SetDriveForceLimit(JointAxis axis, MathLib::HReal forceLimit) override;
+    void SetDriveEnabled(JointAxis axis, bool enabled) override;
 
     physx::PxJoint* GetPxJoint() const;
 
@@ -48,6 +58,7 @@ protected:
     bool CreatePortalJoint();
 
     void UpdateJointPose();
+    void UpdateJointDrive();
 
 protected:
     JointType m_Type;
@@ -60,7 +71,8 @@ protected:
     MathLib::HReal m_BreakForce;
     MathLib::HReal m_BreakTorque;
     JointLimitOptions m_LimitOptions;
-
+    JointDriveConfig m_DriveConfig;
+    
     union {
         physx::PxJoint* m_PxJoint;
         physx::PxFixedJoint* m_PxFixedJoint;
