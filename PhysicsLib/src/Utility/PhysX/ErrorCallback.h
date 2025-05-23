@@ -1,6 +1,6 @@
 #pragma once
 #include <PxPhysicsAPI.h>
-#include "Physics/PhysicsMacro.h"
+#include "Physics/PhysicsMacros.h"
 
 class PhysXErrorCallback : public physx::PxErrorCallback
 {

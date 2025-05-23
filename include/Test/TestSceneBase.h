@@ -13,6 +13,7 @@ enum TestSceneType : uint32_t
     PHYSX_GYROSCOPIC_SCENE,
     PHYSX_RACK_JOINT_SCENE,
     PHYSX_CUSTOM_CONVEX_SCENE,
+    PHYSX_GEAR_JOINT_SCENE,
     TEST_SCENE_COUNT
 };
 
@@ -26,6 +27,7 @@ static std::string testSceneName[] =
     "PhysX Gyroscopic Scene",
     "PhysX Rack Joint Scene",
     "PhysX Custom Convex Scene",
+    "PhysX Gear Joint Scene",
 };
 
 static std::string testSceneDesc[] = 
@@ -38,6 +40,7 @@ static std::string testSceneDesc[] =
     "PhysX Gyroscopic Scene, demonstrates the Dzhanibekov effect by enabling gyroscopic forces on rotating objects. Press SPACE to toggle gyroscopic forces on/off.",
     "PhysX Rack Joint Scene, demonstrates a rack and pinion joint mechanism where a rotating gear drives a linear rack. Press SPACE to toggle the drive direction.",
     "PhysX Custom Convex Scene, demonstrates the use of custom convex geometries (cylinders and cones) using PhysicsLib interfaces. Press SPACE to shoot spheres.",
+    "PhysX Gear Joint Scene, demonstrates a gear joint mechanism where two rotating gears are connected with a gear joint. Press SPACE to toggle automatic velocity control.",
 };
 
 class TestSceneBase

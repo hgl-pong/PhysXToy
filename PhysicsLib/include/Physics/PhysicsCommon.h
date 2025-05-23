@@ -1,6 +1,6 @@
 #pragma once
 #include "PhysicsTypes.h"
-#include "PhysicsMacro.h"
+#include "PhysicsMacros.h"
 #include <memory>
 #include <unordered_set>
 #include <unordered_map>
@@ -19,6 +19,7 @@ class ISoftBody;
 class ICloth;
 class IPhysicsDebugRenderer;
 class IPhysicsProfiler;
+class IPhysicsDebugRender;
 
 enum class ForceMode
 {
@@ -109,16 +110,20 @@ public:
 	virtual PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options) = 0;
 	virtual PhysicsPtr<ISoftBody> CreateSoftBody(const SoftBodyCreateOptions &options) = 0;
 	virtual PhysicsPtr<ICloth> CreateCloth(const ClothCreateOptions &options) = 0;
-	virtual IPhysicsProfiler* GetProfiler() = 0;
-
+	virtual void Release() = 0;
+	
 	virtual void SetSolverIterationCount(uint32_t count) = 0;
 	virtual uint32_t GetSolverIterationCount() const = 0;
 	virtual void SetDebugRenderer(PhysicsPtr<IPhysicsDebugRenderer> renderer) = 0;
 	virtual PhysicsPtr<IPhysicsDebugRenderer> GetDebugRenderer() const = 0;
+	virtual void SetDebugRender(PhysicsPtr<IPhysicsDebugRender> render) = 0;
+	virtual PhysicsPtr<IPhysicsDebugRender> GetDebugRender() const = 0;
+	
+	virtual IPhysicsProfiler* GetProfiler() = 0;
 	virtual void RegisterCollisionCallback(ICollisionCallback* callback) = 0;
 	virtual void UnregisterCollisionCallback(ICollisionCallback* callback) = 0;
-	virtual PhysicsPtr<IPhysicsScene> GetActiveScene() const = 0;
 	virtual void SetActiveScene(PhysicsPtr<IPhysicsScene> scene) = 0;
+	virtual PhysicsPtr<IPhysicsScene> GetActiveScene() const = 0;
 };
 
 class PHYSICSLIB_API IPhysicsScene
@@ -348,6 +353,31 @@ public:
 	virtual void Flush() = 0;
 };
 
+class PHYSICSLIB_API IPhysicsDebugRender
+{
+public:
+	virtual void Release() = 0;
+	virtual void SetVisibleGroup(PhysicsDebugRenderGroupType group) = 0;
+	virtual void DrawAABB(const MathLib::HVector3& min, const MathLib::HVector3& max, const MathLib::HVector3& color) = 0;
+	virtual void DrawOBB(const MathLib::HVector3& center, const MathLib::HVector3& halfExtents, const MathLib::HTransform3& transform, const MathLib::HVector3& color) = 0;
+	virtual void DrawArrow(const MathLib::HVector3& start, const MathLib::HVector3& end, float headSize, const MathLib::HVector3& color) = 0;
+	virtual void DrawCircle(const MathLib::HVector3& center, float radius, const MathLib::HVector3& normal, const MathLib::HVector3& color) = 0;
+	virtual void DrawCone(const MathLib::HVector3& apex, const MathLib::HVector3& direction, float height, float radius, const MathLib::HVector3& color) = 0;
+	virtual void DrawCylinder(const MathLib::HVector3& start, const MathLib::HVector3& end, float radius, const MathLib::HVector3& color) = 0;
+	virtual void DrawGrid(const MathLib::HVector3& center, const MathLib::HVector3& normal, float size, uint32_t divisions, const MathLib::HVector3& color) = 0;
+	virtual void DrawAxis(const MathLib::HTransform3& transform, float size, bool text = true) = 0;
+	virtual void DrawText(const MathLib::HVector3& position, const std::string& text, const MathLib::HVector3& color, float size = 1.0f) = 0;
+	virtual void DrawContact(const MathLib::HVector3& position, const MathLib::HVector3& normal, float impulse, const MathLib::HVector3& color) = 0;
+	virtual void DrawBoundingSphere(const MathLib::HVector3& center, float radius, const MathLib::HVector3& color) = 0;
+	virtual void DrawPoint(const MathLib::HVector3& position, float size, const MathLib::HVector3& color) = 0;
+	virtual void SetLineWidth(float width) = 0;
+	virtual float GetLineWidth() const = 0;
+	virtual void EnableDepthTest(bool enable) = 0;
+	virtual bool IsDepthTestEnabled() const = 0;
+	virtual void Clear() = 0;
+	virtual void Flush() = 0;
+};
+
 class IPhysicsContactCallback
 {
 	public:
@@ -402,6 +432,9 @@ public:
 	static bool IsDebugDrawingEnabled();
 	static void SetDebugRenderer(PhysicsPtr<IPhysicsDebugRenderer> renderer);
 	static PhysicsPtr<IPhysicsDebugRenderer> GetDebugRenderer();
+	
+	static void SetDebugRender(PhysicsPtr<IPhysicsDebugRender> render);
+	static PhysicsPtr<IPhysicsDebugRender> GetDebugRender();
 	
 	static void SetCollisionFilterCallback(std::function<bool(uint32_t, uint32_t)> callback);
 	static bool DefaultCollisionFilter(uint32_t layerA, uint32_t layerB);

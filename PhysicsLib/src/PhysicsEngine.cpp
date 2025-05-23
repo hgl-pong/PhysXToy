@@ -199,6 +199,24 @@ PhysicsPtr<IPhysicsDebugRenderer> PhysicsEngine::GetDebugRenderer() const
 	return m_DebugRenderer;
 }
 
+void PhysicsEngine::SetDebugRender(PhysicsPtr<IPhysicsDebugRender> render)
+{
+	m_DebugRender = render;
+}
+
+PhysicsPtr<IPhysicsDebugRender> PhysicsEngine::GetDebugRender() const
+{
+	return m_DebugRender;
+}
+
+void PhysicsEngine::Release()
+{
+	m_DebugRenderer = nullptr;
+	m_DebugRender = nullptr;
+	m_ActiveScene = nullptr;
+	m_CollisionCallbacks.clear();
+}
+
 void PhysicsEngine::RegisterCollisionCallback(ICollisionCallback* callback)
 {
 	if (callback)

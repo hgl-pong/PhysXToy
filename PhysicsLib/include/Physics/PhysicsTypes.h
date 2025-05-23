@@ -1,4 +1,5 @@
 #pragma once
+#include "PhysicsMacros.h"
 #include <Math/MathUtils.h>
 #include <Math/GraphicUtils/MeshData.h>
 #define DEFAULT_CPU_DISPATCHER_NUM_THREADS 2
@@ -506,4 +507,13 @@ struct PhysicsRaycastHit
     MathLib::HVector3 m_Normal;
     MathLib::HReal m_Distance;
     PhysicsPtr<IColliderGeometry> m_Collider;
+};
+
+enum class PhysicsDebugRenderGroupType
+{
+    eDEFAULT,
+    eSTATIC,
+    eDYNAMIC,
+    eJoint,
+    eTrigger,
 };

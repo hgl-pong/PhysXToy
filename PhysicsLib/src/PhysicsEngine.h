@@ -35,11 +35,14 @@ public:
 	PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options) override;
 	PhysicsPtr<ISoftBody> CreateSoftBody(const SoftBodyCreateOptions &options) override;
 	PhysicsPtr<ICloth> CreateCloth(const ClothCreateOptions &options) override;
+	void Release() override;
 	IPhysicsProfiler* GetProfiler() override;
 	void SetSolverIterationCount(uint32_t count) override;
 	uint32_t GetSolverIterationCount() const override;
 	void SetDebugRenderer(PhysicsPtr<IPhysicsDebugRenderer> renderer) override;
 	PhysicsPtr<IPhysicsDebugRenderer> GetDebugRenderer() const override;
+	void SetDebugRender(PhysicsPtr<IPhysicsDebugRender> render) override;
+	PhysicsPtr<IPhysicsDebugRender> GetDebugRender() const override;
 	void RegisterCollisionCallback(ICollisionCallback* callback) override;
 	void UnregisterCollisionCallback(ICollisionCallback* callback) override;
 	PhysicsPtr<IPhysicsScene> GetActiveScene() const override;
@@ -57,6 +60,7 @@ private:
 	PhysXPtr<physx::PxCudaContextManager> m_CudaContextManager;
 	PhysicsPtr<IPhysicsScene> m_ActiveScene;
 	PhysicsPtr<IPhysicsDebugRenderer> m_DebugRenderer;
+	PhysicsPtr<IPhysicsDebugRender> m_DebugRender;
 	std::unique_ptr<PhysicsProfiler> m_Profiler;
 	std::unordered_set<ICollisionCallback*> m_CollisionCallbacks;
 	bool m_bInitialized;

@@ -210,17 +210,13 @@ bool PhysicsEngineUtils::IsDebugDrawingEnabled()
 void PhysicsEngineUtils::SetDebugRenderer(PhysicsPtr<IPhysicsDebugRenderer> renderer)
 {
 	if (gPhysicsEngine)
-	{
 		gPhysicsEngine->SetDebugRenderer(renderer);
-	}
 }
 
 PhysicsPtr<IPhysicsDebugRenderer> PhysicsEngineUtils::GetDebugRenderer()
 {
 	if (gPhysicsEngine)
-	{
 		return gPhysicsEngine->GetDebugRenderer();
-	}
 	return nullptr;
 }
 
