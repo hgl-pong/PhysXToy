@@ -373,8 +373,6 @@ void PhysicsJoint::SetJointLimits(const JointLimitOptions& limitOptions)
             {
                 m_PxD6Joint->setMotion(PxD6Axis::eSWING2, PxD6Motion::eFREE);
             }
-
-            m_PxD6Joint->setDrive(PxD6Drive::eSLERP, PxD6JointDrive(0, 1000, FLT_MAX, true));
         }
         break;
     case JointType::HINGE:
@@ -938,8 +936,6 @@ void PhysicsJoint::UpdateJointDrive()
                 }
                 else if (twistDrive.m_DriveType == JointDriveType::POSITION)
                 {
-                    // PhysX revolute joint 不直接支持位置驱动，使用弹簧模拟
-                    // 这里可以通过计算当前角度差来设置速度
                 }
                 
                 m_PxRevoluteJoint->setDriveForceLimit(twistDrive.m_ForceLimit);

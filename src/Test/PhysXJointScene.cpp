@@ -223,8 +223,24 @@ PhysicsPtr<IPhysicsJoint> PhysXJointScene::CreateDampedD6Joint(PhysicsPtr<IPhysi
     PhysicsPtr<IPhysicsJoint> joint = PhysicsEngineUtils::CreateJoint(options);
     
     JointLimitOptions limitOptions;
+
+    limitOptions.m_XAxis.m_IsLimited = true;
+    limitOptions.m_YAxis.m_IsLimited = true;
+    limitOptions.m_ZAxis.m_IsLimited = true;
+
+    limitOptions.m_Swing1.m_IsLimited = false;
+    limitOptions.m_Swing2.m_IsLimited = false;
+    limitOptions.m_Twist.m_IsLimited = false;
+
     joint->SetJointLimits(limitOptions);
 
+    JointDriveSettings driveConfig;
+    driveConfig.m_Enabled = true;
+    driveConfig.m_Stiffness = 0;
+    driveConfig.m_Damping = 1000;
+    driveConfig.m_ForceLimit = FLT_MAX;
+    driveConfig.m_IsAcceleration = true;
+    joint->SetDrive(JointAxis::SLERP, driveConfig);
     if (m_Scene) {
         m_Scene->AddJoint(joint);
     }
