@@ -34,6 +34,8 @@ public:
 	uint32_t GetCollisionLayer() const override { return m_CollisionLayer; }
 	void SetCollisionMask(uint32_t mask) override { m_CollisionMask = mask; }
 	uint32_t GetCollisionMask() const override { return m_CollisionMask; }
+	void SetCollisionCallback(ICollisionCallback* callback) override { m_CollisionCallback = callback; }
+	ICollisionCallback* GetCollisionCallback() const override { return m_CollisionCallback; }
 
 	void SetParameter(const ClothParams& params) override;
 	ClothParams GetParameter() const override { return m_Params; }
@@ -80,6 +82,7 @@ private:
 	void* m_UserData = nullptr;
 	uint32_t m_CollisionLayer = 1;
 	uint32_t m_CollisionMask = 0xFFFFFFFF;
+	ICollisionCallback* m_CollisionCallback = nullptr;
 	int m_Width = 0;
 	int m_Height = 0;
 }; 

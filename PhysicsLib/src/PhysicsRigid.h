@@ -36,6 +36,8 @@ public:
 	uint32_t GetCollisionLayer() const override { return m_CollisionLayer; }
 	void SetCollisionMask(uint32_t mask) override { m_CollisionMask = mask; }
 	uint32_t GetCollisionMask() const override { return m_CollisionMask; }
+	void SetCollisionCallback(ICollisionCallback* callback) override { m_CollisionCallback = callback; }
+	ICollisionCallback* GetCollisionCallback() const override { return m_CollisionCallback; }
 
 public:
 	void SetAngularDamping(const MathLib::HReal &damping)override;
@@ -99,6 +101,7 @@ private:
 	bool m_GravityEnabled = true;
 	MathLib::HReal m_SleepThreshold = 0.05f;
 	bool m_GyroscopicForcesEnabled = false;
+	ICollisionCallback* m_CollisionCallback = nullptr;
 };
 
 class PhysicsRigidStatic : public IRigidStatic
@@ -129,6 +132,8 @@ public:
 	uint32_t GetCollisionLayer() const override { return m_CollisionLayer; }
 	void SetCollisionMask(uint32_t mask) override { m_CollisionMask = mask; }
 	uint32_t GetCollisionMask() const override { return m_CollisionMask; }
+	void SetCollisionCallback(ICollisionCallback* callback) override { m_CollisionCallback = callback; }
+	ICollisionCallback* GetCollisionCallback() const override { return m_CollisionCallback; }
 
 	PhysicsObjectType GetRigidBodyType() const override;
 	void SetMassProperties(const MathLib::HReal& mass, const MathLib::HVector3& centerOfMass, const MathLib::HMatrix3& inertiaTensor) override;
@@ -165,4 +170,5 @@ private:
 	void* m_UserData = nullptr;
 	uint32_t m_CollisionLayer = 1;
 	uint32_t m_CollisionMask = 0xFFFFFFFF;
+	ICollisionCallback* m_CollisionCallback = nullptr;
 };

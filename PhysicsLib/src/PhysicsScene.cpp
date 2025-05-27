@@ -9,6 +9,7 @@
 #include "common/PxRenderBuffer.h"
 #include "PhysicsProfiler.h"
 #include "PhysicsProfilerScope.h"
+#include "Utility/PhysX/SimulationEventCallback.h"
 #ifndef NDEBUG
 #define ENABLE_PVD
 #endif
@@ -18,11 +19,13 @@ using namespace physx;
 PhysicsScene::PhysicsScene(const PhysicsSceneCreateOptions &options, physx::PxCpuDispatcher *cpuDispatch, physx::PxCudaContextManager *cudaContextManager)
 {
     auto &physics = PxGetPhysics();
+    m_SimulationEventCallback = std::make_unique<PhysXSimulationEventCallback>();
     PxSceneDesc sceneDesc(physics.getTolerancesScale());
     sceneDesc.gravity = PxVec3(options.m_Gravity[0], options.m_Gravity[1], options.m_Gravity[2]);
     m_Gravity = options.m_Gravity;
     sceneDesc.cpuDispatcher = cpuDispatch;
     sceneDesc.filterShader = GetFilterShader(options.m_FilterShaderType);
+    sceneDesc.simulationEventCallback = m_SimulationEventCallback.get();
 
     if(cudaContextManager)
     {
@@ -42,6 +45,7 @@ PhysicsScene::PhysicsScene(const PhysicsSceneCreateOptions &options, physx::PxCp
     }
 
     m_Scene = make_physx_ptr<PxScene>(physics.createScene(sceneDesc));
+    
 #ifdef ENABLE_PVD
     _ASSERT(m_Scene.get());
     PxPvdSceneClient *pvdClient = m_Scene->getScenePvdClient();
@@ -56,6 +60,11 @@ PhysicsScene::PhysicsScene(const PhysicsSceneCreateOptions &options, physx::PxCp
 
 void PhysicsScene::Release()
 {
+    if (m_SimulationEventCallback)
+    {
+        m_SimulationEventCallback->Release();
+        m_SimulationEventCallback.reset();
+    }
     m_Scene.reset();
 }
 

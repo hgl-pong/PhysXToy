@@ -34,6 +34,8 @@ public:
 	uint32_t GetCollisionLayer() const override { return m_CollisionLayer; }
 	void SetCollisionMask(uint32_t mask) override { m_CollisionMask = mask; }
 	uint32_t GetCollisionMask() const override { return m_CollisionMask; }
+	void SetCollisionCallback(ICollisionCallback* callback) override { m_CollisionCallback = callback; }
+	ICollisionCallback* GetCollisionCallback() const override { return m_CollisionCallback; }
 
 	void SetParameter(const SoftBodyParams& params) override;
 	SoftBodyParams GetParameter() const override { return m_Params; }
@@ -80,4 +82,5 @@ private:
 	void* m_UserData = nullptr;
 	uint32_t m_CollisionLayer = 1;
 	uint32_t m_CollisionMask = 0xFFFFFFFF;
+	ICollisionCallback* m_CollisionCallback = nullptr;
 }; 

@@ -12,6 +12,7 @@ namespace physx
 class PhysicsEngine;
 class PhysicsRigidDynamic;
 class PhysicsRigidStatic;
+class PhysXSimulationEventCallback;
 
 class PhysicsScene : public IPhysicsScene
 {
@@ -48,4 +49,5 @@ private:
 	std::vector<PhysicsPtr<IPhysicsObject>> m_PhysicsClothes;
 	std::vector<PhysicsPtr<IPhysicsJoint>> m_Joints;
 	MathLib::HVector3 m_Gravity;
+	PhysicsPtr<PhysXSimulationEventCallback> m_SimulationEventCallback;
 };

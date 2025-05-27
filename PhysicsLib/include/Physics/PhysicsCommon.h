@@ -183,6 +183,8 @@ public:
 	virtual uint32_t GetCollisionLayer() const = 0;
 	virtual void SetCollisionMask(uint32_t mask) = 0;
 	virtual uint32_t GetCollisionMask() const = 0;
+	virtual void SetCollisionCallback(ICollisionCallback* callback) = 0;
+	virtual ICollisionCallback* GetCollisionCallback() const = 0;
 };
 
 class PHYSICSLIB_API IRigidBody : public IPhysicsObject
