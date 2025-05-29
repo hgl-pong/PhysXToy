@@ -168,6 +168,7 @@ enum class PhysicsObjectType
 	PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC,
 	PHYSICS_OBJECT_TYPE_SOFT_BODY,
 	PHYSICS_OBJECT_TYPE_CLOTH,
+	PHYSICS_OBJECT_TYPE_ARTICULATION_LINK,
 	PHYSICS_OBJECT_TYPE_COUNT
 };
 
@@ -285,7 +286,6 @@ struct JointDriveConfig
     JointDriveSettings m_AngularZ;                        
     JointDriveSettings m_SlerpDrive;                      
     
-    // 目标姿态(用于SLERP驱动)
     MathLib::HQuaternion m_TargetOrientation = MathLib::HQuaternion::Identity();
     MathLib::HVector3 m_TargetPosition = MathLib::HVector3::Zero();
 };

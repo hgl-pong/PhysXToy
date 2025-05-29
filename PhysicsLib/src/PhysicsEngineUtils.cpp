@@ -1,5 +1,6 @@
 #include "Physics/PhysicsCommon.h"
 #include "PhysicsEngine.h"
+#include "PhysicsArticulation.h"
 #include "ConvexMeshDecomposer.h"
 #include "Utility/PhysicsConvexUtils.h"
 #include "Utility/PhysicsUtils.h"
@@ -233,4 +234,74 @@ bool PhysicsEngineUtils::DefaultCollisionFilter(uint32_t layerA, uint32_t layerB
 	}
 	
 	return true;
+}
+
+// Articulation utility functions
+PhysicsPtr<IArticulation> PhysicsEngineUtils::CreateArticulation(const ArticulationCreateOptions &options)
+{
+	if (!gPhysicsEngine)
+		return nullptr;
+	return gPhysicsEngine->CreateArticulation(options);
+}
+
+PhysicsPtr<IArticulationLink> PhysicsEngineUtils::CreateArticulationLink(PhysicsPtr<IArticulation> articulation, PhysicsPtr<IArticulationLink> parent, const ArticulationLinkCreateOptions &options)
+{
+	if (!articulation)
+		return nullptr;
+	return articulation->CreateLink(parent, options);
+}
+
+PhysicsPtr<IArticulationJoint> PhysicsEngineUtils::CreateArticulationJoint(PhysicsPtr<IArticulationLink> link, const ArticulationJointCreateOptions &options)
+{
+	if (!link)
+		return nullptr;
+	
+	// Create joint based on the link's inbound joint
+	IArticulationJoint* joint = link->GetInboundJoint();
+	if (joint)
+	{
+		// Configure the existing joint
+		joint->SetParentPose(options.parentPose);
+		joint->SetChildPose(options.childPose);
+		joint->SetFrictionCoefficient(options.frictionCoefficient);
+		joint->SetMaxJointVelocity(options.maxJointVelocity);
+	}
+	
+	return std::make_shared<PhysicsArticulationJoint>(link, options);
+}
+
+PhysicsPtr<IArticulationCache> PhysicsEngineUtils::CreateArticulationCache(PhysicsPtr<IArticulation> articulation)
+{
+	if (!articulation)
+		return nullptr;
+	return articulation->CreateCache();
+}
+
+PhysicsPtr<IRigidStatic> PhysicsEngineUtils::CreateRigidStatic(const PhysicsObjectCreateOptions &options)
+{
+	PhysicsObjectCreateOptions staticOptions = options;
+	staticOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_STATIC;
+	auto object = CreateObject(staticOptions);
+	return std::dynamic_pointer_cast<IRigidStatic>(object);
+}
+
+PhysicsPtr<IRigidDynamic> PhysicsEngineUtils::CreateRigidDynamic(const PhysicsObjectCreateOptions &options)
+{
+	PhysicsObjectCreateOptions dynamicOptions = options;
+	dynamicOptions.m_ObjectType = PhysicsObjectType::PHYSICS_OBJECT_TYPE_RIGID_DYNAMIC;
+	auto object = CreateObject(dynamicOptions);
+	return std::dynamic_pointer_cast<IRigidDynamic>(object);
+}
+
+void PhysicsEngineUtils::SetDebugRender(PhysicsPtr<IPhysicsDebugRender> render)
+{
+	if (gPhysicsEngine)
+		gPhysicsEngine->SetDebugRender(render);
+}
+
+PhysicsPtr<IPhysicsDebugRender> PhysicsEngineUtils::GetDebugRender()
+{
+	if (gPhysicsEngine)
+		return gPhysicsEngine->GetDebugRender();
+	return nullptr;
 }

@@ -35,6 +35,7 @@ public:
 	PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options) override;
 	PhysicsPtr<ISoftBody> CreateSoftBody(const SoftBodyCreateOptions &options) override;
 	PhysicsPtr<ICloth> CreateCloth(const ClothCreateOptions &options) override;
+	PhysicsPtr<IArticulation> CreateArticulation(const ArticulationCreateOptions &options) override;
 	void Release() override;
 	IPhysicsProfiler* GetProfiler() override;
 	void SetSolverIterationCount(uint32_t count) override;
@@ -47,6 +48,9 @@ public:
 	void UnregisterCollisionCallback(ICollisionCallback* callback) override;
 	PhysicsPtr<IPhysicsScene> GetActiveScene() const override;
 	void SetActiveScene(PhysicsPtr<IPhysicsScene> scene) override;
+
+	// Internal methods for accessing native PhysX objects
+	physx::PxPhysics* GetNativePhysics() const { return m_Physics.get(); }
 
 private:
 	friend class PhysicsEngineUtils;

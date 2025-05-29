@@ -20,6 +20,10 @@ class ICloth;
 class IPhysicsDebugRenderer;
 class IPhysicsProfiler;
 class IPhysicsDebugRender;
+class IArticulation;
+class IArticulationLink;
+class IArticulationJoint;
+class IArticulationCache;
 
 enum class ForceMode
 {
@@ -27,6 +31,129 @@ enum class ForceMode
 	IMPULSE,        
 	VELOCITY_CHANGE,
 	ACCELERATION    
+};
+
+enum class ArticulationJointType
+{
+	FIXED,						// Fixed joint, 0 DOF
+	PRISMATIC,					// Prismatic joint, 1 DOF
+	REVOLUTE,					// Revolute joint, 1 DOF
+	REVOLUTE_UNWRAPPED,			// Revolute joint without wrapping, 1 DOF
+	SPHERICAL					// Spherical joint, 2-3 DOF
+};
+
+enum class ArticulationAxis
+{
+	TWIST,						// X-axis rotation
+	SWING1,						// Y-axis rotation
+	SWING2,						// Z-axis rotation
+	X,							// X-axis translation
+	Y,							// Y-axis translation
+	Z							// Z-axis translation
+};
+
+enum class ArticulationMotion
+{
+	LOCKED,						// Locked motion
+	LIMITED,					// Limited motion
+	FREE						// Free motion
+};
+
+enum class ArticulationDriveType
+{
+	NONE,
+	FORCE,						// Force drive
+	ACCELERATION				// Acceleration drive
+};
+
+enum class ArticulationCacheFlag
+{
+	VELOCITY = (1 << 0),			// Joint velocities
+	ACCELERATION = (1 << 1),		// Joint accelerations
+	POSITION = (1 << 2),			// Joint positions
+	FORCE = (1 << 3),				// Joint forces
+	LINK_VELOCITY = (1 << 4),		// Link velocities
+	LINK_ACCELERATION = (1 << 5),	// Link accelerations
+	ROOT_TRANSFORM = (1 << 6),		// Root link transform
+	ROOT_VELOCITIES = (1 << 7),		// Root link velocities
+	SENSOR_FORCES = (1 << 8),		// Sensor forces
+	JOINT_SOLVER_FORCES = (1 << 9),	// Joint solver forces
+	ALL = 0x3FF
+};
+
+struct ArticulationLimit
+{
+	MathLib::HReal low = 0.0f;				// Lower limit
+	MathLib::HReal high = 0.0f;				// Upper limit
+	MathLib::HReal stiffness = 0.0f;		// Stiffness
+	MathLib::HReal damping = 0.0f;			// Damping
+	bool isValid = false;					// Is valid
+};
+
+struct ArticulationDrive
+{
+	ArticulationDriveType driveType = ArticulationDriveType::NONE;
+	MathLib::HReal stiffness = 0.0f;		// Stiffness
+	MathLib::HReal damping = 0.0f;			// Damping
+	MathLib::HReal maxForce = 3.402823466e+38f;  // Force limit
+	MathLib::HReal targetPosition = 0.0f;	// Target position
+	MathLib::HReal targetVelocity = 0.0f;	// Target velocity
+	bool isAcceleration = false;			// Is acceleration drive
+};
+
+struct ArticulationRootLinkData
+{
+	MathLib::HTransform3 transform;			// Root link transform
+	MathLib::HVector3 worldLinVel;			// World linear velocity
+	MathLib::HVector3 worldAngVel;			// World angular velocity
+	MathLib::HVector3 worldLinAccel;		// World linear acceleration
+	MathLib::HVector3 worldAngAccel;		// World angular acceleration
+};
+
+struct ArticulationSpatialForce
+{
+	MathLib::HVector3 force;				// Force
+	MathLib::HVector3 torque;				// Torque
+};
+
+struct ArticulationSpatialVelocity
+{
+	MathLib::HVector3 linear;				// Linear velocity
+	MathLib::HVector3 angular;				// Angular velocity
+};
+
+struct ArticulationCreateOptions
+{
+	bool fixedBase = false;					// Whether to fix the base
+	uint32_t maxProjectionIterations = 4;	// Maximum projection iterations
+	MathLib::HReal separationTolerance = 0.1f; // Separation tolerance
+	uint32_t solverIterationCounts = 4;		// Solver iteration counts
+	bool enableSelfCollision = false;		// Enable self collision
+	MathLib::HReal sleepThreshold = 5e-5f;	// Sleep threshold
+	MathLib::HReal stabilizationThreshold = 1e-5f; // Stabilization threshold
+	MathLib::HReal wakeCounter = 0.4f;		// Wake counter
+};
+
+struct ArticulationLinkCreateOptions
+{
+	MathLib::HTransform3 pose;				// Link pose
+	MathLib::HReal mass = 1.0f;				// Mass
+	MathLib::HVector3 massLocalPose = MathLib::HVector3::Zero(); // Mass center local pose
+	MathLib::HVector3 inertia = MathLib::HVector3(1.0f, 1.0f, 1.0f); // Inertia tensor
+	MathLib::HReal linearDamping = 0.05f;	// Linear damping
+	MathLib::HReal angularDamping = 0.05f;	// Angular damping
+	MathLib::HReal maxLinearVelocity = 100.0f; // Maximum linear velocity
+	MathLib::HReal maxAngularVelocity = 50.0f; // Maximum angular velocity
+	void* userData = nullptr;				// User data
+};
+
+struct ArticulationJointCreateOptions
+{
+	ArticulationJointType jointType = ArticulationJointType::FIXED;
+	MathLib::HTransform3 parentPose;		// Parent link pose
+	MathLib::HTransform3 childPose;			// Child link pose
+	MathLib::HReal frictionCoefficient = 0.05f; // Friction coefficient
+	MathLib::HReal maxJointVelocity = 100.0f; // Maximum joint velocity
 };
 
 struct CollisionEventData
@@ -110,6 +237,7 @@ public:
 	virtual PhysicsPtr<IPhysicsJoint> CreateJoint(const JointCreateOptions &options) = 0;
 	virtual PhysicsPtr<ISoftBody> CreateSoftBody(const SoftBodyCreateOptions &options) = 0;
 	virtual PhysicsPtr<ICloth> CreateCloth(const ClothCreateOptions &options) = 0;
+	virtual PhysicsPtr<IArticulation> CreateArticulation(const ArticulationCreateOptions &options) = 0;
 	virtual void Release() = 0;
 	
 	virtual void SetSolverIterationCount(uint32_t count) = 0;
@@ -450,4 +578,229 @@ public:
 	
 	static void SetCollisionFilterCallback(std::function<bool(uint32_t, uint32_t)> callback);
 	static bool DefaultCollisionFilter(uint32_t layerA, uint32_t layerB);
+
+	// Articulation utility functions
+	static PhysicsPtr<IArticulation> CreateArticulation(const ArticulationCreateOptions &options);
+	static PhysicsPtr<IArticulationLink> CreateArticulationLink(PhysicsPtr<IArticulation> articulation, PhysicsPtr<IArticulationLink> parent, const ArticulationLinkCreateOptions &options);
+	static PhysicsPtr<IArticulationJoint> CreateArticulationJoint(PhysicsPtr<IArticulationLink> link, const ArticulationJointCreateOptions &options);
+	static PhysicsPtr<IArticulationCache> CreateArticulationCache(PhysicsPtr<IArticulation> articulation);
+};
+
+class PHYSICSLIB_API IArticulationCache
+{
+public:
+	virtual ~IArticulationCache() = default;
+	virtual void Release() = 0;
+	
+	// Data access interface
+	virtual MathLib::HReal* GetJointPositions() = 0;
+	virtual const MathLib::HReal* GetJointPositions() const = 0;
+	virtual MathLib::HReal* GetJointVelocities() = 0;
+	virtual const MathLib::HReal* GetJointVelocities() const = 0;
+	virtual MathLib::HReal* GetJointAccelerations() = 0;
+	virtual const MathLib::HReal* GetJointAccelerations() const = 0;
+	virtual MathLib::HReal* GetJointForces() = 0;
+	virtual const MathLib::HReal* GetJointForces() const = 0;
+	
+	virtual ArticulationSpatialVelocity* GetLinkVelocities() = 0;
+	virtual const ArticulationSpatialVelocity* GetLinkVelocities() const = 0;
+	virtual ArticulationSpatialVelocity* GetLinkAccelerations() = 0;
+	virtual const ArticulationSpatialVelocity* GetLinkAccelerations() const = 0;
+	
+	virtual ArticulationRootLinkData* GetRootLinkData() = 0;
+	virtual const ArticulationRootLinkData* GetRootLinkData() const = 0;
+	
+	virtual ArticulationSpatialForce* GetExternalForces() = 0;
+	virtual const ArticulationSpatialForce* GetExternalForces() const = 0;
+	
+	// Advanced computation data
+	virtual MathLib::HReal* GetMassMatrix() = 0;
+	virtual const MathLib::HReal* GetMassMatrix() const = 0;
+	virtual MathLib::HReal* GetJacobian() = 0;
+	virtual const MathLib::HReal* GetJacobian() const = 0;
+};
+
+class PHYSICSLIB_API IArticulationJoint
+{
+public:
+	virtual ~IArticulationJoint() = default;
+	
+	// Basic properties
+	virtual ArticulationJointType GetJointType() const = 0;
+	virtual void SetParentPose(const MathLib::HTransform3& pose) = 0;
+	virtual MathLib::HTransform3 GetParentPose() const = 0;
+	virtual void SetChildPose(const MathLib::HTransform3& pose) = 0;
+	virtual MathLib::HTransform3 GetChildPose() const = 0;
+	
+	// Motion configuration
+	virtual void SetMotion(ArticulationAxis axis, ArticulationMotion motion) = 0;
+	virtual ArticulationMotion GetMotion(ArticulationAxis axis) const = 0;
+	virtual uint32_t GetDofCount() const = 0;
+	
+	// Limit settings
+	virtual void SetLimit(ArticulationAxis axis, const ArticulationLimit& limit) = 0;
+	virtual ArticulationLimit GetLimit(ArticulationAxis axis) const = 0;
+	
+	// Drive settings
+	virtual void SetDrive(ArticulationAxis axis, const ArticulationDrive& drive) = 0;
+	virtual ArticulationDrive GetDrive(ArticulationAxis axis) const = 0;
+	virtual void SetDriveTarget(ArticulationAxis axis, MathLib::HReal target) = 0;
+	virtual MathLib::HReal GetDriveTarget(ArticulationAxis axis) const = 0;
+	virtual void SetDriveVelocity(ArticulationAxis axis, MathLib::HReal velocity) = 0;
+	virtual MathLib::HReal GetDriveVelocity(ArticulationAxis axis) const = 0;
+	
+	// Joint position and velocity
+	virtual void SetJointPosition(ArticulationAxis axis, MathLib::HReal position) = 0;
+	virtual MathLib::HReal GetJointPosition(ArticulationAxis axis) const = 0;
+	virtual void SetJointVelocity(ArticulationAxis axis, MathLib::HReal velocity) = 0;
+	virtual MathLib::HReal GetJointVelocity(ArticulationAxis axis) const = 0;
+	
+	// Physical properties
+	virtual void SetFrictionCoefficient(MathLib::HReal coefficient) = 0;
+	virtual MathLib::HReal GetFrictionCoefficient() const = 0;
+	virtual void SetMaxJointVelocity(MathLib::HReal maxVelocity) = 0;
+	virtual MathLib::HReal GetMaxJointVelocity() const = 0;
+	
+	virtual size_t GetOffset() const = 0;
+};
+
+class PHYSICSLIB_API IArticulationLink : public IPhysicsObject
+{
+public:
+	virtual ~IArticulationLink() = default;
+	
+	// Link hierarchy
+	virtual IArticulation* GetArticulation() const = 0;
+	virtual IArticulationJoint* GetInboundJoint() const = 0;
+	virtual uint32_t GetInboundJointDof() const = 0;
+	virtual uint32_t GetLinkIndex() const = 0;
+	
+	// Child link management
+	virtual uint32_t GetNbChildren() const = 0;
+	virtual uint32_t GetChildren(std::vector<PhysicsPtr<IArticulationLink>>& children) const = 0;
+	
+	// Mass properties
+	virtual void SetMass(MathLib::HReal mass) = 0;
+	virtual MathLib::HReal GetMass() const = 0;
+	virtual MathLib::HReal GetInvMass() const = 0;
+	virtual void SetCMassLocalPose(const MathLib::HTransform3& pose) = 0;
+	virtual MathLib::HTransform3 GetCMassLocalPose() const = 0;
+	virtual void SetMassSpaceInertiaTensor(const MathLib::HVector3& inertia) = 0;
+	virtual MathLib::HVector3 GetMassSpaceInertiaTensor() const = 0;
+	virtual MathLib::HVector3 GetMassSpaceInvInertiaTensor() const = 0;
+	
+	// Damping
+	virtual void SetLinearDamping(MathLib::HReal damping) = 0;
+	virtual MathLib::HReal GetLinearDamping() const = 0;
+	virtual void SetAngularDamping(MathLib::HReal damping) = 0;
+	virtual MathLib::HReal GetAngularDamping() const = 0;
+	
+	// Velocity limits
+	virtual void SetMaxLinearVelocity(MathLib::HReal maxVel) = 0;
+	virtual MathLib::HReal GetMaxLinearVelocity() const = 0;
+	virtual void SetMaxAngularVelocity(MathLib::HReal maxVel) = 0;
+	virtual MathLib::HReal GetMaxAngularVelocity() const = 0;
+	
+	// Velocity and acceleration
+	virtual MathLib::HVector3 GetLinearVelocity() const = 0;
+	virtual MathLib::HVector3 GetAngularVelocity() const = 0;
+	virtual MathLib::HVector3 GetLinearAcceleration() const = 0;
+	virtual MathLib::HVector3 GetAngularAcceleration() const = 0;
+	
+	// Force application
+	virtual void AddForce(const MathLib::HVector3& force, ForceMode mode = ForceMode::FORCE, bool autowake = true) = 0;
+	virtual void AddTorque(const MathLib::HVector3& torque, ForceMode mode = ForceMode::FORCE, bool autowake = true) = 0;
+	virtual void ClearForce(ForceMode mode = ForceMode::FORCE) = 0;
+	virtual void ClearTorque(ForceMode mode = ForceMode::FORCE) = 0;
+	virtual void SetForceAndTorque(const MathLib::HVector3& force, const MathLib::HVector3& torque, ForceMode mode = ForceMode::FORCE) = 0;
+	
+	// CCD and physical properties
+	virtual void SetMinCCDAdvanceCoefficient(MathLib::HReal coefficient) = 0;
+	virtual MathLib::HReal GetMinCCDAdvanceCoefficient() const = 0;
+	virtual void SetMaxDepenetrationVelocity(MathLib::HReal maxVel) = 0;
+	virtual MathLib::HReal GetMaxDepenetrationVelocity() const = 0;
+	virtual void SetMaxContactImpulse(MathLib::HReal maxImpulse) = 0;
+	virtual MathLib::HReal GetMaxContactImpulse() const = 0;
+	virtual void SetContactSlopCoefficient(MathLib::HReal coefficient) = 0;
+	virtual MathLib::HReal GetContactSlopCoefficient() const = 0;
+	
+	// CFM (Constraint Force Mixing)
+	virtual void SetCfmScale(MathLib::HReal cfm) = 0;
+	virtual MathLib::HReal GetCfmScale() const = 0;
+	
+	virtual void* GetNativeLink() const = 0;
+};
+
+class PHYSICSLIB_API IArticulation
+{
+public:
+	virtual ~IArticulation() = default;
+	virtual void Release() = 0;
+	
+	// Basic properties
+	virtual PhysicsPtr<IPhysicsScene> GetScene() const = 0;
+	virtual bool IsFixedBase() const = 0;
+	virtual void SetSolverIterationCounts(uint32_t minPositionIters, uint32_t minVelocityIters = 1) = 0;
+	virtual void GetSolverIterationCounts(uint32_t& minPositionIters, uint32_t& minVelocityIters) const = 0;
+	
+	// Link management
+	virtual PhysicsPtr<IArticulationLink> CreateLink(PhysicsPtr<IArticulationLink> parent, const ArticulationLinkCreateOptions& options) = 0;
+	virtual uint32_t GetNbLinks() const = 0;
+	virtual uint32_t GetLinks(std::vector<PhysicsPtr<IArticulationLink>>& links) const = 0;
+	virtual PhysicsPtr<IArticulationLink> GetRootLink() const = 0;
+	
+	// Joint management
+	virtual uint32_t GetDofs() const = 0;
+	virtual void UpdateKinematic() = 0;
+	
+	// Cache management
+	virtual PhysicsPtr<IArticulationCache> CreateCache() = 0;
+	virtual void ApplyCache(PhysicsPtr<IArticulationCache> cache, uint32_t flag) = 0;
+	virtual void CopyInternalStateToCache(PhysicsPtr<IArticulationCache> cache, uint32_t flag) const = 0;
+	
+	// Projection and separation settings
+	virtual void SetMaxProjectionIterations(uint32_t iterations) = 0;
+	virtual uint32_t GetMaxProjectionIterations() const = 0;
+	virtual void SetSeparationTolerance(MathLib::HReal tolerance) = 0;
+	virtual MathLib::HReal GetSeparationTolerance() const = 0;
+	
+	// Drive iteration settings
+	virtual void SetInternalDriveIterations(uint32_t iterations) = 0;
+	virtual uint32_t GetInternalDriveIterations() const = 0;
+	virtual void SetExternalDriveIterations(uint32_t iterations) = 0;
+	virtual uint32_t GetExternalDriveIterations() const = 0;
+	
+	// Sleep and wake
+	virtual bool IsSleeping() const = 0;
+	virtual void SetSleepThreshold(MathLib::HReal threshold) = 0;
+	virtual MathLib::HReal GetSleepThreshold() const = 0;
+	virtual void SetStabilizationThreshold(MathLib::HReal threshold) = 0;
+	virtual MathLib::HReal GetStabilizationThreshold() const = 0;
+	virtual void SetWakeCounter(MathLib::HReal wakeCounterValue) = 0;
+	virtual MathLib::HReal GetWakeCounter() const = 0;
+	virtual void WakeUp() = 0;
+	virtual void PutToSleep() = 0;
+	
+	// Advanced computation functions
+	virtual void CommonInit() = 0;
+	virtual void ComputeGeneralizedGravityForce(PhysicsPtr<IArticulationCache> cache) = 0;
+	virtual void ComputeCoriolisAndCentrifugalForce(PhysicsPtr<IArticulationCache> cache) = 0;
+	virtual void ComputeGeneralizedExternalForce(PhysicsPtr<IArticulationCache> cache) = 0;
+	virtual void ComputeJointAcceleration(PhysicsPtr<IArticulationCache> cache) = 0;
+	virtual void ComputeJointForce(PhysicsPtr<IArticulationCache> cache) = 0;
+	virtual void ComputeGeneralizedMassMatrix(PhysicsPtr<IArticulationCache> cache) = 0;
+	virtual void ComputeDenseJacobian(PhysicsPtr<IArticulationCache> cache, uint32_t& nRows, uint32_t& nCols) = 0;
+	
+	// Name and bounds
+	virtual void SetName(const char* name) = 0;
+	virtual const char* GetName() const = 0;
+	virtual MathLib::HAABBox3D GetWorldBounds(MathLib::HReal inflation = 1.01f) const = 0;
+	
+	// User data and internal index
+	virtual void SetUserData(void* userData) = 0;
+	virtual void* GetUserData() const = 0;
+	virtual uint32_t GetInternalActorIndex() const = 0;
+	
+	virtual size_t GetOffset() const = 0;
+	virtual void* GetNativeArticulation() const = 0;
 };

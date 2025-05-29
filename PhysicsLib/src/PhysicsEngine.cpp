@@ -9,6 +9,7 @@
 #include "PhysicsJoint.h"
 #include "PhysicsSoftBody.h"
 #include "PhysicsCloth.h"
+#include "PhysicsArticulation.h"
 #include "PhysicsProfiler.h"
 #include "Utility/PhysicsUtils.h"
 #include "Utility/PhysX/ErrorCallback.h"
@@ -285,6 +286,23 @@ PhysicsPtr<ICloth> PhysicsEngine::CreateCloth(const ClothCreateOptions &options)
 	}
 	
 	return make_physics_ptr(cloth);
+}
+
+PhysicsPtr<IArticulation> PhysicsEngine::CreateArticulation(const ArticulationCreateOptions &options)
+{
+	if (!m_bInitialized)
+	{
+		return nullptr;
+	}
+	
+	auto articulation = std::make_shared<PhysicsArticulation>(options);
+	
+	if (!articulation->GetNativeArticulation())
+	{
+		return nullptr;
+	}
+	
+	return articulation;
 }
 
 IPhysicsProfiler* PhysicsEngine::GetProfiler()
